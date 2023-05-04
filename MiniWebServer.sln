@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33530.505
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer", "MiniWebServer\MiniWebServer.csproj", "{C5F00823-5638-4EE9-8FAB-32D2F2FEE7C7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Abstractions", "MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj", "{1C717D84-E35C-4C28-A9AB-74AA9C2CD231}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Server", "MiniWebServer.Server\MiniWebServer.Server.csproj", "{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Client.Abstractions", "MiniWebServer.Client.Abstractions\MiniWebServer.Client.Abstractions.csproj", "{8A5AF898-75FD-464C-B430-4AE6DD120A5F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.HttpParser", "MiniWebServer.HttpParser\MiniWebServer.HttpParser.csproj", "{57911B66-10D8-4B27-BD65-F760CB2928C6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParserTests", "Tests\ParserTests\ParserTests.csproj", "{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5F00823-5638-4EE9-8FAB-32D2F2FEE7C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5F00823-5638-4EE9-8FAB-32D2F2FEE7C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5F00823-5638-4EE9-8FAB-32D2F2FEE7C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5F00823-5638-4EE9-8FAB-32D2F2FEE7C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C717D84-E35C-4C28-A9AB-74AA9C2CD231}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C717D84-E35C-4C28-A9AB-74AA9C2CD231}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C717D84-E35C-4C28-A9AB-74AA9C2CD231}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C717D84-E35C-4C28-A9AB-74AA9C2CD231}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A5AF898-75FD-464C-B430-4AE6DD120A5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A5AF898-75FD-464C-B430-4AE6DD120A5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A5AF898-75FD-464C-B430-4AE6DD120A5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A5AF898-75FD-464C-B430-4AE6DD120A5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57911B66-10D8-4B27-BD65-F760CB2928C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57911B66-10D8-4B27-BD65-F760CB2928C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57911B66-10D8-4B27-BD65-F760CB2928C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57911B66-10D8-4B27-BD65-F760CB2928C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D1843708-76D1-4698-A487-8D1531533306}
+	EndGlobalSection
+EndGlobal
