@@ -3,6 +3,7 @@ using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Host;
 using MiniWebServer.Server.Http.Helpers;
+using MiniWebServer.Server.MimeType;
 using MiniWebServer.Server.ProtocolHandlers;
 using MiniWebServer.Server.Routing;
 using System.Collections.Concurrent;
@@ -20,7 +21,8 @@ namespace MiniWebServer.Server
     {
         private readonly MiniWebServerConfiguration config;
         private readonly IProtocolHandlerFactory protocolHandlerFactory;
-        private readonly Dictionary<string, HostContainer> hostContainers;
+        private readonly IDictionary<string, HostContainer> hostContainers;
+        private readonly IMimeTypeMapping mimeTypeMapping;
         private readonly ILogger logger;
         private TcpListener? server;
         private bool running;
@@ -34,13 +36,15 @@ namespace MiniWebServer.Server
         public MiniWebServer(
             MiniWebServerConfiguration config, 
             IProtocolHandlerFactory protocolHandlerFactory,
-            Dictionary<string, HostContainer> hostContainers,
+            IDictionary<string, HostContainer> hostContainers,
+            IMimeTypeMapping mimeTypeMapping,
             ILogger logger
             )
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.protocolHandlerFactory = protocolHandlerFactory ?? throw new ArgumentNullException(nameof(protocolHandlerFactory));
             this.hostContainers = hostContainers ?? throw new ArgumentNullException(nameof(hostContainers));
+            this.mimeTypeMapping = mimeTypeMapping ?? throw new ArgumentNullException(nameof(mimeTypeMapping));
             this.logger = logger;
 
             running = false;
@@ -226,7 +230,11 @@ namespace MiniWebServer.Server
             {
                 if (method == HttpMethod.Get)
                 {
-                    await callable.OnGet(request, responseObjectBuilder);
+                    await callable.OnGet(request, responseObjectBuilder, mimeTypeMapping);
+                }
+                else
+                {
+                    StandardResponseBuilderHelpers.OK(responseObjectBuilder);
                 }
             } catch (Exception ex)
             {

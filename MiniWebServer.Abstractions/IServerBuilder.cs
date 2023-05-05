@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,5 +15,6 @@ namespace MiniWebServer.Abstractions
         IServerBuilder AddHost(string hostName, string hostDirectory);
         IServerBuilder UseStaticFiles();
         IServer Build();
+        IServerBuilder UseCache(IDistributedCache cache);
     }
 }

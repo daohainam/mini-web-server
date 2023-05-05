@@ -48,7 +48,7 @@ namespace MiniWebServer.HttpParser.Http11
         [GeneratedRegex("^(?<method>[a-zA-Z]+)\\s(?<url>.+)\\sHTTP/(?<major>\\d)\\.(?<minor>\\d+)$")]
         private static partial Regex HttpRequestLineRegex();
 
-        [GeneratedRegex(@"(?<name>[\w-_]+): (?<value>[\w\-_ :;.,\\/'?!(){}\[\]@<>=\-+\*#$&`|~^%]+)")]
+        [GeneratedRegex(@"(?<name>[\w-_]+): (?<value>[\w\-  _ :;.,\\/'?!(){}\[\]@<>=\-+\*#$&`|~^%""]+)")]
         private static partial Regex HttpHeaderLineRegex();
     }
 }

@@ -1,7 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using MimeMapping;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Server.Host;
+using MiniWebServer.Server.MimeType;
 using MiniWebServer.Server.Routing;
 using MiniWebServer.Server.StaticFileSupport;
 using System;
@@ -19,12 +22,15 @@ namespace MiniWebServer.Server
         private IPAddress address = IPAddress.Loopback;
         private int httpPort = 80;
         private readonly ILogger<MiniWebServerBuilder> logger;
+        private IDistributedCache cache;
         private readonly Dictionary<string, HostConfiguration> hosts = new();
         private readonly List<IRoutingServiceFactory> routingServiceFactories = new();
+        private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
 
-        public MiniWebServerBuilder(ILogger<MiniWebServerBuilder>? logger)
+        public MiniWebServerBuilder(ILogger<MiniWebServerBuilder>? logger, IDistributedCache? cache)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
         public IServerBuilder BindToAddress(string ipAddress)
@@ -67,7 +73,21 @@ namespace MiniWebServer.Server
 
             return this;
         }
-        
+
+        public IServerBuilder AddMimeTypeMapping(IMimeTypeMapping mimeTypeMapping)
+        {
+            mimeTypeMappings.Add(mimeTypeMapping);
+
+            return this;
+        }
+
+        public IServerBuilder UseCache(IDistributedCache cache)
+        {
+            this.cache = cache;
+
+            return this;
+        }
+
         public IServerBuilder UseStaticFiles()
         {
             return AddRoutingServiceFactory(
@@ -77,10 +97,8 @@ namespace MiniWebServer.Server
 
         public IServer Build()
         {
-            if (!hosts.Any())
-            {
-                hosts.Add(string.Empty, new HostConfiguration(string.Empty, Path.Combine(new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName ?? string.Empty, "wwwroot")));
-            }
+            Validate();
+            AddDefaultValuesIfRequired();
 
             Dictionary<string, HostContainer> hostContainers = new();
             foreach (var host in hosts.Values)
@@ -102,12 +120,33 @@ namespace MiniWebServer.Server
                 },
                 new ProtocolHandlerFactory(logger),
                 hostContainers,
+                new CachableMimeTypeMapping(new MimeTypeMappingContainer(mimeTypeMappings), cache),
                 logger
             );
 
             return server;
         }
 
+        private void AddDefaultValuesIfRequired()
+        {
+            if (!hosts.Any())
+            {
+                hosts.Add(string.Empty, new HostConfiguration(string.Empty, Path.Combine(new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName ?? string.Empty, "wwwroot")));
+            }
 
+            if (!mimeTypeMappings.Any()) // we always need a mime type mapping
+            {
+                mimeTypeMappings.Add(StaticMimeMapping.GetInstance());
+            }
+        }
+
+        private void Validate() // move validating routines here so we can make Build function shorter 
+        {
+            if (cache == null) 
+            {
+                // Opps, this will never happen
+                throw new InvalidOperationException("Cache required");
+            }
+        }
     }
 }

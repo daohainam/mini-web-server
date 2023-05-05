@@ -7,11 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MimeMapping\MimeMapping.csproj" />
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
     <ProjectReference Include="..\MiniWebServer.Client.Abstractions\MiniWebServer.Client.Abstractions.csproj" />
     <ProjectReference Include="..\MiniWebServer.HttpParser\MiniWebServer.HttpParser.csproj" />

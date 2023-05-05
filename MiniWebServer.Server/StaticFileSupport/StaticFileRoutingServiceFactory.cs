@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.StaticFileSupport
 {
+    // Abstract Factory pattern
     public class StaticFileRoutingServiceFactory : IRoutingServiceFactory
     {
         private readonly ILogger logger;

@@ -72,7 +72,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                     }
                                     else
                                     {
-                                        logger.LogError("Invalid header line");
+                                        logger.LogError("Invalid header line: {line}", headerLineText);
                                         state = BuildRequestStates.Failed;
                                     }
 
@@ -88,13 +88,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         }
                         else
                         {
-                            logger.LogError("Invalid request line");
+                            logger.LogError("Invalid request line: {line}", requestLineText);
                             state = BuildRequestStates.Failed;
                         }
                     }
                     else
                     {
-                        logger.LogError("Invalid request line");
+                        logger.LogError("Invalid request line (empty)");
                         state = BuildRequestStates.Failed;
                     }
                 }
@@ -146,8 +146,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 }
 
                 await d.Writer.WriteLineAsync();
-                await response.Content.WriteTo(d.Writer);
                 await d.Writer.FlushAsync();
+                await response.Content.WriteTo(tcpClient.GetStream());
             }
         }
 

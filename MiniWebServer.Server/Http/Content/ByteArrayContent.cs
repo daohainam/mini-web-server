@@ -7,20 +7,18 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.Http.Content
 {
-    public class StringContent : Abstractions.Http.HttpContent
+    public class ByteArrayContent : Abstractions.Http.HttpContent
     {
-        private readonly string content;
+        private readonly byte[] content;
 
-        public StringContent(string content)
+        public ByteArrayContent(byte[] content)
         {
             this.content = content ?? throw new ArgumentNullException(nameof(content));
         }
 
         public override async Task WriteTo(Stream stream)
         {
-            var writer = new StreamWriter(stream);
-            await writer.WriteAsync(content);
-            await writer.FlushAsync();
+            await stream.WriteAsync(content);
         }
     }
 }

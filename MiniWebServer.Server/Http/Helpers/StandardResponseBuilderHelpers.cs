@@ -15,6 +15,12 @@ namespace MiniWebServer.Server.Http.Helpers
             builder.SetReasonPhrase("Internal Server Error");
         }
 
+        public static void NotImplemented(IHttpResponseBuilder builder)
+        {
+            builder.SetStatusCode(System.Net.HttpStatusCode.NotImplemented);
+            builder.SetReasonPhrase("Not Implemented");
+        }
+
         public static void BadRequest(IHttpResponseBuilder builder)
         {
             builder.SetStatusCode(System.Net.HttpStatusCode.BadRequest);

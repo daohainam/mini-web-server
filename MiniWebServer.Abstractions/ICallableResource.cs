@@ -9,6 +9,6 @@ namespace MiniWebServer.Abstractions
 {
     public interface ICallableResource
     {
-        Task OnGet(HttpRequest request, IHttpResponseBuilder responseObjectBuilder);
+        Task OnGet(HttpRequest request, IHttpResponseBuilder responseObjectBuilder, IMimeTypeMapping mimeTypeMappings);
     }
 }

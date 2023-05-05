@@ -51,7 +51,10 @@ namespace MiniWebServer.Server.Http
 
             return this;
         }
-
+        public IHttpResponseBuilder AddHeader(HttpResponseHeader header, string value)
+        {
+            return AddHeader(header.ToString(), value);
+        }
         public IHttpResponseBuilder AddHeaders(IEnumerable<KeyValuePair<string, string>> keyValues)
         {
             foreach (var k in headers)
@@ -62,5 +65,24 @@ namespace MiniWebServer.Server.Http
             return this;
         }
 
+        public IHttpResponseBuilder SetHeaderContentEncoding(string contentEncoding)
+        {
+            return AddHeader(HttpResponseHeader.ContentEncoding, contentEncoding);
+        }
+
+        public IHttpResponseBuilder SetHeaderContentLength(long contentLength)
+        {
+            return AddHeader(HttpResponseHeader.ContentLength, contentLength.ToString());
+        }
+
+        public IHttpResponseBuilder SetHeaderConnection(string connectionStatus)
+        {
+            return AddHeader(HttpResponseHeader.Connection, connectionStatus);
+        }
+
+        public IHttpResponseBuilder SetHeaderKeepAlive(string keepAlive)
+        {
+            return AddHeader(HttpResponseHeader.KeepAlive, keepAlive);
+        }
     }
 }
