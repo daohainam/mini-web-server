@@ -11,8 +11,11 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Reflection.Metadata;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
 namespace MiniWebServer.Server
@@ -54,6 +57,12 @@ namespace MiniWebServer.Server
         {
             logger.LogInformation("Starting web server...");
 
+            if (config.Certificate != null)
+            {
+                // lower TLS versions are obsoleted, we only use 1.2
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            }
+
             running = true;
 
             acceptCancellationToken = acceptCancellationTokenSource.Token;
@@ -68,14 +77,37 @@ namespace MiniWebServer.Server
 
         }
 
-        private void HandleNewClientConnection(TcpClient tcpClient)
+        private async Task HandleNewClientConnection(TcpClient tcpClient)
         {
+            Stream stream = tcpClient.GetStream();
+            if (config.Certificate != null)
+            {
+                var sslStream = new SslStream(stream);
+
+                SslServerAuthenticationOptions options = new()
+                {
+                    ApplicationProtocols = new List<SslApplicationProtocol>()
+                    {
+                        SslApplicationProtocol.Http11
+                    },
+                    ServerCertificate = config.Certificate,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    ClientCertificateRequired = false,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                };
+
+                await sslStream.AuthenticateAsServerAsync(options);
+
+                stream = sslStream;
+            }
+
             var client = new MiniWebClientConnection(
                 nextClientId++,
                 tcpClient,
+                stream,
                 protocolHandlerFactory.Create(ProtocolHandlerFactory.HTTP11), // A connection always starts with HTTP 1.1 
                 MiniWebClientConnection.States.Pending
-            );
+            ); ;
 
             waitingClients.Enqueue(client);
             logger.LogInformation("New client connected");
@@ -105,7 +137,7 @@ namespace MiniWebServer.Server
                 {
                     TcpClient client = await server.AcceptTcpClientAsync(acceptCancellationToken);
 
-                    HandleNewClientConnection(client);
+                    await HandleNewClientConnection(client);
                 }
                 catch (OperationCanceledException)
                 {
@@ -153,7 +185,7 @@ namespace MiniWebServer.Server
             {
                 if (client.State == MiniWebClientConnection.States.Pending || client.State == MiniWebClientConnection.States.BuildingRequestObject)
                 {
-                    var state = await client.ProtocolHandler.ReadRequest(client.TcpClient, client.RequestObjectBuilder, client.ProtocolHandlerData);
+                    var state = await client.ProtocolHandler.ReadRequest(client.ClientStream, client.RequestObjectBuilder, client.ProtocolHandlerData);
                     if (state == ProtocolHandlerStates.BuildRequestStates.Failed)
                     {
                         StandardResponseBuilderHelpers.BadRequest(client.ResponseObjectBuilder);
@@ -203,7 +235,7 @@ namespace MiniWebServer.Server
                 }
                 else if (client.State == MiniWebClientConnection.States.ResponseObjectReady)
                 {
-                    await client.ProtocolHandler.SendResponse(client.TcpClient, client.ResponseObjectBuilder, client.ProtocolHandlerData);
+                    await client.ProtocolHandler.SendResponse(client.ClientStream, client.ResponseObjectBuilder, client.ProtocolHandlerData);
 
                     client.State = NextState(client.State);
                 }

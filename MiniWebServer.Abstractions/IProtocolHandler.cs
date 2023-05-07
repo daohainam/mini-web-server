@@ -12,7 +12,7 @@ namespace MiniWebServer.Abstractions
     public interface IProtocolHandler
     {
         int ProtocolVersion { get; }
-        Task<BuildRequestStates> ReadRequest(TcpClient tcpClient, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data);
-        Task SendResponse(TcpClient tcpClient, IHttpResponseBuilder responseObjectBuilder, ProtocolHandlerData protocolHandlerData);
+        Task<BuildRequestStates> ReadRequest(Stream clientStream, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data);
+        Task SendResponse(Stream clientStream, IHttpResponseBuilder responseObjectBuilder, ProtocolHandlerData protocolHandlerData);
     }
 }

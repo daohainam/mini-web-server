@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -25,6 +26,8 @@ namespace MiniWebServer.Server
         private int httpPort = 80;
         private readonly ILogger<MiniWebServerBuilder> logger;
         private IDistributedCache cache;
+        private string certificateFile = string.Empty;
+        private string certificatePassword = string.Empty;
         private readonly Dictionary<string, HostConfiguration> hosts = new();
         private readonly List<IRoutingServiceFactory> routingServiceFactories = new();
         private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
@@ -48,9 +51,14 @@ namespace MiniWebServer.Server
                 {
                     UseHttpPort(serverOptions.BindingOptions.Port);
                 }
-                if (string.IsNullOrEmpty(serverOptions.BindingOptions.Address))
+                if (!string.IsNullOrEmpty(serverOptions.BindingOptions.Address))
                 {
                     BindToAddress(serverOptions.BindingOptions.Address);
+                }
+                if (!string.IsNullOrEmpty(serverOptions.BindingOptions.Certificate))
+                {
+                    // note that a certificate might have empty password
+                    AddCertificate(serverOptions.BindingOptions.Certificate, serverOptions.BindingOptions.CertificatePassword);
                 }
             }
 
@@ -60,6 +68,19 @@ namespace MiniWebServer.Server
             }
 
             return this;
+        }
+
+        private void AddCertificate(string certificateFile, string certificatePassword)
+        {
+            if (File.Exists(certificateFile))
+            {
+                this.certificateFile = certificateFile;
+                this.certificatePassword = certificatePassword;
+            }
+            else
+            {
+                throw new FileNotFoundException(nameof(certificateFile));
+            }
         }
 
         public IServerBuilder BindToAddress(string ipAddress)
@@ -146,6 +167,7 @@ namespace MiniWebServer.Server
             var server = new MiniWebServer(new MiniWebServerConfiguration() { 
                     HttpEndPoint = new IPEndPoint(address, httpPort),
                     Hosts = hosts.Values.ToList(),
+                    Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword)
                 },
                 new ProtocolHandlerFactory(logger),
                 hostContainers,

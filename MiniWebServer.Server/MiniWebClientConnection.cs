@@ -23,11 +23,12 @@ namespace MiniWebServer.Server
             ReadyToClose
         }
 
-        public MiniWebClientConnection(int id, TcpClient tcpClient, IProtocolHandler connectionHandler, States initState)
+        public MiniWebClientConnection(int id, TcpClient tcpClient, Stream clientStream, IProtocolHandler connectionHandler, States initState)
         {
             Id = id;
             TcpClient = tcpClient;
-            this.State = initState;
+            ClientStream = clientStream;
+            State = initState;
             ProtocolHandler = connectionHandler;
             ProtocolHandlerData = new ProtocolHandlerData();
             RequestObjectBuilder = new HttpWebRequestBuilder();
@@ -36,6 +37,7 @@ namespace MiniWebServer.Server
 
         public int Id { get; }
         public TcpClient TcpClient { get; }
+        public Stream ClientStream { get; }
         public IProtocolHandler ProtocolHandler { get; }
         public ProtocolHandlerData ProtocolHandlerData { get; }
         public States State { get; set; }

@@ -27,13 +27,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         public int ProtocolVersion => 101;
 
-        public async Task<BuildRequestStates> ReadRequest(TcpClient tcpClient, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data)
+        public async Task<BuildRequestStates> ReadRequest(Stream clientStream, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data)
         {
             BuildRequestStates state = BuildRequestStates.InProgress;
 
             data.Data ??= new Http11ProtocolData(
-                new StreamReader(tcpClient.GetStream()),
-                new StreamWriter(tcpClient.GetStream())
+                new StreamReader(clientStream),
+                new StreamWriter(clientStream)
                 );
 
             var d = (Http11ProtocolData)data.Data;
@@ -129,12 +129,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             return state;
         }
 
-        public async Task SendResponse(TcpClient tcpClient, IHttpResponseBuilder responseObjectBuilder, ProtocolHandlerData protocolHandlerData)
+        public async Task SendResponse(Stream clientStream, IHttpResponseBuilder responseObjectBuilder, ProtocolHandlerData protocolHandlerData)
         {
             if (protocolHandlerData.Data is not Http11ProtocolData d)
             {
                 logger.LogError("Invalid ProtocolHandlerData");
-                await SendResponseStatus(new StreamWriter(tcpClient.GetStream()), HttpStatusCode.InternalServerError, "Internal Server Error");
+                await SendResponseStatus(new StreamWriter(clientStream), HttpStatusCode.InternalServerError, "Internal Server Error");
             }
             else
             {
@@ -147,7 +147,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                 await d.Writer.WriteLineAsync();
                 await d.Writer.FlushAsync();
-                await response.Content.WriteTo(tcpClient.GetStream());
+                await response.Content.WriteTo(clientStream);
             }
         }
 
