@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using MimeMapping;
 using MiniWebServer.Abstractions;
+using MiniWebServer.Configuration;
 using MiniWebServer.Server.Host;
 using MiniWebServer.Server.MimeType;
 using MiniWebServer.Server.Routing;
@@ -33,12 +35,39 @@ namespace MiniWebServer.Server
             this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
         }
 
+        public IServerBuilder UseOptions(ServerOptions serverOptions)
+        {
+            if (serverOptions == null)
+            {
+                throw new ArgumentNullException(nameof(serverOptions));
+            }
+
+            if (serverOptions.BindingOptions != null)
+            {
+                if (serverOptions.BindingOptions.Port > 0)
+                {
+                    UseHttpPort(serverOptions.BindingOptions.Port);
+                }
+                if (string.IsNullOrEmpty(serverOptions.BindingOptions.Address))
+                {
+                    BindToAddress(serverOptions.BindingOptions.Address);
+                }
+            }
+
+            foreach (var host in serverOptions.HostOptions)
+            {
+                AddHost(host.HostName, host.HostDirectory);
+            }
+
+            return this;
+        }
+
         public IServerBuilder BindToAddress(string ipAddress)
         {
             if (!IPAddress.TryParse(ipAddress, out IPAddress? ip))
                 throw new ArgumentException(null, nameof(ipAddress));
 
-            this.address = ip;
+            address = ip;
 
             return this;
         }

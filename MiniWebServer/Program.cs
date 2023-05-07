@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
+using MiniWebServer.Configuration;
 using MiniWebServer.Server;
 
 namespace MiniWebServer
@@ -14,18 +16,24 @@ namespace MiniWebServer
             ConfigureServices(serviceCollection);
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
-
             var serverBuilder = serviceProvider.GetService<IServerBuilder>();
-
             if (serverBuilder == null)
             {
                 serviceProvider.GetService<ILogger>()?.LogError("Error creating ServerBuilder");
                 return;
-            }
+            };
 
-            ;
+            IConfiguration config = new ConfigurationBuilder()
+                .AddJsonFile("mini-web-server.json")
+                .AddEnvironmentVariables()
+                .AddCommandLine(args)
+                .Build();
+
+            // Get values from the config given their key and their target type.
+            ServerOptions serverOptions = config.Get<ServerOptions>() ?? new ServerOptions();
+
             var server = serverBuilder
-                .UseHttpPort(8080)
+                .UseOptions(serverOptions)
                 .UseStaticFiles()
                 //.UseCache(serviceProvider.GetService<IDistributedCache>())
                 .Build();
@@ -41,6 +49,7 @@ namespace MiniWebServer
         private static void ConfigureServices(IServiceCollection services)
         {
             services.AddLogging(configure => configure.AddConsole());
+            services.AddLogging(loggingBuilder => loggingBuilder.AddLog4Net("log4net.xml"));
             services.AddDistributedMemoryCache();
 
             services.AddTransient<IServerBuilder>(

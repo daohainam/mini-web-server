@@ -17,7 +17,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{E2BF560E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ParserTests", "Tests\ParserTests\ParserTests.csproj", "{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MimeMapping", "MimeMapping\MimeMapping.csproj", "{18230824-D7EB-4EB1-BEF5-16FE935D4F19}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MimeMapping", "MimeMapping\MimeMapping.csproj", "{18230824-D7EB-4EB1-BEF5-16FE935D4F19}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.Configuration", "MiniWebServer.Configuration\MiniWebServer.Configuration.csproj", "{7A4E46F4-DF96-498D-A09E-C84A386C797A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +55,10 @@ Global
 		{18230824-D7EB-4EB1-BEF5-16FE935D4F19}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18230824-D7EB-4EB1-BEF5-16FE935D4F19}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18230824-D7EB-4EB1-BEF5-16FE935D4F19}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A4E46F4-DF96-498D-A09E-C84A386C797A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A4E46F4-DF96-498D-A09E-C84A386C797A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A4E46F4-DF96-498D-A09E-C84A386C797A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A4E46F4-DF96-498D-A09E-C84A386C797A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

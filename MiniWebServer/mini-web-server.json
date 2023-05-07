@@ -1,0 +1,9 @@
+{
+  "BindingOptions": {
+    "Port": 8081,
+    "Address": "127.0.0.1",
+    "Certificate": "",
+    "CertificatePassword": ""
+  },
+  "HostOptions": []
+}
