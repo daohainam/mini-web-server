@@ -26,6 +26,11 @@ namespace MiniWebServer.Server.Http.Helpers
             builder.SetStatusCode(System.Net.HttpStatusCode.BadRequest);
             builder.SetReasonPhrase("Bad Request");
         }
+        public static void MethodNotAllowed(IHttpResponseBuilder builder)
+        {
+            builder.SetStatusCode(System.Net.HttpStatusCode.MethodNotAllowed);
+            builder.SetReasonPhrase("Method Not Allowed");
+        }
 
         public static void OK(IHttpResponseBuilder builder)
         {

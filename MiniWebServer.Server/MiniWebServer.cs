@@ -3,20 +3,12 @@ using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Host;
 using MiniWebServer.Server.Http.Helpers;
-using MiniWebServer.Server.MimeType;
-using MiniWebServer.Server.ProtocolHandlers;
-using MiniWebServer.Server.Routing;
 using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Net;
-using System.Net.Http;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Reflection.Metadata;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 
 namespace MiniWebServer.Server
 {
@@ -229,8 +221,6 @@ namespace MiniWebServer.Server
                 }
                 else if (client.State == MiniWebClientConnection.States.CallingResourceReady)
                 {
-                    StandardResponseBuilderHelpers.OK(client.ResponseObjectBuilder);
-
                     client.State = NextState(client.State);
                 }
                 else if (client.State == MiniWebClientConnection.States.ResponseObjectReady)
@@ -266,7 +256,7 @@ namespace MiniWebServer.Server
                 }
                 else
                 {
-                    StandardResponseBuilderHelpers.OK(responseObjectBuilder);
+                    StandardResponseBuilderHelpers.MethodNotAllowed(responseObjectBuilder);
                 }
             } catch (Exception ex)
             {
