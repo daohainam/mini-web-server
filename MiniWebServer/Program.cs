@@ -34,6 +34,7 @@ namespace MiniWebServer
 
             var server = serverBuilder
                 .UseOptions(serverOptions)
+
                 .UseStaticFiles()
                 .Build();
 

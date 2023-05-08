@@ -31,6 +31,7 @@ namespace MiniWebServer.Server
         private readonly Dictionary<string, HostConfiguration> hosts = new();
         private readonly List<IRoutingServiceFactory> routingServiceFactories = new();
         private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
+        private int threadPoolSize = MiniWebServerConfiguration.DefaultThreadPoolSize;
 
         public MiniWebServerBuilder(ILogger<MiniWebServerBuilder>? logger, IDistributedCache? cache)
         {
@@ -138,6 +139,18 @@ namespace MiniWebServer.Server
             return this;
         }
 
+        public IServerBuilder UseThreadPoolSize(int size)
+        {
+            if (size <= 0)
+            {
+                throw new ArgumentException("ThreadPool size must be >= 0", nameof(size));
+            }
+            
+            threadPoolSize = size;
+
+            return this;
+        }
+
         public IServerBuilder UseStaticFiles()
         {
             return AddRoutingServiceFactory(
@@ -167,8 +180,9 @@ namespace MiniWebServer.Server
             var server = new MiniWebServer(new MiniWebServerConfiguration() { 
                     HttpEndPoint = new IPEndPoint(address, httpPort),
                     Hosts = hosts.Values.ToList(),
-                    Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword)
-                },
+                    Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword),
+                    ThreadPoolSize = threadPoolSize
+            },
                 new ProtocolHandlerFactory(logger),
                 hostContainers,
                 new CachableMimeTypeMapping(new MimeTypeMappingContainer(mimeTypeMappings), cache),

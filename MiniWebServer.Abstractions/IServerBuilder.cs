@@ -16,6 +16,7 @@ namespace MiniWebServer.Abstractions
         IServerBuilder AddHost(string hostName, string hostDirectory);
         IServerBuilder UseStaticFiles();
         IServerBuilder UseCache(IDistributedCache cache);
+        IServerBuilder UseThreadPoolSize(int size);
         IServerBuilder UseOptions(ServerOptions serverOptions);
 
         /// <summary>
