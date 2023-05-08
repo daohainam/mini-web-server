@@ -22,8 +22,9 @@ namespace MiniWebServer.Server
         private TcpListener? server;
         private bool running;
         private int nextClientId = 1;
+        private int threadInThreadPoolCount = 0;
         private readonly ConcurrentQueue<MiniWebClientConnection> waitingClients = new();
-        private static EventWaitHandle clientConnectionWaitHandle = new(false, EventResetMode.AutoReset);
+        private static EventWaitHandle waitingClientsWaitHandle = new(false, EventResetMode.AutoReset);
         private CancellationTokenSource acceptCancellationTokenSource = new();
         private CancellationToken acceptCancellationToken;
         private bool disposed = false;
@@ -104,7 +105,7 @@ namespace MiniWebServer.Server
             waitingClients.Enqueue(client);
             logger.LogInformation("New client connected");
 
-            clientConnectionWaitHandle.Set();
+            waitingClientsWaitHandle.Set();
         }
 
         public void Stop()
@@ -113,7 +114,14 @@ namespace MiniWebServer.Server
             acceptCancellationTokenSource.Cancel();
             server?.Stop();
 
-            Task.Delay(5000).Wait();
+            // wait for all client threads stopped, we can use wait handles to make it more resource effective, but we use a loop here because it is more understandable :)
+            int seconds10 = 15 * 10; // we will wait max 15 seconds
+            while (threadInThreadPoolCount > 0 && seconds10 > 0)
+            {
+                Task.Delay(100).Wait();
+
+                seconds10--;
+            }
         }
 
         private async void ClientConnectionListeningProc()
@@ -133,6 +141,7 @@ namespace MiniWebServer.Server
                 }
                 catch (OperationCanceledException)
                 {
+                    logger.LogInformation("Server socket stopped listening");
                 }
                 catch (Exception ex)
                 {
@@ -146,13 +155,14 @@ namespace MiniWebServer.Server
             int n = (int?)data ?? 0;
             logger.LogInformation("Starting ThreadPool.Thread {n}", n);
 
+            Interlocked.Increment(ref threadInThreadPoolCount); // why don't we simply use threadInThreadPoolCount++ here? :)
+
             while (running)
             {
                 logger.LogDebug("ThreadPool.Thread {n} processing...", n);
 
-                clientConnectionWaitHandle.WaitOne(TimeSpan.FromSeconds(3));
-
-                if (running)
+                // wait for 1 second and process if there is at least one item in the queue
+                if (waitingClientsWaitHandle.WaitOne(1000) && running)
                 {
                     if (waitingClients.TryDequeue(out var client))
                     {
@@ -160,13 +170,14 @@ namespace MiniWebServer.Server
                         if (newClient != null)
                         {
                             waitingClients.Enqueue(newClient);
-                            clientConnectionWaitHandle.Set();
+                            waitingClientsWaitHandle.Set();
                         }
                     }
                 }
             }
 
             logger.LogInformation("ThreadPool.Thread {n} stopped", n);
+            Interlocked.Decrement(ref threadInThreadPoolCount);
         }
 
         private async Task<MiniWebClientConnection?> ProcessClientConnection(MiniWebClientConnection client)
