@@ -8,33 +8,19 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpRequest : IWebRequest
+    public class HttpRequest : IHttpRequest
     {
-        public HttpRequest(HttpMethod method, string url, IReadOnlyDictionary<string, string> headers)
+        public HttpRequest(HttpMethod method, string url, HttpRequestHeaders headers)
         {
             Method = method;
             Url = url ?? throw new ArgumentNullException(nameof(url));
-            Headers = new Dictionary<string, string>(headers ?? throw new ArgumentNullException(nameof(headers)));
+            Headers = headers ?? throw new ArgumentNullException(nameof(headers));
         }
 
         public HttpMethod Method { get; }
 
         public string Url { get; }
 
-        public IReadOnlyDictionary<string, string> Headers { get; }
-        public string Host { 
-            get 
-            {
-                return TryGetHeader("Host");
-            } 
-        }
-
-        private string TryGetHeader(string hostName)
-        {
-            if (Headers.TryGetValue(hostName, out var value))
-                return value;
-
-            return string.Empty;
-        }
+        public HttpRequestHeaders Headers { get; }
     }
 }

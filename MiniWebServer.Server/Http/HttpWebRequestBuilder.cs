@@ -12,12 +12,12 @@ namespace MiniWebServer.Server.Http
     public class HttpWebRequestBuilder : IHttpRequestBuilder
     {
         private HttpMethod httpMethod = HttpMethod.Get;
-        private Dictionary<string, string> headers = new();
+        private readonly HttpRequestHeaders headers = new();
         private string url = "/";
 
         public IHttpRequestBuilder AddHeader(string name, string value)
         {
-            headers.TryAdd(name, value);
+            headers.Add(name, value);
 
             return this;
         }
@@ -26,7 +26,7 @@ namespace MiniWebServer.Server.Http
         {
             foreach (var k in headers)
             {
-                headers.TryAdd(k.Key, k.Value);
+                headers.Add(k.Key, k.Value);
             }
 
             return this;

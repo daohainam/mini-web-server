@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions
 {
-    public class IWebResponse
+    public interface IHttpResponse
     {
     }
 }

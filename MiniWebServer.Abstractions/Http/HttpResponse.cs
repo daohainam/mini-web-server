@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpResponse : IWebResponse
+    public class HttpResponse : IHttpResponse
     {
         public HttpResponse(HttpStatusCode statusCode, string reasonPhrase, IReadOnlyDictionary<string, string> headers, HttpContent content)
         {

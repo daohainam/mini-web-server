@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions
 {
-    public interface IWebRequest
+    public interface IHttpRequest 
     {
         HttpMethod Method { get; }
         string Url { get; }
-        IReadOnlyDictionary<string, string> Headers { get; }
+        HttpRequestHeaders Headers { get; }
     }
 }

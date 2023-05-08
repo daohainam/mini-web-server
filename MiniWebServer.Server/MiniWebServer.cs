@@ -91,7 +91,7 @@ namespace MiniWebServer.Server
                         SslApplicationProtocol.Http11
                     },
                     ServerCertificate = config.Certificate,
-                    EnabledSslProtocols = SslProtocols.Tls12,
+                    EnabledSslProtocols = SslProtocols.None, // use the system default version
                     ClientCertificateRequired = false,
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck
                 };
@@ -144,7 +144,7 @@ namespace MiniWebServer.Server
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, null);
+                    logger.LogError(ex, "Error accepting client socket");
                 }
             }
         }
@@ -199,7 +199,7 @@ namespace MiniWebServer.Server
                 else if (client.State == MiniWebClientConnection.States.RequestObjectReady)
                 {
                     var requestObject = client.RequestObjectBuilder.Build();
-                    if (hostContainers.TryGetValue(requestObject.Host, out var hostContainer)
+                    if (hostContainers.TryGetValue(requestObject.Headers.Host, out var hostContainer)
                         || hostContainers.TryGetValue(string.Empty, out hostContainer)) {
                         // find a callable resource using IRoutingService
                         var callable = hostContainer.RoutingService.FindRoute(requestObject.Url);
