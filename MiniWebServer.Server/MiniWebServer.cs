@@ -188,6 +188,7 @@ namespace MiniWebServer.Server
             {
                 if (client.State == MiniWebClientConnection.States.Pending || client.State == MiniWebClientConnection.States.BuildingRequestObject)
                 {
+                    // todo: we must have a mechanism to control request reading timeout
                     var state = await client.ProtocolHandler.ReadRequest(client.ClientStream, client.RequestObjectBuilder, client.ProtocolHandlerData);
                     if (state == ProtocolHandlerStates.BuildRequestStates.Failed)
                     {

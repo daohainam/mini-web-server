@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ParserTests", "Tests\Parser
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MimeMapping", "MimeMapping\MimeMapping.csproj", "{18230824-D7EB-4EB1-BEF5-16FE935D4F19}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.Configuration", "MiniWebServer.Configuration\MiniWebServer.Configuration.csproj", "{7A4E46F4-DF96-498D-A09E-C84A386C797A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Configuration", "MiniWebServer.Configuration\MiniWebServer.Configuration.csproj", "{7A4E46F4-DF96-498D-A09E-C84A386C797A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Http11ProtocolTests", "Tests\Http11ProtocolTests\Http11ProtocolTests.csproj", "{BD64443D-6F0F-4290-AD5C-8754361EA4F7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,12 +61,17 @@ Global
 		{7A4E46F4-DF96-498D-A09E-C84A386C797A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A4E46F4-DF96-498D-A09E-C84A386C797A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A4E46F4-DF96-498D-A09E-C84A386C797A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD64443D-6F0F-4290-AD5C-8754361EA4F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD64443D-6F0F-4290-AD5C-8754361EA4F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD64443D-6F0F-4290-AD5C-8754361EA4F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD64443D-6F0F-4290-AD5C-8754361EA4F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
+		{BD64443D-6F0F-4290-AD5C-8754361EA4F7} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D1843708-76D1-4698-A487-8D1531533306}
