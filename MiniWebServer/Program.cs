@@ -34,7 +34,7 @@ namespace MiniWebServer
 
             var server = serverBuilder
                 .UseOptions(serverOptions)
-
+                .UseThreadPoolSize(Environment.ProcessorCount)
                 .UseStaticFiles()
                 .Build();
 
