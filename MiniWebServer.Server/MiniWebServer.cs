@@ -129,7 +129,7 @@ namespace MiniWebServer.Server
             server = new(config.HttpEndPoint);
             server.Start();
 
-            logger.LogInformation("Server has started on {binding}.", config.HttpEndPoint);
+            logger.LogInformation("Server started on {binding}", config.HttpEndPoint);
 
             while (running)
             {
@@ -153,7 +153,7 @@ namespace MiniWebServer.Server
         private async void ClientConnectionProcessingProc(object? data)
         {
             int n = (int?)data ?? 0;
-            logger.LogInformation("Starting ThreadPool.Thread {n}", n);
+            logger.LogInformation("Starting ThreadPool.Thread #{n}", n);
 
             Interlocked.Increment(ref threadInThreadPoolCount); // why don't we simply use threadInThreadPoolCount++ here? :)
 
@@ -176,7 +176,7 @@ namespace MiniWebServer.Server
                 }
             }
 
-            logger.LogInformation("ThreadPool.Thread {n} stopped", n);
+            logger.LogInformation("ThreadPool.Thread #{n} stopped", n);
             Interlocked.Decrement(ref threadInThreadPoolCount);
         }
 

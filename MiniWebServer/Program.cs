@@ -35,7 +35,6 @@ namespace MiniWebServer
             var server = serverBuilder
                 .UseOptions(serverOptions)
                 .UseStaticFiles()
-                //.UseCache(serviceProvider.GetService<IDistributedCache>())
                 .Build();
 
             server.Start();
@@ -48,7 +47,6 @@ namespace MiniWebServer
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            services.AddLogging(configure => configure.AddConsole());
             services.AddLogging(loggingBuilder => loggingBuilder.AddLog4Net("log4net.xml"));
             services.AddDistributedMemoryCache();
 
