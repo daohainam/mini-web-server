@@ -6,19 +6,13 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpRequestHeaders: HttpHeaders
+    public class HttpResponseHeaders: HttpHeaders
     {
-        public string AcceptLanguage
+        public string ContentLength
         {
             get
             {
-                return TryGetValueAsString("Accept-Language");
-            }
-        }
-        public string Host { 
-            get
-            {
-                return TryGetValueAsString("Host");
+                return TryGetValueAsString("Content-Length");
             }
         }
         public string Connection
@@ -26,14 +20,6 @@ namespace MiniWebServer.Abstractions.Http
             get
             {
                 return TryGetValueAsString("Connection");
-            }
-        }
-
-        public string CacheControl
-        {
-            get
-            {
-                return TryGetValueAsString("Cache-Control");
             }
         }
 

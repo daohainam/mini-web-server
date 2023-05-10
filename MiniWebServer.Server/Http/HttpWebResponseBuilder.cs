@@ -13,7 +13,7 @@ namespace MiniWebServer.Server.Http
     public class HttpWebResponseBuilder : IHttpResponseBuilder
     {
         private HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
-        private Dictionary<string, string> headers = new();
+        private readonly HttpResponseHeaders headers = new();
         private string reasonPhrase = string.Empty;
         private Abstractions.Http.HttpContent content = new Content.StringContent(string.Empty);
 
@@ -47,7 +47,7 @@ namespace MiniWebServer.Server.Http
 
         public IHttpResponseBuilder AddHeader(string name, string value)
         {
-            headers.TryAdd(name, value);
+            headers.Add(name, value);
 
             return this;
         }
@@ -59,7 +59,7 @@ namespace MiniWebServer.Server.Http
         {
             foreach (var k in headers)
             {
-                headers.TryAdd(k.Key, k.Value);
+                headers.Add(k.Key, k.Value);
             }
 
             return this;
@@ -78,11 +78,6 @@ namespace MiniWebServer.Server.Http
         public IHttpResponseBuilder SetHeaderConnection(string connectionStatus)
         {
             return AddHeader(HttpResponseHeader.Connection, connectionStatus);
-        }
-
-        public IHttpResponseBuilder SetHeaderKeepAlive(string keepAlive)
-        {
-            return AddHeader(HttpResponseHeader.KeepAlive, keepAlive);
         }
     }
 }

@@ -15,21 +15,21 @@ namespace MiniWebServer.Abstractions.Http
 
         public HttpHeaders Add(string name, string value) // we return a HttpHeaders so we can make a chain of call, for example: headers.Add("Connection", "Close").Add("ETag", "ABCD") ...
         {
-            headers.Add(name, new HttpHeader(name, value));
+            headers[name] = new HttpHeader(name, value);
 
             return this;
         }
 
         public HttpHeaders Add(string name, IEnumerable<string> value)
         {
-            headers.Add(name, new HttpHeader(name, value));
+            headers[name] = new HttpHeader(name, value);
 
             return this;
         }
 
         public HttpHeaders Add(string name, HttpHeader value)
         {
-            headers.Add(name, value ?? throw new ArgumentNullException(nameof(value)));
+            headers[name] = value ?? throw new ArgumentNullException(nameof(value));
 
             return this;
         }

@@ -14,6 +14,10 @@ namespace MiniWebServer.Server
 
         public IPEndPoint HttpEndPoint { get; init; } = new(IPAddress.Loopback, 80);
         public int ThreadPoolSize { get; init; } = DefaultThreadPoolSize;
+        /// <summary>
+        /// a connection will be closed if it has no data in ConnectionTimeout (in ms)
+        /// </summary>
+        public int ConnectionTimeout { get; init; } = 3000; 
         public string Root { get; init; } = string.Empty;
         public X509Certificate2? Certificate { get; internal set; }
 

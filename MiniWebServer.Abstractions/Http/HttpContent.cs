@@ -12,6 +12,6 @@ namespace MiniWebServer.Abstractions.Http
     {
         public virtual IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
-        public abstract Task WriteTo(Stream stream);
+        public abstract Task WriteToAsync(Stream stream);
     }
 }

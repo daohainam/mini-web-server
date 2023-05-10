@@ -21,7 +21,6 @@ namespace MiniWebServer.Abstractions.Http
         IHttpResponseBuilder SetHeaderContentEncoding(string contentEncoding);
         IHttpResponseBuilder SetHeaderContentLength(long contentLength);
         IHttpResponseBuilder SetHeaderConnection(string connectionStatus);
-        IHttpResponseBuilder SetHeaderKeepAlive(string keepAlive);
         #endregion
     }
 }

@@ -10,7 +10,8 @@ namespace MiniWebServer.Abstractions
     {
         public enum BuildRequestStates
         {
-            InProgress,
+            InProgressWithNoData,
+            InProgressWithData,
             Succeeded,
             Failed
         }

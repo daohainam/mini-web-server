@@ -10,17 +10,17 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpResponse : IHttpResponse
     {
-        public HttpResponse(HttpStatusCode statusCode, string reasonPhrase, IReadOnlyDictionary<string, string> headers, HttpContent content)
+        public HttpResponse(HttpStatusCode statusCode, string reasonPhrase, HttpResponseHeaders headers, HttpContent content)
         {
             StatusCode = statusCode;
             ReasonPhrase = reasonPhrase ?? throw new ArgumentNullException(nameof(reasonPhrase));
-            Headers = new Dictionary<string, string>(headers ?? throw new ArgumentNullException(nameof(headers)));
+            Headers = headers ?? throw new ArgumentNullException(nameof(headers));
             Content = content ?? throw new ArgumentNullException(nameof(content));
         }
 
         public HttpStatusCode StatusCode { get; }
         public string ReasonPhrase { get; }
-        public IReadOnlyDictionary<string, string> Headers { get; }
+        public HttpResponseHeaders Headers { get; }
         public HttpContent Content { get; }
     }
 }

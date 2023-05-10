@@ -21,7 +21,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11.Tests
         public async Task ReadRequestTest()
         {
             string requestContent =
-                @"GET https://localhost:8443/index.html HTTP/1.1
+                @"GET /index.html HTTP/1.1
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36
 Host: localhost:8443
 Connection: keep-alive
@@ -29,13 +29,21 @@ Cookie: CONSENT=PENDING+243; sw_version=1; JSESSION=10F4DF1D-C4BE-44BA-AF88-81A3
 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
 Accept-Encoding: gzip, deflate, br
 Accept-Language: vi,en-US;q=0.9,en;q=0.8,nb;q=0.7
-Cache-Control: no-cache
+Cache-Control:no-cache
 
 ";
 
             var result = await ReadRequest(requestContent);
 
             Assert.AreEqual(ProtocolHandlerStates.BuildRequestStates.Succeeded, result.State);
+
+            var request = result.HttpWebRequestBuilder.Build();
+            Assert.AreEqual(HttpMethod.Get, request.Method);
+            Assert.AreEqual(request.Url, "/index.html");
+            Assert.AreEqual(request.Headers.Host, "localhost:8443");
+            Assert.AreEqual(request.Headers.Connection, "keep-alive");
+            Assert.AreEqual(request.Headers.AcceptLanguage, "vi,en-US;q=0.9,en;q=0.8,nb;q=0.7");
+            Assert.AreEqual(request.Headers.CacheControl, "no-cache");
         }
 
         private async Task<ReadRequestTestResult> ReadRequest(string requestContent)
@@ -47,10 +55,10 @@ Cache-Control: no-cache
             var requestBuilder = new HttpWebRequestBuilder();
             var protocolData = new ProtocolHandlerData();
 
-            var result = await handler.ReadRequest(stream, requestBuilder, protocolData);
-            while (result == ProtocolHandlerStates.BuildRequestStates.InProgress)
+            var result = await handler.ReadRequestAsync(stream, requestBuilder, protocolData);
+            while (result == ProtocolHandlerStates.BuildRequestStates.InProgressWithNoData)
             {
-                result = await handler.ReadRequest(stream, requestBuilder, protocolData);
+                result = await handler.ReadRequestAsync(stream, requestBuilder, protocolData);
             }
 
             return new ReadRequestTestResult(result, requestBuilder);

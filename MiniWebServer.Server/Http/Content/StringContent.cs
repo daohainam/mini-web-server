@@ -16,7 +16,7 @@ namespace MiniWebServer.Server.Http.Content
             this.content = content ?? throw new ArgumentNullException(nameof(content));
         }
 
-        public override async Task WriteTo(Stream stream)
+        public override async Task WriteToAsync(Stream stream)
         {
             var writer = new StreamWriter(stream);
             await writer.WriteAsync(content);

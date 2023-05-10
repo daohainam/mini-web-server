@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.DependencyInjection;
 using MiniWebServer.Configuration;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace MiniWebServer.Abstractions
         IServerBuilder BindToAddress(string ipAddress);
         IServerBuilder AddRoot(string rootDirectory);
         IServerBuilder AddHost(string hostName, string hostDirectory);
+        IServerBuilder UseDependencyInjectionService(ServiceProvider serviceProvider);
         IServerBuilder UseStaticFiles();
         IServerBuilder UseCache(IDistributedCache cache);
         IServerBuilder UseThreadPoolSize(int size);

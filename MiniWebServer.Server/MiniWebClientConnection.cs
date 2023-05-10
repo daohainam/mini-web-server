@@ -23,16 +23,18 @@ namespace MiniWebServer.Server
             ReadyToClose
         }
 
-        public MiniWebClientConnection(int id, TcpClient tcpClient, Stream clientStream, IProtocolHandler connectionHandler, States initState)
+        public MiniWebClientConnection(int id, TcpClient tcpClient, Stream clientStream, IProtocolHandler connectionHandler, States initState, DateTime timeout, bool isKeepAlive)
         {
             Id = id;
             TcpClient = tcpClient;
             ClientStream = clientStream;
             State = initState;
             ProtocolHandler = connectionHandler;
+            ConnectionTimeoutTime = timeout;
             ProtocolHandlerData = new ProtocolHandlerData();
             RequestObjectBuilder = new HttpWebRequestBuilder();
             ResponseObjectBuilder = new HttpWebResponseBuilder();
+            KeepAlive = isKeepAlive;
         }
 
         public int Id { get; }
@@ -41,6 +43,8 @@ namespace MiniWebServer.Server
         public IProtocolHandler ProtocolHandler { get; }
         public ProtocolHandlerData ProtocolHandlerData { get; }
         public States State { get; set; }
+        public DateTime ConnectionTimeoutTime { get; internal set; }
+        public bool KeepAlive { get; set; }
         public IHttpRequestBuilder RequestObjectBuilder { get; }
         public IHttpResponseBuilder ResponseObjectBuilder { get; }
     }

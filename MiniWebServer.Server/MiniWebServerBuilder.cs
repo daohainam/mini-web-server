@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using MimeMapping;
 using MiniWebServer.Abstractions;
@@ -32,6 +34,7 @@ namespace MiniWebServer.Server
         private readonly List<IRoutingServiceFactory> routingServiceFactories = new();
         private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
         private int threadPoolSize = MiniWebServerConfiguration.DefaultThreadPoolSize;
+        private ServiceProvider? serviceProvider;
 
         public MiniWebServerBuilder(ILogger<MiniWebServerBuilder>? logger, IDistributedCache? cache)
         {
@@ -132,6 +135,13 @@ namespace MiniWebServer.Server
             return this;
         }
 
+        public IServerBuilder UseDependencyInjectionService(ServiceProvider serviceProvider)
+        {
+            this.serviceProvider = serviceProvider;
+
+            return this;
+        }
+
         public IServerBuilder UseCache(IDistributedCache cache)
         {
             this.cache = cache;
@@ -177,16 +187,18 @@ namespace MiniWebServer.Server
                     ); 
             }
 
+            var services = serviceProvider!; // it should be a Non-Null value
+
             var server = new MiniWebServer(new MiniWebServerConfiguration() { 
                     HttpEndPoint = new IPEndPoint(address, httpPort),
                     Hosts = hosts.Values.ToList(),
                     Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword),
                     ThreadPoolSize = threadPoolSize
             },
-                new ProtocolHandlerFactory(logger),
+                services.GetService<IProtocolHandlerFactory>(),
                 hostContainers,
-                new CachableMimeTypeMapping(new MimeTypeMappingContainer(mimeTypeMappings), cache),
-                logger
+                services.GetService<IMimeTypeMapping>(), 
+                services.GetService<ILogger<MiniWebServer>>() ?? new NullLogger<MiniWebServer>()
             );
 
             return server;
@@ -207,6 +219,11 @@ namespace MiniWebServer.Server
 
         private void Validate() // move validating routines here so we can make Build function shorter 
         {
+            if (serviceProvider == null)
+            {
+                throw new InvalidOperationException("ServiceProvider required");
+            }
+
             if (cache == null) 
             {
                 // Opps, this will never happen

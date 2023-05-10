@@ -19,7 +19,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         private readonly ILogger logger;
         private readonly IHttp11Parser http11Parser;
 
-        public Http11IProtocolHandler(ILogger logger, IHttp11Parser http11Parser)
+        public Http11IProtocolHandler(ILogger? logger, IHttp11Parser? http11Parser)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.http11Parser = http11Parser ?? throw new ArgumentNullException(nameof(http11Parser));
@@ -27,9 +27,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         public int ProtocolVersion => 101;
 
-        public async Task<BuildRequestStates> ReadRequest(Stream clientStream, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data)
+        public async Task<BuildRequestStates> ReadRequestAsync(Stream clientStream, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data)
         {
-            BuildRequestStates state = BuildRequestStates.InProgress;
+            BuildRequestStates state = BuildRequestStates.InProgressWithNoData;
 
             data.Data ??= new Http11ProtocolData(
                 new StreamReader(clientStream),
@@ -40,8 +40,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
             if (d.CurrentReadingPart == Http11RequestMessageParts.Header) // Read request line and header
             {
-                if (d.Reader.Peek() != -1)
+                // here we use sync I/O, which is inefficient, CPU time-consuming, but it is easy to implement and easy to understand. 
+                // We will upgrade to async I/O later
+                if (d.Reader.Peek() != -1) 
                 {
+                    // todo: requestLine should be handled as a sequence of octets
                     string? requestLineText = await d.Reader.ReadLineAsync();
 
                     if (requestLineText != null)
@@ -54,12 +57,15 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         {
                             var method = GetHttpMethod(requestLine.Method);
 
+                            // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
+                            // if Url length exceeds Url buffer length, you should return 414 URI Too Long
+
                             d.HttpMethod = method;
                             httpWebRequestBuilder
                                 .SetMethod(method)
                                 .SetUrl(requestLine.Url);
 
-                            string? headerLineText = d.Reader.ReadLine();
+                            string? headerLineText = d.Reader.ReadLine(); 
                             while (headerLineText != null && d.CurrentReadingPart == Http11RequestMessageParts.Header)
                             {
                                 if (!string.IsNullOrEmpty(headerLineText))
@@ -84,7 +90,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                     d.CurrentReadingPart = Http11RequestMessageParts.Body;
                                 }
                             }
-
                         }
                         else
                         {
@@ -129,7 +134,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             return state;
         }
 
-        public async Task SendResponse(Stream clientStream, IHttpResponseBuilder responseObjectBuilder, ProtocolHandlerData protocolHandlerData)
+        public async Task SendResponseAsync(Stream clientStream, HttpResponse response, ProtocolHandlerData protocolHandlerData)
         {
             if (protocolHandlerData.Data is not Http11ProtocolData d)
             {
@@ -138,16 +143,14 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
             else
             {
-                var response = responseObjectBuilder.Build();
-
                 await SendResponseStatus(d.Writer, response.StatusCode, response.ReasonPhrase);
                 foreach (var header in response.Headers) { 
-                    await d.Writer.WriteLineAsync($"{header.Key}: {header.Value}");
+                    await d.Writer.WriteLineAsync($"{header.Key}: {string.Join(',', header.Value.Value)}");
                 }
 
                 await d.Writer.WriteLineAsync();
                 await d.Writer.FlushAsync();
-                await response.Content.WriteTo(clientStream);
+                await response.Content.WriteToAsync(clientStream);
             }
         }
 
@@ -179,6 +182,15 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
             throw new ArgumentException(null, nameof(method));
         }
+
+        public void Reset(ProtocolHandlerData data)
+        {
+            if (data.Data != null)
+            {
+                var d = (Http11ProtocolData)data.Data;
+                d.CurrentReadingPart = Http11RequestMessageParts.Header;
+            }
+        }
     }
 
     public class Http11ProtocolData
@@ -193,6 +205,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         public StreamWriter Writer { get; set; }
         public Http11RequestMessageParts CurrentReadingPart { get; set; } = Http11RequestMessageParts.Header;
         public HttpMethod HttpMethod { get; set; } = HttpMethod.Get;
+        public bool KeepAlive { get; set; } = true; // Keep-Alive is true by default in HTTP 1.1
     }
 
     public enum Http11RequestMessageParts

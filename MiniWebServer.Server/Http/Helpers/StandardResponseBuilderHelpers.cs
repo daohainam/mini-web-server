@@ -41,6 +41,7 @@ namespace MiniWebServer.Server.Http.Helpers
         public static void NotFound(IHttpResponseBuilder builder)
         {
             builder.SetStatusCode(System.Net.HttpStatusCode.NotFound);
+            builder.AddHeader("Content-Length", "0");
             builder.SetReasonPhrase("Not Found");
         }
     }

@@ -2,9 +2,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MimeMapping;
 using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.HttpParser.Http11;
 using MiniWebServer.Configuration;
+using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.Server;
+using MiniWebServer.Server.MimeType;
 
 namespace MiniWebServer
 {
@@ -33,6 +37,7 @@ namespace MiniWebServer
             ServerOptions serverOptions = config.Get<ServerOptions>() ?? new ServerOptions();
 
             var server = serverBuilder
+                .UseDependencyInjectionService(serviceProvider)
                 .UseOptions(serverOptions)
                 .UseThreadPoolSize(Environment.ProcessorCount)
                 .UseStaticFiles()
@@ -50,7 +55,9 @@ namespace MiniWebServer
         {
             services.AddLogging(loggingBuilder => loggingBuilder.AddLog4Net("log4net.xml"));
             services.AddDistributedMemoryCache();
-
+            services.AddTransient<IHttp11Parser, RegexHttp11Parsers>();
+            services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
+            services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.GetInstance());
             services.AddTransient<IServerBuilder>(
                 services => new MiniWebServerBuilder(
                     services.GetService<ILogger<MiniWebServerBuilder>>(),
