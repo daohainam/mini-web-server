@@ -4,7 +4,7 @@ namespace MimeMapping
 {
     public class StaticMimeMapping : IMimeTypeMapping
     {
-        private static readonly Lazy<StaticMimeMapping> instance = new(() => new StaticMimeMapping()
+        private static readonly StaticMimeMapping instance = new()
         {
             // for a full list (extremely long), refer https://www.iana.org/assignments/media-types/media-types.xhtml
             mimeTypes =
@@ -16,10 +16,15 @@ namespace MimeMapping
                 {".bmp", "image/bmp"},
                 {".png", "image/png"}
             }
-        });
+        };
         
         private readonly Dictionary<string, string> mimeTypes = new();
 
+        // Explicit static constructor to tell C# compiler
+        // not to mark type as beforefieldinit
+        static StaticMimeMapping()
+        {
+        }
         private StaticMimeMapping() { } // a private constructor prevents creating new instances from outside
 
         public string GetMimeMapping(string fileExt)
@@ -33,6 +38,6 @@ namespace MimeMapping
         }
 
         // this function demonstrates singleton pattern
-        public static StaticMimeMapping Instance => instance.Value;
+        public static StaticMimeMapping Instance => instance;
     }
 }
