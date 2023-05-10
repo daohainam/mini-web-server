@@ -57,7 +57,7 @@ namespace MiniWebServer
             services.AddDistributedMemoryCache();
             services.AddTransient<IHttp11Parser, RegexHttp11Parsers>();
             services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
-            services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.GetInstance());
+            services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
             services.AddTransient<IServerBuilder>(
                 services => new MiniWebServerBuilder(
                     services.GetService<ILogger<MiniWebServerBuilder>>(),
