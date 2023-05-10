@@ -201,7 +201,7 @@ namespace MiniWebServer.Server
 
             if (!mimeTypeMappings.Any()) // we always need a mime type mapping
             {
-                mimeTypeMappings.Add(StaticMimeMapping.GetInstance());
+                mimeTypeMappings.Add(StaticMimeMapping.Instance);
             }
         }
 
