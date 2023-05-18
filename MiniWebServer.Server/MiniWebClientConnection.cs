@@ -12,6 +12,7 @@ namespace MiniWebServer.Server
 {
     public class MiniWebClientConnection
     {
+        public const int BufferSize = 1024 * 64;
         public enum States
         {
             Pending,
@@ -113,7 +114,7 @@ namespace MiniWebServer.Server
         {
             bool succeed = false;
 
-            IMemoryOwner<byte> owner = MemoryPool<byte>.Shared.Rent(1024 * 8); // rfc9112: we should have ability to process request line length at minimum 8000 octets
+            IMemoryOwner<byte> owner = MemoryPool<byte>.Shared.Rent(BufferSize); // rfc9112: we should have ability to process request line length at minimum 8000 octets
             var buffer = owner.Memory;
 
             try
@@ -203,7 +204,7 @@ namespace MiniWebServer.Server
 
         private async Task SendResponseAsync(HttpResponse response, CancellationToken cancellationToken)
         {
-            IMemoryOwner<byte> owner = MemoryPool<byte>.Shared.Rent(1024 * 8); // rfc9112: we should have ability to process request line length at minimum 8000 octets
+            IMemoryOwner<byte> owner = MemoryPool<byte>.Shared.Rent(BufferSize); // rfc9112: we should have ability to process request line length at minimum 8000 octets
             var buffer = owner.Memory;
 
             var state = ProtocolHandler.WriteResponse(buffer.Span, response, protocolHandlerData, out int bytesProcessed);
