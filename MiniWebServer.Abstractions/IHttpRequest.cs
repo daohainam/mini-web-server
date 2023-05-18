@@ -12,5 +12,6 @@ namespace MiniWebServer.Abstractions
         HttpMethod Method { get; }
         string Url { get; }
         HttpRequestHeaders Headers { get; }
+        bool KeepAliveRequested { get; }
     }
 }

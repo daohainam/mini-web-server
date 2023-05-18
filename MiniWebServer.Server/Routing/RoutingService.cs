@@ -1,4 +1,5 @@
 ﻿using MiniWebServer.Abstractions;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace MiniWebServer.Server.Routing
     {
         private readonly List<IRoutingService> children = new();
 
-        public ICallableResource? FindRoute(string url)
+        public ICallable? FindRoute(string url)
         {
             lock(children)
             {

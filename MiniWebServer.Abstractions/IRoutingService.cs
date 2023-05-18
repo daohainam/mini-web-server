@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.MiniApp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,6 @@ namespace MiniWebServer.Abstractions
 {
     public interface IRoutingService
     {
-        ICallableResource? FindRoute(string url);
+        ICallable? FindRoute(string url);
     }
 }

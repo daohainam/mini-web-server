@@ -18,7 +18,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11.Tests
     public class ReadRequestTests
     {
         [TestMethod()]
-        public async Task ReadRequestTest()
+        public void ReadRequestTest()
         {
             string requestContent =
                 @"GET /index.html HTTP/1.1
@@ -33,7 +33,7 @@ Cache-Control:no-cache
 
 ";
 
-            var result = await ReadRequest(requestContent);
+            var result = ReadRequest(requestContent);
 
             Assert.AreEqual(ProtocolHandlerStates.BuildRequestStates.Succeeded, result.State);
 
@@ -46,25 +46,27 @@ Cache-Control:no-cache
             Assert.AreEqual(request.Headers.CacheControl, "no-cache");
         }
 
-        private async Task<ReadRequestTestResult> ReadRequest(string requestContent)
+        private ReadRequestTestResult ReadRequest(string requestContent)
         {
-            using var stream = String2Stream(requestContent);
+            var memory = String2Span(requestContent);
+
             var http11Parser = new RegexHttp11Parsers();
             var handler = new Http11IProtocolHandler(NullLogger.Instance, http11Parser);
 
             var requestBuilder = new HttpWebRequestBuilder();
             var protocolData = new ProtocolHandlerData();
+            int bp = 0;
 
-            var result = await handler.ReadRequestAsync(stream, requestBuilder, protocolData);
-            while (result == ProtocolHandlerStates.BuildRequestStates.InProgressWithNoData)
+            var result = handler.ReadRequest(memory[bp..].Span, requestBuilder, protocolData, out bp);
+            while (result == ProtocolHandlerStates.BuildRequestStates.InProgress)
             {
-                result = await handler.ReadRequestAsync(stream, requestBuilder, protocolData);
+                result = handler.ReadRequest(memory[bp..].Span, requestBuilder, protocolData, out bp);
             }
 
             return new ReadRequestTestResult(result, requestBuilder);
         }
 
-        public static Stream String2Stream(string s)
+        public static Memory<byte> String2Span(string s)
         {
             var stream = new MemoryStream();
             var writer = new StreamWriter(stream);
@@ -73,7 +75,7 @@ Cache-Control:no-cache
             writer.Flush();
             stream.Position = 0;
 
-            return stream;
+            return stream.GetBuffer().AsMemory();
         }
     }
 }

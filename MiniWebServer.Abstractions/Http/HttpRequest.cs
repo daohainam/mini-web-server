@@ -1,4 +1,5 @@
 ﻿using MiniWebServer.Abstractions;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,5 +23,10 @@ namespace MiniWebServer.Abstractions.Http
         public string Url { get; }
 
         public HttpRequestHeaders Headers { get; }
+        public bool KeepAliveRequested { get 
+            {
+                return Headers.Any(h => string.Equals("Connection", h.Value.Name, StringComparison.InvariantCultureIgnoreCase) && h.Value.Value.Any() && string.Equals("Keep-Alive", h.Value.Value.First(), StringComparison.InvariantCultureIgnoreCase));
+            } 
+        }
     }
 }

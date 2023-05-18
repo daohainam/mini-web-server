@@ -1,4 +1,5 @@
 ﻿using MiniWebServer.Abstractions;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpResponse : IHttpResponse
     {
-        public HttpResponse(HttpStatusCode statusCode, string reasonPhrase, HttpResponseHeaders headers, HttpContent content)
+        public HttpResponse(HttpStatusCode statusCode, string reasonPhrase, HttpResponseHeaders headers, MiniContent content)
         {
             StatusCode = statusCode;
             ReasonPhrase = reasonPhrase ?? throw new ArgumentNullException(nameof(reasonPhrase));
@@ -21,6 +22,6 @@ namespace MiniWebServer.Abstractions.Http
         public HttpStatusCode StatusCode { get; }
         public string ReasonPhrase { get; }
         public HttpResponseHeaders Headers { get; }
-        public HttpContent Content { get; }
+        public MiniContent Content { get; }
     }
 }

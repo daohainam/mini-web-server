@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Abstractions"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Server", "MiniWebServer.Server\MiniWebServer.Server.csproj", "{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Client.Abstractions", "MiniWebServer.Client.Abstractions\MiniWebServer.Client.Abstractions.csproj", "{8A5AF898-75FD-464C-B430-4AE6DD120A5F}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.HttpParser", "MiniWebServer.HttpParser\MiniWebServer.HttpParser.csproj", "{57911B66-10D8-4B27-BD65-F760CB2928C6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}"
@@ -21,7 +19,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MimeMapping", "MimeMapping\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Configuration", "MiniWebServer.Configuration\MiniWebServer.Configuration.csproj", "{7A4E46F4-DF96-498D-A09E-C84A386C797A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Http11ProtocolTests", "Tests\Http11ProtocolTests\Http11ProtocolTests.csproj", "{BD64443D-6F0F-4290-AD5C-8754361EA4F7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Http11ProtocolTests", "Tests\Http11ProtocolTests\Http11ProtocolTests.csproj", "{BD64443D-6F0F-4290-AD5C-8754361EA4F7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Action", "MiniWebServer.Action\MiniWebServer.Action.csproj", "{09B700AB-E118-4173-B8FA-9FECF227344F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MiniApp.Web", "MiniWebServer.MiniApp.Web\MiniWebServer.MiniApp.Web.csproj", "{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MiniApp", "MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj", "{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,10 +45,6 @@ Global
 		{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8C0E39BD-8A5C-430E-BE81-AC501AC859B8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8A5AF898-75FD-464C-B430-4AE6DD120A5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8A5AF898-75FD-464C-B430-4AE6DD120A5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8A5AF898-75FD-464C-B430-4AE6DD120A5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8A5AF898-75FD-464C-B430-4AE6DD120A5F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{57911B66-10D8-4B27-BD65-F760CB2928C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{57911B66-10D8-4B27-BD65-F760CB2928C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57911B66-10D8-4B27-BD65-F760CB2928C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -65,6 +65,18 @@ Global
 		{BD64443D-6F0F-4290-AD5C-8754361EA4F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD64443D-6F0F-4290-AD5C-8754361EA4F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD64443D-6F0F-4290-AD5C-8754361EA4F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09B700AB-E118-4173-B8FA-9FECF227344F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09B700AB-E118-4173-B8FA-9FECF227344F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09B700AB-E118-4173-B8FA-9FECF227344F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09B700AB-E118-4173-B8FA-9FECF227344F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

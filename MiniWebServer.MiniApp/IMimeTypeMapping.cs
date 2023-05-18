@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.MiniApp
 {
     /// <summary>
     /// refer to RFC 2046 (https://datatracker.ietf.org/doc/html/rfc2046)

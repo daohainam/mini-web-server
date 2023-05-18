@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using MiniWebServer.Abstractions;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;

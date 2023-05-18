@@ -13,6 +13,7 @@ namespace MiniWebServer.Server.Http
     {
         private HttpMethod httpMethod = HttpMethod.Get;
         private readonly HttpRequestHeaders headers = new();
+        private readonly List<HttpTransferEncoding> transferEncodings = new();
         private string url = "/";
 
         public IHttpRequestBuilder AddHeader(string name, string value)
@@ -48,6 +49,23 @@ namespace MiniWebServer.Server.Http
         public IHttpRequestBuilder SetUrl(string url)
         {
             this.url = url;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder AddTransferEncoding(string transferEncodings)
+        {
+            string[] encodings = transferEncodings.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var en in encodings)
+            {
+                var encoding = HttpTransferEncoding.GetEncoding(en);
+
+                if (encoding == HttpTransferEncoding.Unknown)
+                    throw new InvalidOperationException($"Unknown transfer encoding: {transferEncodings}");
+                else
+                    this.transferEncodings.Add(encoding);
+            }
 
             return this;
         }

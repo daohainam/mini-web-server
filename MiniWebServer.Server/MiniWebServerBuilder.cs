@@ -7,10 +7,7 @@ using Microsoft.Extensions.Logging.Console;
 using MimeMapping;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Configuration;
-using MiniWebServer.Server.Host;
-using MiniWebServer.Server.MimeType;
-using MiniWebServer.Server.Routing;
-using MiniWebServer.Server.StaticFileSupport;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,7 +33,7 @@ namespace MiniWebServer.Server
         private int threadPoolSize = MiniWebServerConfiguration.DefaultThreadPoolSize;
         private ServiceProvider? serviceProvider;
 
-        public MiniWebServerBuilder(ILogger<MiniWebServerBuilder>? logger, IDistributedCache? cache)
+        public MiniWebServerBuilder(ILogger<MiniWebServerBuilder> logger, IDistributedCache? cache)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
@@ -64,11 +61,6 @@ namespace MiniWebServer.Server
                     // note that a certificate might have empty password
                     AddCertificate(serverOptions.BindingOptions.Certificate, serverOptions.BindingOptions.CertificatePassword);
                 }
-            }
-
-            foreach (var host in serverOptions.HostOptions)
-            {
-                AddHost(host.HostName, host.HostDirectory);
             }
 
             return this;
@@ -102,21 +94,16 @@ namespace MiniWebServer.Server
             if (httpPort < 0 || httpPort > 65535)
             {
                 throw new ArgumentOutOfRangeException(nameof(httpPort));
-            } 
+            }
 
             this.httpPort = httpPort;
 
             return this;
         }
 
-        public IServerBuilder AddRoot(string rootDirectory)
+        public IServerBuilder AddHost(string hostName, IMiniApp app)
         {
-            return AddHost(string.Empty, rootDirectory);
-        }
-
-        public IServerBuilder AddHost(string hostName, string hostDirectory)
-        {
-            hosts[hostName] = new HostConfiguration(hostName, hostDirectory);
+            hosts[hostName] = new HostConfiguration(hostName, app);
 
             return this;
         }
@@ -155,17 +142,10 @@ namespace MiniWebServer.Server
             {
                 throw new ArgumentException("ThreadPool size must be >= 0", nameof(size));
             }
-            
+
             threadPoolSize = size;
 
             return this;
-        }
-
-        public IServerBuilder UseStaticFiles()
-        {
-            return AddRoutingServiceFactory(
-                new StaticFileRoutingServiceFactory(logger)
-                );
         }
 
         public IServer Build()
@@ -173,31 +153,23 @@ namespace MiniWebServer.Server
             Validate();
             AddDefaultValuesIfRequired();
 
-            Dictionary<string, HostContainer> hostContainers = new();
+            Dictionary<string, Host.Host> hostContainers = new();
             foreach (var host in hosts.Values)
             {
-                var routingService = new RoutingService();
-                foreach (var factory in routingServiceFactories)
-                {
-                    routingService.AddRoute(factory.Create(host.RootDirectory));
-                }
-
-                hostContainers.Add(host.HostName, new HostContainer(
-                    host.HostName, new DirectoryInfo(host.RootDirectory), routingService)
-                    ); 
+                hostContainers.Add(host.HostName, new Host.Host(host.HostName, host.App));
             }
 
             var services = serviceProvider!; // it should be a Non-Null value
 
-            var server = new MiniWebServer(new MiniWebServerConfiguration() { 
-                    HttpEndPoint = new IPEndPoint(address, httpPort),
-                    Hosts = hosts.Values.ToList(),
-                    Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword),
-                    ThreadPoolSize = threadPoolSize
+            var server = new MiniWebServer(new MiniWebServerConfiguration()
+            {
+                HttpEndPoint = new IPEndPoint(address, httpPort),
+                Hosts = hosts.Values.ToList(),
+                Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword),
+                ThreadPoolSize = threadPoolSize
             },
                 services.GetService<IProtocolHandlerFactory>(),
                 hostContainers,
-                services.GetService<IMimeTypeMapping>(), 
                 services.GetService<ILogger<MiniWebServer>>() ?? new NullLogger<MiniWebServer>()
             );
 
@@ -208,7 +180,7 @@ namespace MiniWebServer.Server
         {
             if (!hosts.Any())
             {
-                hosts.Add(string.Empty, new HostConfiguration(string.Empty, Path.Combine(new FileInfo(Assembly.GetExecutingAssembly().Location).DirectoryName ?? string.Empty, "wwwroot")));
+                hosts.Add(string.Empty, new HostConfiguration(string.Empty, new DefaultMiniApp()));
             }
 
             if (!mimeTypeMappings.Any()) // we always need a mime type mapping
@@ -224,7 +196,7 @@ namespace MiniWebServer.Server
                 throw new InvalidOperationException("ServiceProvider required");
             }
 
-            if (cache == null) 
+            if (cache == null)
             {
                 // Opps, this will never happen
                 throw new InvalidOperationException("Cache required");

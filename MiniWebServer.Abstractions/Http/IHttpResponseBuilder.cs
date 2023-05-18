@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.MiniApp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -15,7 +16,7 @@ namespace MiniWebServer.Abstractions.Http
         IHttpResponseBuilder AddHeader(string name, string value);
         IHttpResponseBuilder AddHeader(HttpResponseHeader header, string value);
         IHttpResponseBuilder SetReasonPhrase(string message);
-        IHttpResponseBuilder SetContent(HttpContent content);
+        IHttpResponseBuilder SetContent(MiniApp.MiniContent content);
 
         #region Predefined headers
         IHttpResponseBuilder SetHeaderContentEncoding(string contentEncoding);

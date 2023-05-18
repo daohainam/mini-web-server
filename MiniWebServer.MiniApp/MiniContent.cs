@@ -6,12 +6,12 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Abstractions.Http
+namespace MiniWebServer.MiniApp
 {
-    public abstract class HttpContent
+    public abstract class MiniContent
     {
         public virtual IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
-        public abstract Task WriteToAsync(Stream stream);
+        public abstract int CopyTo(Span<byte> buffer, int contentIndex);
     }
 }

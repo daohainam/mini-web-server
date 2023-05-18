@@ -12,6 +12,7 @@ namespace MiniWebServer.Abstractions.Http
         IHttpRequestBuilder SetUrl(string url);
         IHttpRequestBuilder AddHeader(string name, string value);
         IHttpRequestBuilder AddHeaders(IEnumerable<KeyValuePair<string, string>> headers);
+        IHttpRequestBuilder AddTransferEncoding(string transferEncodings);
         HttpRequest Build();
     }
 }

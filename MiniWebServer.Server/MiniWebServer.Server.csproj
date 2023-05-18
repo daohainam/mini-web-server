@@ -16,9 +16,9 @@
   <ItemGroup>
     <ProjectReference Include="..\MimeMapping\MimeMapping.csproj" />
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
-    <ProjectReference Include="..\MiniWebServer.Client.Abstractions\MiniWebServer.Client.Abstractions.csproj" />
     <ProjectReference Include="..\MiniWebServer.Configuration\MiniWebServer.Configuration.csproj" />
     <ProjectReference Include="..\MiniWebServer.HttpParser\MiniWebServer.HttpParser.csproj" />
+    <ProjectReference Include="..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
   </ItemGroup>
 
 </Project>

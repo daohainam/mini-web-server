@@ -1,10 +1,4 @@
 ﻿using MiniWebServer.Abstractions.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 using static MiniWebServer.Abstractions.ProtocolHandlerStates;
 
 namespace MiniWebServer.Abstractions
@@ -12,8 +6,8 @@ namespace MiniWebServer.Abstractions
     public interface IProtocolHandler
     {
         int ProtocolVersion { get; }
-        Task<BuildRequestStates> ReadRequestAsync(Stream clientStream, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data);
-        Task SendResponseAsync(Stream clientStream, HttpResponse response, ProtocolHandlerData protocolHandlerData);
+        BuildRequestStates ReadRequest(Span<byte> buffer, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data, out int bytesProcessed);
+        WriteResponseStates WriteResponse(Span<byte> buffer, HttpResponse response, ProtocolHandlerData protocolHandlerData, out int bytesProcessed);
         void Reset(ProtocolHandlerData data);
     }
 }

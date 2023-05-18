@@ -22,5 +22,8 @@ namespace MiniWebServer.Server
         public X509Certificate2? Certificate { get; internal set; }
 
         public List<HostConfiguration> Hosts = new();
+
+        // advanced settings
+        public int ReadBufferSize { get; init; } = 1024 * 8;
     }
 }

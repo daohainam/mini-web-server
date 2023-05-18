@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using MiniWebServer.Configuration;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,10 +15,8 @@ namespace MiniWebServer.Abstractions
     {
         IServerBuilder UseHttpPort(int httpPort);
         IServerBuilder BindToAddress(string ipAddress);
-        IServerBuilder AddRoot(string rootDirectory);
-        IServerBuilder AddHost(string hostName, string hostDirectory);
+        IServerBuilder AddHost(string hostName, IMiniApp host);
         IServerBuilder UseDependencyInjectionService(ServiceProvider serviceProvider);
-        IServerBuilder UseStaticFiles();
         IServerBuilder UseCache(IDistributedCache cache);
         IServerBuilder UseThreadPoolSize(int size);
         IServerBuilder UseOptions(ServerOptions serverOptions);

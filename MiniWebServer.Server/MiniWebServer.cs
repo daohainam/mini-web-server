@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.Http;
-using MiniWebServer.Server.Host;
-using MiniWebServer.Server.Http.Helpers;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Security;
@@ -16,8 +13,7 @@ namespace MiniWebServer.Server
     {
         private readonly MiniWebServerConfiguration config;
         private readonly IProtocolHandlerFactory protocolHandlerFactory;
-        private readonly IDictionary<string, HostContainer> hostContainers;
-        private readonly IMimeTypeMapping mimeTypeMapping;
+        private readonly IDictionary<string, Host.Host> hostContainers;
         private readonly ILogger<MiniWebServer> logger;
         private TcpListener? server;
         private bool running;
@@ -27,24 +23,27 @@ namespace MiniWebServer.Server
         private static readonly EventWaitHandle waitingClientsWaitHandle = new(false, EventResetMode.AutoReset);
         private bool disposed = false;
 
+        private CancellationTokenSource cancellationTokenSource; // we use this to cancel system-wise threads
+        private CancellationToken cancellationToken;
+
         public MiniWebServer(
             MiniWebServerConfiguration config, 
             IProtocolHandlerFactory? protocolHandlerFactory,
-            IDictionary<string, HostContainer>? hostContainers,
-            IMimeTypeMapping? mimeTypeMapping,
+            IDictionary<string, Host.Host>? hostContainers,
             ILogger<MiniWebServer> logger
             )
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.protocolHandlerFactory = protocolHandlerFactory ?? throw new ArgumentNullException(nameof(protocolHandlerFactory));
             this.hostContainers = hostContainers ?? throw new ArgumentNullException(nameof(hostContainers));
-            this.mimeTypeMapping = mimeTypeMapping ?? throw new ArgumentNullException(nameof(mimeTypeMapping));
             this.logger = logger;
 
             running = false;
+            cancellationTokenSource = new();
+            cancellationToken = cancellationTokenSource.Token;
         }
 
-        public void Start()
+        public Task Start()
         {
             logger.LogInformation("Starting web server...");
 
@@ -55,20 +54,20 @@ namespace MiniWebServer.Server
 
             running = true;
 
-            new Thread(ClientConnectionListeningProc) { IsBackground = false }.Start();
+            return ClientConnectionListeningProc();
 
             // create threads to process client data, it is actually not efficient to do this way, but it can demonstrate how a thread pool works
             // normally we create it's own class to make the code 'clean', but we will soon change to .NET's ThreadPool https://learn.microsoft.com/en-us/dotnet/api/system.threading.threadpool?view=net-7.0
             // so just let it be :)
-            for (int i = 1; i <= config.ThreadPoolSize; i++)
-            {
-                var thread = new Thread(ClientConnectionProcessingProc) { IsBackground = true };
-                thread.Start(i);
-            }
+            //for (int i = 1; i <= config.ThreadPoolSize; i++)
+            //{
+            //    var thread = new Thread(ClientConnectionProcessingProc) { IsBackground = true };
+            //    thread.Start(i);
+            //}
 
         }
 
-        private void HandleNewClientConnection(TcpClient tcpClient)
+        private async Task HandleNewClientConnectionAsync(TcpClient tcpClient)
         {
             try
             {
@@ -99,18 +98,21 @@ namespace MiniWebServer.Server
                     tcpClient,
                     stream,
                     protocolHandlerFactory.Create(ProtocolHandlerFactory.HTTP11), // A connection always starts with HTTP 1.1 
-                    MiniWebClientConnection.States.Pending,
-                    DateTime.Now.AddMilliseconds(config.ConnectionTimeout),
-                    true // Connection is keep-alive by default in HTTP 1.1
+                    hostContainers,
+                    TimeSpan.FromMilliseconds(config.ConnectionTimeout),
+                    logger,
+                    cancellationToken
                 );
 
-                waitingClients.Enqueue(client);
+                //waitingClients.Enqueue(client);
                 logger.LogInformation("New client connected {tcpClient}", tcpClient.Client.RemoteEndPoint);
+                await client.HandleRequestAsync();
 
-                waitingClientsWaitHandle.Set();
+                //waitingClientsWaitHandle.Set();
             } catch (Exception ex)
             {
                 logger.LogError(ex, "Error accepting client");
+                CloseConnection(tcpClient);
             }
         }
 
@@ -118,6 +120,8 @@ namespace MiniWebServer.Server
         {
             running = false;
             server?.Stop();
+
+            cancellationTokenSource.Cancel();
 
             // wait for all client threads stopped, we can use wait handles to make it more resource effective, but we use a loop here because it is more understandable :)
             int seconds10 = 15 * 10; // we will wait max 15 seconds
@@ -136,7 +140,7 @@ namespace MiniWebServer.Server
             }
         }
 
-        private void ClientConnectionListeningProc()
+        private async Task ClientConnectionListeningProc()
         {
             server = new(config.HttpEndPoint);
             server.Start();
@@ -145,22 +149,19 @@ namespace MiniWebServer.Server
 
             while (running)
             {
-                if (server.Pending())
+                try
                 {
-                    try
-                    {
-                        TcpClient client = server.AcceptTcpClient();
+                    TcpClient client = await server.AcceptTcpClientAsync(cancellationToken);
 
-                        HandleNewClientConnection(client);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        logger.LogInformation("Server socket stopped listening");
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Error accepting client socket");
-                    }
+                    await HandleNewClientConnectionAsync(client);
+                }
+                catch (OperationCanceledException)
+                {
+                    logger.LogInformation("Server socket stopped listening");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error accepting client socket");
                 }
             }
         }
@@ -170,159 +171,143 @@ namespace MiniWebServer.Server
         /// Using .NET's ThreadPool class and async/await are better in performance since they can control pool running threads
         /// </summary>
         /// <param name="data"></param>
-        private void ClientConnectionProcessingProc(object? data)
-        {
-            int n = (int?)data ?? 0;
-            logger.LogInformation("Starting ThreadPool.Thread #{n}", n);
+        //private void ClientConnectionProcessingProc(object? data)
+        //{
+        //    int n = (int?)data ?? 0;
+        //    logger.LogInformation("Starting ThreadPool.Thread #{n}", n);
 
-            Interlocked.Increment(ref threadInThreadPoolCount); // why don't we simply use threadInThreadPoolCount++ here? :)
+        //    Interlocked.Increment(ref threadInThreadPoolCount); // why don't we simply use threadInThreadPoolCount++ here? :)
 
-            while (running)
-            {
-                // wait for 1 second and process if there is at least one item in the queue
-                if (waitingClientsWaitHandle.WaitOne() && running)
-                {
-                    if (waitingClients.TryDequeue(out var client))
-                    {
-                        var newClient = ProcessClientConnection(client).GetAwaiter().GetResult();
-                        if (newClient != null)
-                        {
-                            waitingClients.Enqueue(newClient);
-                            waitingClientsWaitHandle.Set();
-                        }
-                    }
-                }
-            }
+        //    while (running)
+        //    {
+        //        // wait for 1 second and process if there is at least one item in the queue
+        //        if (waitingClientsWaitHandle.WaitOne() && running)
+        //        {
+        //            if (waitingClients.TryDequeue(out var client))
+        //            {
+        //                var newClient = ProcessClientConnection(client).GetAwaiter().GetResult();
+        //                if (newClient != null)
+        //                {
+        //                    waitingClients.Enqueue(newClient);
+        //                    waitingClientsWaitHandle.Set();
+        //                }
+        //            }
+        //        }
+        //    }
 
-            logger.LogInformation("ThreadPool.Thread #{n} stopped", n);
-            Interlocked.Decrement(ref threadInThreadPoolCount);
-        }
+        //    logger.LogInformation("ThreadPool.Thread #{n} stopped", n);
+        //    Interlocked.Decrement(ref threadInThreadPoolCount);
+        //}
 
-        private async Task<MiniWebClientConnection?> ProcessClientConnection(MiniWebClientConnection client)
-        {
-            logger.LogInformation("Processing client connection: {client}", client.Id);
+        //private async Task<MiniWebClientConnection?> ProcessClientConnection(MiniWebClientConnection client)
+        //{
+        //    logger.LogInformation("Processing client connection: {client}", client.Id);
 
-            try
-            {
-                if (client.State == MiniWebClientConnection.States.Pending || client.State == MiniWebClientConnection.States.BuildingRequestObject)
-                {
-                    // todo: we must have a mechanism to control request reading timeout
-                    var state = await client.ProtocolHandler.ReadRequestAsync(client.ClientStream, client.RequestObjectBuilder, client.ProtocolHandlerData);
-                    if (state == ProtocolHandlerStates.BuildRequestStates.Failed)
-                    {
-                        StandardResponseBuilderHelpers.BadRequest(client.ResponseObjectBuilder);
-                        client.KeepAlive = false;
-                        client.State = MiniWebClientConnection.States.RequestObjectReady;
-                    }
-                    else if (state == ProtocolHandlerStates.BuildRequestStates.Succeeded)
-                    {
-                        client.State = MiniWebClientConnection.States.RequestObjectReady;
-                    }
-                    else if (state == ProtocolHandlerStates.BuildRequestStates.InProgressWithNoData)
-                    {
-                        if (client.ConnectionTimeoutTime <= DateTime.Now) // if no data received after config.ConnectionTimeout ms, we close the connection
-                        {
-                            logger.LogInformation("Connection {connection} timed-out", client.TcpClient.Client.RemoteEndPoint);
-                            client.KeepAlive = false;
-                            client.State = MiniWebClientConnection.States.ResponseObjectReady;
-                        }
-                    }
-                    else
-                    {
-                        client.ConnectionTimeoutTime = DateTime.Now.AddMilliseconds(config.ConnectionTimeout);
-                    }
-                }
-                else if (client.State == MiniWebClientConnection.States.RequestObjectReady)
-                {
-                    var requestObject = client.RequestObjectBuilder.Build();
+        //    try
+        //    {
+        //        if (client.State == MiniWebClientConnection.States.Pending || client.State == MiniWebClientConnection.States.BuildingRequestObject)
+        //        {
+        //            // todo: we must have a mechanism to control request reading timeout
+        //            var state = await client.ProtocolHandler.ReadRequestAsync(client.ClientStream, client.RequestObjectBuilder, client.ProtocolHandlerData);
+        //            if (state == ProtocolHandlerStates.BuildRequestStates.Failed)
+        //            {
+        //                StandardResponseBuilderHelpers.BadRequest(client.ResponseObjectBuilder);
+        //                client.KeepAlive = false;
+        //                client.State = MiniWebClientConnection.States.RequestObjectReady;
+        //            }
+        //            else if (state == ProtocolHandlerStates.BuildRequestStates.Succeeded)
+        //            {
+        //                client.State = MiniWebClientConnection.States.RequestObjectReady;
+        //            }
+        //            else if (state == ProtocolHandlerStates.BuildRequestStates.InProgressWithNoData)
+        //            {
+        //                if (client.ConnectionTimeoutTime <= DateTime.Now) // if no data received after config.ConnectionTimeout ms, we close the connection
+        //                {
+        //                    logger.LogInformation("Connection {connection} timed-out", client.TcpClient.Client.RemoteEndPoint);
+        //                    client.KeepAlive = false;
+        //                    client.State = MiniWebClientConnection.States.ResponseObjectReady;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                client.ConnectionTimeoutTime = DateTime.Now.AddMilliseconds(config.ConnectionTimeout);
+        //            }
+        //        }
+        //        else if (client.State == MiniWebClientConnection.States.RequestObjectReady)
+        //        {
+        //            var requestObject = client.RequestObjectBuilder.Build();
 
-                    client.KeepAlive = string.IsNullOrEmpty(requestObject.Headers.Connection) || string.Equals("keep-alive", requestObject.Headers.Connection, StringComparison.OrdinalIgnoreCase);
+        //            client.KeepAlive = string.IsNullOrEmpty(requestObject.Headers.Connection) || string.Equals("keep-alive", requestObject.Headers.Connection, StringComparison.OrdinalIgnoreCase);
 
-                    if (hostContainers.TryGetValue(requestObject.Headers.Host, out var hostContainer)
-                        || hostContainers.TryGetValue(string.Empty, out hostContainer)) {
-                        // find a callable resource using IRoutingService
-                        var callable = hostContainer.RoutingService.FindRoute(requestObject.Url);
+        //            if (hostContainers.TryGetValue(requestObject.Headers.Host, out var hostContainer)
+        //                || hostContainers.TryGetValue(string.Empty, out hostContainer)) {
+        //                // find a callable resource using IRoutingService
+        //                var callable = hostContainer.RoutingService.FindRoute(requestObject.Url);
 
-                        if (callable != null)
-                        {
-                            await CallByMethod(callable, requestObject.Method, requestObject, client.ResponseObjectBuilder);
+        //                if (callable != null)
+        //                {
+        //                    await CallByMethod(callable, requestObject.Method, requestObject, client.ResponseObjectBuilder);
 
-                            client.State = NextState(client.State, client.KeepAlive);
-                        }
-                        else
-                        {
-                            StandardResponseBuilderHelpers.NotFound(client.ResponseObjectBuilder);
-                            client.State = MiniWebClientConnection.States.ResponseObjectReady;
-                        }
-                    }
-                    else
-                    {
-                        // unknown host
-                        StandardResponseBuilderHelpers.NotFound(client.ResponseObjectBuilder);
-                        client.State = MiniWebClientConnection.States.ResponseObjectReady;
-                    }
-                }
-                else if (client.State == MiniWebClientConnection.States.CallingResource)
-                {
-                    client.State = NextState(client.State, client.KeepAlive);
-                }
-                else if (client.State == MiniWebClientConnection.States.CallingResourceReady)
-                {
-                    client.State = NextState(client.State, client.KeepAlive);
-                }
-                else if (client.State == MiniWebClientConnection.States.ResponseObjectReady)
-                {
-                    if (client.KeepAlive)
-                    {
-                        client.ResponseObjectBuilder.SetHeaderConnection("keep-alive");
-                    }
-                    else
-                    {
-                        client.ResponseObjectBuilder.SetHeaderConnection("close");
-                    }
+        //                    client.State = NextState(client.State, client.KeepAlive);
+        //                }
+        //                else
+        //                {
+        //                    StandardResponseBuilderHelpers.NotFound(client.ResponseObjectBuilder);
+        //                    client.State = MiniWebClientConnection.States.ResponseObjectReady;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                // unknown host
+        //                StandardResponseBuilderHelpers.NotFound(client.ResponseObjectBuilder);
+        //                client.State = MiniWebClientConnection.States.ResponseObjectReady;
+        //            }
+        //        }
+        //        else if (client.State == MiniWebClientConnection.States.CallingResource)
+        //        {
+        //            client.State = NextState(client.State, client.KeepAlive);
+        //        }
+        //        else if (client.State == MiniWebClientConnection.States.CallingResourceReady)
+        //        {
+        //            client.State = NextState(client.State, client.KeepAlive);
+        //        }
+        //        else if (client.State == MiniWebClientConnection.States.ResponseObjectReady)
+        //        {
+        //            if (client.KeepAlive)
+        //            {
+        //                client.ResponseObjectBuilder.SetHeaderConnection("keep-alive");
+        //            }
+        //            else
+        //            {
+        //                client.ResponseObjectBuilder.SetHeaderConnection("close");
+        //            }
 
-                    var response = client.ResponseObjectBuilder.Build();
-                    await client.ProtocolHandler.SendResponseAsync(client.ClientStream, response, client.ProtocolHandlerData);
-                    client.ProtocolHandler.Reset(client.ProtocolHandlerData);
+        //            var response = client.ResponseObjectBuilder.Build();
+        //            await client.ProtocolHandler.SendResponseAsync(client.ClientStream, response, client.ProtocolHandlerData);
+        //            client.ProtocolHandler.Reset(client.ProtocolHandlerData);
 
-                    client.State = NextState(client.State, client.KeepAlive); // if keep-alive we start processing next message, else we release and close connection
-                }
-                else if (client.State == MiniWebClientConnection.States.ReadyToClose)
-                {
-                    ReleaseResources(client);
+        //            client.State = NextState(client.State, client.KeepAlive); // if keep-alive we start processing next message, else we release and close connection
+        //        }
+        //        else if (client.State == MiniWebClientConnection.States.ReadyToClose)
+        //        {
+        //            ReleaseResources(client);
 
-                    return null; // return null to not enqueue the task again
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error processing client connection");
+        //            return null; // return null to not enqueue the task again
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError(ex, "Error processing client connection");
 
-                client.TcpClient.Close();
+        //        client.TcpClient.Close();
 
-                return null;
-            }
+        //        return null;
+        //    }
 
-            return client;
-        }
+        //    return client;
+        //}
 
-        private async Task CallByMethod(ICallableResource callable, HttpMethod method, HttpRequest request, IHttpResponseBuilder responseObjectBuilder)
-        {
-            try
-            {
-                if (method == HttpMethod.Get)
-                {
-                    await callable.OnGet(request, responseObjectBuilder, mimeTypeMapping);
-                }
-                else
-                {
-                    StandardResponseBuilderHelpers.MethodNotAllowed(responseObjectBuilder);
-                }
-            } catch (Exception ex)
-            {
-                logger.LogError(ex, "Error executing resource");
-            }
-        }
+
 
         private static void ReleaseResources(MiniWebClientConnection client)
         {

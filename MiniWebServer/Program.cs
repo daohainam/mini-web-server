@@ -7,6 +7,8 @@ using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.HttpParser.Http11;
 using MiniWebServer.Configuration;
 using MiniWebServer.HttpParser.Http11;
+using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp.Web;
 using MiniWebServer.Server;
 using MiniWebServer.Server.MimeType;
 
@@ -23,7 +25,7 @@ namespace MiniWebServer
             var serverBuilder = serviceProvider.GetService<IServerBuilder>();
             if (serverBuilder == null)
             {
-                serviceProvider.GetService<ILogger>()?.LogError("Error creating ServerBuilder");
+                Console.WriteLine("Error creating ServerBuilder");
                 return;
             };
 
@@ -36,12 +38,19 @@ namespace MiniWebServer
             // Get values from the config given their key and their target type.
             ServerOptions serverOptions = config.Get<ServerOptions>() ?? new ServerOptions();
 
-            var server = serverBuilder
+            serverBuilder = serverBuilder
                 .UseDependencyInjectionService(serviceProvider)
                 .UseOptions(serverOptions)
-                .UseThreadPoolSize(Environment.ProcessorCount)
-                .UseStaticFiles()
-                .Build();
+                .UseThreadPoolSize(Environment.ProcessorCount);
+
+            var appBuilder = serviceProvider.GetRequiredService<IMiniWebBuilder>();
+
+                appBuilder.UseRootDirectory("wwwroot")
+                .UseStaticFiles();
+
+            serverBuilder.AddHost(string.Empty, appBuilder.Build());
+
+            var server = serverBuilder.Build();
 
             server.Start();
 
@@ -60,9 +69,13 @@ namespace MiniWebServer
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
             services.AddTransient<IServerBuilder>(
                 services => new MiniWebServerBuilder(
-                    services.GetService<ILogger<MiniWebServerBuilder>>(),
+                    services.GetRequiredService<ILogger<MiniWebServerBuilder>>(),
                     services.GetService<IDistributedCache>()
                     )
+                );
+            services.AddTransient<IMiniWebBuilder>(
+                services => new MiniWebBuilder(
+                    services.GetRequiredService<ILogger<MiniWebBuilder>>())
                 );
         }
     }

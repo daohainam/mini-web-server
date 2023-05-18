@@ -2,7 +2,7 @@
 {
     public interface IServer: IDisposable
     {
-        void Start();
+        Task Start();
         void Stop();
     }
 }

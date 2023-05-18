@@ -1,5 +1,6 @@
 ﻿using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace MiniWebServer.Server.Http
         private HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
         private readonly HttpResponseHeaders headers = new();
         private string reasonPhrase = string.Empty;
-        private Abstractions.Http.HttpContent content = new Content.StringContent(string.Empty);
+        private MiniContent content = new global::MiniWebServer.MiniApp.Content.StringContent(string.Empty);
 
         public HttpResponse Build()
         {
@@ -38,7 +39,7 @@ namespace MiniWebServer.Server.Http
             return this;
         }
 
-        public IHttpResponseBuilder SetContent(Abstractions.Http.HttpContent content)
+        public IHttpResponseBuilder SetContent(MiniContent content)
         {
             this.content = content ?? throw new ArgumentNullException(nameof(content));
 

@@ -1,27 +1,30 @@
 ﻿using Microsoft.Extensions.Logging;
-using MiniWebServer.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Server.StaticFileSupport
+namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 {
-    public class StaticFileRoutingService : IRoutingService
+    public class StaticFileCallableService : ICallableService
     {
         private readonly DirectoryInfo directoryInfo;
         private readonly ILogger logger;
+        private readonly IMimeTypeMapping mimeTypeMapping;
 
-        public StaticFileRoutingService(DirectoryInfo directoryInfo, ILogger logger)
+        public StaticFileCallableService(DirectoryInfo directoryInfo, IMimeTypeMapping mimeTypeMapping, ILogger logger)
         {
             this.directoryInfo = directoryInfo ?? throw new ArgumentNullException(nameof(directoryInfo));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.mimeTypeMapping = mimeTypeMapping ?? throw new ArgumentNullException(nameof(mimeTypeMapping));
         }
 
-        public ICallableResource? FindRoute(string url)
+        public bool IsGetSupported => true;
+
+        public ICallable? Find(IMiniAppRequest request)
         {
-            if (url == null) throw new ArgumentNullException(nameof(url));
+            string url = request.Url;
 
             if (directoryInfo.Exists)
             {
@@ -32,11 +35,12 @@ namespace MiniWebServer.Server.StaticFileSupport
                 url = url.Replace('/', Path.DirectorySeparatorChar);
 
                 var file = new FileInfo(Path.Combine(directoryInfo.FullName, url));
-                if (file.Exists )
+                if (file.Exists)
                 {
-                    return new StaticFileCallable(file, logger);
+                    return new StaticFileCallable(file, mimeTypeMapping, logger);
                 }
             }
+
             return null;
         }
     }

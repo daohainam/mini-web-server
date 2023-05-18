@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.MiniApp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,13 +9,13 @@ namespace MiniWebServer.Server
 {
     public class HostConfiguration
     {
-        public HostConfiguration(string hostName, string rootDirectory)
+        public HostConfiguration(string hostName, IMiniApp app)
         {
             HostName = hostName;
-            RootDirectory = rootDirectory;
+            App = app;
         }
 
         public string HostName { get; }
-        public string RootDirectory { get; }
+        public IMiniApp App { get; }
     }
 }

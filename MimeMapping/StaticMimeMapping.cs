@@ -1,4 +1,4 @@
-﻿using MiniWebServer.Abstractions;
+﻿using MiniWebServer.MiniApp;
 
 namespace MimeMapping
 {
@@ -11,10 +11,13 @@ namespace MimeMapping
             {
                 {".txt", "text/plain"},
                 {".htm", "text/html"},
+                {".css", "text/css"},
+                {".js", "application/x-javascript"},
                 {".html", "text/html"},
                 {".jpg", "image/jpeg"},
                 {".bmp", "image/bmp"},
-                {".png", "image/png"}
+                {".png", "image/png"},
+                {".xml", "text/xml"}
             }
         };
         

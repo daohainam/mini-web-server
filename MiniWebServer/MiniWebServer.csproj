@@ -19,6 +19,8 @@
   <ItemGroup>
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
     <ProjectReference Include="..\MiniWebServer.Configuration\MiniWebServer.Configuration.csproj" />
+    <ProjectReference Include="..\MiniWebServer.MiniApp.Web\MiniWebServer.MiniApp.Web.csproj" />
+    <ProjectReference Include="..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
     <ProjectReference Include="..\MiniWebServer.Server\MiniWebServer.Server.csproj" />
   </ItemGroup>
 
@@ -33,6 +35,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="wwwroot\css\site.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="wwwroot\favicon.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="wwwroot\images\dotnet-logo.jpg">
