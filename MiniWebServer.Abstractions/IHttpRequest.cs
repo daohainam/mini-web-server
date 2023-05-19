@@ -9,7 +9,7 @@ namespace MiniWebServer.Abstractions
 {
     public interface IHttpRequest 
     {
-        HttpMethod Method { get; }
+        Http.HttpMethod Method { get; }
         string Url { get; }
         HttpRequestHeaders Headers { get; }
         bool KeepAliveRequested { get; }

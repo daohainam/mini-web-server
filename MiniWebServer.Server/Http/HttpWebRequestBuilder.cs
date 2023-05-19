@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.Http
 {
@@ -15,6 +16,9 @@ namespace MiniWebServer.Server.Http
         private readonly HttpRequestHeaders headers = new();
         private readonly List<HttpTransferEncoding> transferEncodings = new();
         private string url = "/";
+        private string queryString = string.Empty;
+        private string hash = string.Empty;
+        private HttpParameters parameters = new();
 
         public IHttpRequestBuilder AddHeader(string name, string value)
         {
@@ -66,6 +70,30 @@ namespace MiniWebServer.Server.Http
                 else
                     this.transferEncodings.Add(encoding);
             }
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetParameters(HttpParameters parameters)
+        {
+            foreach (var parameter in parameters)
+            {
+                this.parameters.Add(parameter.Key, parameter.Value);
+            }
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetQueryString(string queryString)
+        {
+            this.queryString = queryString;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetHash(string hash)
+        {
+            this.hash = hash;
 
             return this;
         }

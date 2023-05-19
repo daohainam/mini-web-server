@@ -7,6 +7,7 @@ using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
 using System.Buffers;
 using System.Net.Sockets;
+using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server
 {

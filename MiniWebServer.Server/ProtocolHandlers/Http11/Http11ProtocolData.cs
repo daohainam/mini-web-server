@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HttpMethod = global::MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {

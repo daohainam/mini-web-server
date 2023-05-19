@@ -7,8 +7,9 @@ namespace ParserTests
     public class ParserTests
     {
         [TestMethod]
-        [DataRow("GET /path/to/file/index.html HTTP/1.1", "GET", "/path/to/file/index.html", "1", "1")]
-        public void IsValidRequestLine(string text, string method, string url, string majorVersion, string minorVersion)
+        //[DataRow("GET /path/to/file/index.html HTTP/1.1", "GET", "/path/to/file/index.html", "", "", "1", "1")]
+        [DataRow("GET /index.html?p1=v1&p2=v2&txt=Mini20Web20Server&d=d1&d=d2&d=d3#hash HTTP/1.1", "GET", "/index.html", "#hash", "?p1=v1&p2=v2&txt=Mini20Web20Server&d=d1&d=d2&d=d3", "1", "1", 4)]
+        public void IsValidRequestLine(string text, string method, string url, string hash, string queryString, string majorVersion, string minorVersion, int paramsCount)
         {
             IHttp11Parser http11Parser = new RegexHttp11Parsers();
 
@@ -16,8 +17,11 @@ namespace ParserTests
             Assert.IsNotNull(result);
             Assert.AreEqual(method, result.Method);
             Assert.AreEqual(url, result.Url);
+            Assert.AreEqual(hash, result.Hash);
+            Assert.AreEqual(queryString, result.QueryString);
             Assert.AreEqual(majorVersion, result.ProtocolVersion.Major);
             Assert.AreEqual(minorVersion, result.ProtocolVersion.Minor);
+            Assert.AreEqual(paramsCount, result.Parameters.Count);
         }
 
         [TestMethod]

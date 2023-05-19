@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,15 +20,29 @@ namespace MiniWebServer.Abstractions.HttpParser.Http11
     }
     public class Http11RequestLine
     {
-        public Http11RequestLine(string method, string url, Http11ProtocolVersion protocolVersion)
+        public Http11RequestLine(string method, string url, string hash, string queryString, Http11ProtocolVersion protocolVersion, HttpParameters? parameters = null)
         {
             Method = method ?? throw new ArgumentNullException(nameof(method));
             Url = url ?? throw new ArgumentNullException(nameof(url));
             ProtocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
+            Hash = hash;
+            QueryString = queryString;
+
+            if (parameters != null)
+            {
+                Parameters = new HttpParameters(parameters);
+            }
+            else
+            {
+                Parameters = new HttpParameters();
+            }
         }
 
         public string Method { get; }
         public string Url { get; }
+        public string Hash { get; }
+        public string QueryString { get; }
+        public HttpParameters Parameters { get; }
         public Http11ProtocolVersion ProtocolVersion { get; }
     }
 

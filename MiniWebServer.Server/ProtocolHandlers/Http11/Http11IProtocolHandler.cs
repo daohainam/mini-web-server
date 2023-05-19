@@ -5,6 +5,7 @@ using MiniWebServer.Abstractions.HttpParser.Http11;
 using System.Net;
 using System.Text;
 using static MiniWebServer.Abstractions.ProtocolHandlerStates;
+using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
@@ -59,7 +60,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                 d.HttpMethod = method;
                                 httpWebRequestBuilder
                                     .SetMethod(method)
-                                    .SetUrl(requestLine.Url);
+                                    .SetUrl(requestLine.Url)
+                                    .SetParameters(requestLine.Parameters)
+                                    .SetQueryString(requestLine.QueryString)
+                                    .SetHash(requestLine.Hash)
+                                    ;
 
                                 state = BuildRequestStates.InProgress;
                                 d.CurrentReadingPart = Http11RequestMessageParts.Header;
@@ -256,8 +261,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 return HttpMethod.Head;
             else if (HttpMethod.Options.Method == method)
                 return HttpMethod.Options;
-            else if (HttpMethod.Patch.Method == method)
-                return HttpMethod.Patch;
             else if (HttpMethod.Post.Method == method)
                 return HttpMethod.Post;
             else if (HttpMethod.Put.Method == method)

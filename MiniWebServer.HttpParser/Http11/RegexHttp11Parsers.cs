@@ -1,4 +1,5 @@
-﻿using MiniWebServer.Abstractions.HttpParser.Http11;
+﻿using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Abstractions.HttpParser.Http11;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,10 +21,22 @@ namespace MiniWebServer.HttpParser.Http11
             var match = httpRegex.Match(text);
             if (match.Success)
             {
+                var paramNameGroup = match.Groups["paramName"];
+                var paramValueGroup = match.Groups["paramValue"];
+
+                HttpParameters httpParameters = new();
+                for (int i = 0; i < paramNameGroup.Captures.Count; i++)
+                {
+                    httpParameters.Add(new HttpParameter(paramNameGroup.Captures[i].Value, paramValueGroup.Captures[i].Value));
+                }
+
                 return new Http11RequestLine(
                     match.Groups["method"].Value,
                     match.Groups["url"].Value,
-                    new Http11ProtocolVersion(match.Groups["major"].Value, match.Groups["minor"].Value)
+                    match.Groups["hash"].Value,
+                    match.Groups["queryString"].Value,
+                    new Http11ProtocolVersion(match.Groups["major"].Value, match.Groups["minor"].Value),
+                    httpParameters
                     );
             }
 
@@ -45,7 +58,7 @@ namespace MiniWebServer.HttpParser.Http11
             return null;
         }
 
-        [GeneratedRegex("^(?<method>[a-zA-Z]+)\\s(?<url>.+)\\sHTTP/(?<major>\\d)\\.(?<minor>\\d+)$")]
+        [GeneratedRegex("^(?<method>[a-zA-Z]+)\\s(?<url>/[^\\r\\n\\?]*)(?<queryString>\\?((?<params>(?<paramName>\\w+)+=(?<paramValue>[\\w|%]*))&?)*)?(?<hash>#\\w*)?\\sHTTP/(?<major>\\d)\\.(?<minor>\\d+)$")]
         private static partial Regex HttpRequestLineRegex();
 
         [GeneratedRegex(@"(?<name>[\w-_]+): ?(?<value>[\w\-  _ :;.,\\/'?!(){}\[\]@<>=\-+\*#$&`|~^%""]+) ?")]
