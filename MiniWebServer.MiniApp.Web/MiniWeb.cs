@@ -18,7 +18,7 @@
             return this;
         }
 
-        public async Task Get(IMiniAppRequest request, IMiniAppResponse response)
+        public async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
         {
             foreach (var cf in callableServices)
             {
@@ -26,7 +26,7 @@
 
                 if (callable != null)
                 {
-                    await callable.Get(request, response);
+                    await callable.Get(request, response, cancellationToken);
                 }
             }
         }

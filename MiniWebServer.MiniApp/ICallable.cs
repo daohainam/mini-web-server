@@ -14,6 +14,6 @@ namespace MiniWebServer.MiniApp
     /// </summary>
     public interface ICallable
     {
-        Task Get(IMiniAppRequest request, IMiniAppResponse response);
+        Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken);
     }
 }

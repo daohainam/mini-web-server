@@ -9,9 +9,9 @@ namespace MiniWebServer.Server
 {
     internal class DefaultMiniApp : IMiniApp
     {
-        public async Task Get(IMiniAppRequest request, IMiniAppResponse response)
+        public async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
         {          
-            await Task.Run(() => { response.SetStatus(HttpResponseCodes.NotFound); });
+            await Task.Run(() => { response.SetStatus(HttpResponseCodes.NotFound); }, cancellationToken);
         }
     }
 }

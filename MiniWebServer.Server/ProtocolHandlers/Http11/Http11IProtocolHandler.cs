@@ -63,8 +63,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                     .SetUrl(requestLine.Url)
                                     .SetParameters(requestLine.Parameters)
                                     .SetQueryString(requestLine.QueryString)
-                                    .SetHash(requestLine.Hash)
-                                    ;
+                                    .SetHash(requestLine.Hash);
 
                                 state = BuildRequestStates.InProgress;
                                 d.CurrentReadingPart = Http11RequestMessageParts.Header;
@@ -115,7 +114,17 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                 else
                                     state = BuildRequestStates.InProgress;
 
-                                d.CurrentReadingPart = Http11RequestMessageParts.Body;
+                                if (!ValidateRequestHeader(d))
+                                {
+                                    state = BuildRequestStates.Failed; // reject request for whatever reason
+                                }
+                                else
+                                {
+                                    d.CurrentReadingPart = Http11RequestMessageParts.Body;
+                                    d.RequestBodySize = 0;
+                                    d.CurrentRequestBodyBytes = 0;
+                                }
+
                                 break;
                             }
                             else
@@ -132,6 +141,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                     }
 
                                     httpWebRequestBuilder.AddHeader(headerLine.Name, headerLine.Value);
+                                    d.RequestHeaders.Add(headerLine.Name, headerLine.Value);
                                     d.HeaderStringBuilder.Clear();
                                 }
                                 else
@@ -159,19 +169,41 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
             else
             {
-                //SendResponseStatus(d.Writer, HttpStatusCode.OK, "OK");
-                //d.Writer.WriteLine("Content-Type: text/html; charset=UTF-8");
-                //d.Writer.WriteLine("Content-Length: 0");
-                //d.Writer.WriteLine("Connection: close");
-                //d.Writer.WriteLine();
-                //d.Writer.WriteLine();
-                //d.Writer.Flush();
-
-                bytesProcessed = buffer.Length;
-                state = BuildRequestStates.Succeeded;
+                if (!ValidateRequestHeader(d))
+                {
+                    bytesProcessed = buffer.Length; // simulate consumming the buffer
+                    state = BuildRequestStates.Failed;
+                }
+                else
+                {
+                    bytesProcessed = buffer.Length;
+                    state = BuildRequestStates.Succeeded;
+                }
             }
 
             return state;
+        }
+
+        private static bool ValidateRequestHeader(Http11ProtocolData d)
+        {
+            if ((d.HttpMethod == HttpMethod.Post || d.HttpMethod == HttpMethod.Put))
+            {
+                if (d.RequestBodySize == 0)
+                { // POST and PUT require body part
+                    return false;
+                }
+                if (string.IsNullOrEmpty(d.RequestHeaders.ContentType))
+                { 
+                    return false;
+                }
+                else if (!HttpRequestHeaders.ValidContentTypes.Contains(d.RequestHeaders.ContentType))
+                {
+                    return false;
+                }
+            }
+
+
+            return true;
         }
 
         protected bool IsValidHeader(string name, string value, Http11ProtocolData stateObject)
@@ -268,7 +300,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             else if (HttpMethod.Trace.Method == method)
                 return HttpMethod.Trace;
 
-            throw new ArgumentException(null, nameof(method));
+            throw new ArgumentException("Unknown method", nameof(method));
         }
 
         public void Reset(ProtocolHandlerData data)

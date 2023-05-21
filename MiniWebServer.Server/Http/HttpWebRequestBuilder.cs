@@ -18,7 +18,7 @@ namespace MiniWebServer.Server.Http
         private string url = "/";
         private string queryString = string.Empty;
         private string hash = string.Empty;
-        private HttpParameters parameters = new();
+        private readonly HttpParameters parameters = new();
 
         public IHttpRequestBuilder AddHeader(string name, string value)
         {
@@ -39,7 +39,7 @@ namespace MiniWebServer.Server.Http
 
         public HttpRequest Build()
         {
-            var request = new HttpRequest(httpMethod, url, headers);
+            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters);
 
             return request;
         }

@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
+    // here is the this of standard request headers defined in 
     public class HttpRequestHeaders: HttpHeaders
     {
+        public static readonly string[] ValidContentTypes = { "text/plain", "multipart/form-data", "application/x-www-form-urlencoded" };
+
         public string AcceptLanguage
         {
             get
@@ -15,10 +18,11 @@ namespace MiniWebServer.Abstractions.Http
                 return TryGetValueAsString("Accept-Language");
             }
         }
-        public string Host { 
+        public string CacheControl
+        {
             get
             {
-                return TryGetValueAsString("Host");
+                return TryGetValueAsString("Cache-Control");
             }
         }
         public string Connection
@@ -28,15 +32,20 @@ namespace MiniWebServer.Abstractions.Http
                 return TryGetValueAsString("Connection");
             }
         }
-
-        public string CacheControl
+        public string ContentType
         {
             get
             {
-                return TryGetValueAsString("Cache-Control");
+                return TryGetValueAsString("Content-Type");
             }
         }
-
+        public string Host
+        {
+            get
+            {
+                return TryGetValueAsString("Host");
+            }
+        }
         public string TransferEncoding
         {
             get

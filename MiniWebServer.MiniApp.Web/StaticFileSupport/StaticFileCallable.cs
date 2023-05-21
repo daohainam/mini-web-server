@@ -18,7 +18,7 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 
         private static bool IsText(string mimeType) => mimeType.StartsWith("text/");
 
-        public async Task Get(IMiniAppRequest request, IMiniAppResponse response)
+        public async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
         {
             if (file.Exists)
             {
@@ -30,7 +30,7 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
                     if (IsText(mimeType))
                     {
                         using var reader = file.OpenText();
-                        var content = await reader.ReadToEndAsync();
+                        var content = await reader.ReadToEndAsync(cancellationToken);
 
                         response.AddHeader("Content-Type", mimeType);
                         response.AddHeader("Content-Length", content.Length.ToString());

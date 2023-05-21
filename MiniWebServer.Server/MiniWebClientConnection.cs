@@ -188,7 +188,7 @@ namespace MiniWebServer.Server
 
             try
             {
-                await CallByMethod(app, request, responseBuilder);
+                await CallByMethod(app, request, responseBuilder, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -228,7 +228,7 @@ namespace MiniWebServer.Server
             }
         }
 
-        private async Task CallByMethod(IMiniApp app, HttpRequest httpRequest, IHttpResponseBuilder responseBuilder)
+        private async Task CallByMethod(IMiniApp app, HttpRequest httpRequest, IHttpResponseBuilder responseBuilder, CancellationToken cancellationToken)
         {
             try
             {
@@ -238,7 +238,7 @@ namespace MiniWebServer.Server
 
                 if (httpRequest.Method == HttpMethod.Get)
                 {
-                    await app.Get(request, response);
+                    await app.Get(request, response, cancellationToken);
                 }
                 else
                 {

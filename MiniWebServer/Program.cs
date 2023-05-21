@@ -11,6 +11,7 @@ using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Web;
 using MiniWebServer.Server;
 using MiniWebServer.Server.MimeType;
+using System;
 
 namespace MiniWebServer
 {
@@ -43,12 +44,8 @@ namespace MiniWebServer
                 .UseOptions(serverOptions)
                 .UseThreadPoolSize(Environment.ProcessorCount);
 
-            var appBuilder = serviceProvider.GetRequiredService<IMiniWebBuilder>();
-
-                appBuilder.UseRootDirectory("wwwroot")
-                .UseStaticFiles();
-
-            serverBuilder.AddHost(string.Empty, appBuilder.Build());
+            var app = BuildApp(serviceProvider);
+            serverBuilder.AddHost(string.Empty, app);
 
             var server = serverBuilder.Build();
 
@@ -58,6 +55,18 @@ namespace MiniWebServer
             Console.ReadLine();
 
             server.Stop();
+        }
+
+        private static MiniWeb BuildApp(ServiceProvider serviceProvider)
+        {
+            var appBuilder = serviceProvider.GetRequiredService<IMiniWebBuilder>();
+
+            appBuilder.UseRootDirectory("wwwroot")
+            .UseStaticFiles();
+
+            //appBuilder.Get("/api/v1/time/current", );
+
+            return appBuilder.Build();
         }
 
         private static void ConfigureServices(IServiceCollection services)

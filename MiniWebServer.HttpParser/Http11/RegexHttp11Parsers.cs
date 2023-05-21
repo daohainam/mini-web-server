@@ -12,6 +12,7 @@ namespace MiniWebServer.HttpParser.Http11
 {
     /// <summary>
     /// this class uses samples from: https://stackoverflow.com/questions/27457949/check-pattern-of-http-get-using-regexc
+    /// we will need a ABNF-based parser 
     /// </summary>
     public partial class RegexHttp11Parsers : IHttp11Parser
     {
@@ -58,6 +59,7 @@ namespace MiniWebServer.HttpParser.Http11
             return null;
         }
 
+        // https://regex101.com/r/QLes5d/1
         [GeneratedRegex("^(?<method>[a-zA-Z]+)\\s(?<url>/[^\\r\\n\\?]*)(?<queryString>\\?((?<params>(?<paramName>\\w+)+=(?<paramValue>[\\w|%]*))&?)*)?(?<hash>#\\w*)?\\sHTTP/(?<major>\\d)\\.(?<minor>\\d+)$")]
         private static partial Regex HttpRequestLineRegex();
 
