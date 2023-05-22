@@ -9,8 +9,6 @@ namespace MiniWebServer.Abstractions.Http
     // here is the this of standard request headers defined in 
     public class HttpRequestHeaders: HttpHeaders
     {
-        public static readonly string[] ValidContentTypes = { "text/plain", "multipart/form-data", "application/x-www-form-urlencoded" };
-
         public string AcceptLanguage
         {
             get

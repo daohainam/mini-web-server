@@ -9,6 +9,7 @@ namespace MiniWebServer.MiniApp
     public class HttpResponseCodes
     {
         public const int Ok = 200;
+        public const int Forbidden = 403;
         public const int NotFound = 404;
         public const int InternalServerError = 500;
     }

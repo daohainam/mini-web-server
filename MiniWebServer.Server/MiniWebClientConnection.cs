@@ -83,7 +83,7 @@ namespace MiniWebServer.Server
                     if (!await ReadRequestAsync(cancellationToken))
                     {
                         isKeepAlive = false; // we always close wrongly working connections
-                        return;
+                        break;
                     }
                     else
                     {
@@ -239,6 +239,10 @@ namespace MiniWebServer.Server
                 if (httpRequest.Method == HttpMethod.Get)
                 {
                     await app.Get(request, response, cancellationToken);
+                }
+                else if (httpRequest.Method == HttpMethod.Post)
+                {
+                    await app.Post(request, response, cancellationToken);
                 }
                 else
                 {

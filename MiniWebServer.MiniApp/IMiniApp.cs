@@ -9,5 +9,6 @@ namespace MiniWebServer.MiniApp
     public interface IMiniApp
     {
         Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken);
+        Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken);
     }
 }

@@ -10,7 +10,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
     public class Http11StandardHeaderValidators
     {
-        public class ContentTypeHeaderValidator : IHeaderValidator
+        public class ContentLengthHeaderValidator : IHeaderValidator
         {
             public bool Validate(string name, string value, Http11ProtocolData stateObject)
             {

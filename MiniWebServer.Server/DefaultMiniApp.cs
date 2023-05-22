@@ -13,5 +13,10 @@ namespace MiniWebServer.Server
         {          
             await Task.Run(() => { response.SetStatus(HttpResponseCodes.NotFound); }, cancellationToken);
         }
+
+        public async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        {
+            await Task.Run(() => { response.SetStatus(HttpResponseCodes.NotFound); }, cancellationToken);
+        }
     }
 }

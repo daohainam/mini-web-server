@@ -13,16 +13,6 @@ namespace MiniWebServer.Abstractions.Http
     {
         public HttpRequest(HttpMethod method, string url, HttpRequestHeaders headers, string queryString, string hash, HttpParameters queryParameters)
         {
-            if (string.IsNullOrEmpty(queryString))
-            {
-                throw new ArgumentException($"'{nameof(queryString)}' cannot be null or empty.", nameof(queryString));
-            }
-
-            if (string.IsNullOrEmpty(hash))
-            {
-                throw new ArgumentException($"'{nameof(hash)}' cannot be null or empty.", nameof(hash));
-            }
-
             if (queryParameters is null)
             {
                 throw new ArgumentNullException(nameof(queryParameters));
@@ -31,8 +21,8 @@ namespace MiniWebServer.Abstractions.Http
             Method = method ?? throw new ArgumentNullException(nameof(method));
             Url = url ?? throw new ArgumentNullException(nameof(url));
             Headers = headers ?? throw new ArgumentNullException(nameof(headers));
-            QueryString = queryString;
-            Hash = hash;
+            QueryString = queryString ?? string.Empty;
+            Hash = hash ?? string.Empty;
             QueryParameters = queryParameters;
         }
 

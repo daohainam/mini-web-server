@@ -63,5 +63,10 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
                 response.SetStatus(HttpResponseCodes.NotFound);
             }
         }
+
+        public async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        {
+            response.SetStatus(HttpResponseCodes.Forbidden);
+        }
     }
 }

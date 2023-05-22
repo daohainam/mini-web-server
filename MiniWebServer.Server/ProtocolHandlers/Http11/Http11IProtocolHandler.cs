@@ -14,7 +14,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         protected readonly ILogger logger;
         protected readonly IHttp11Parser http11Parser;
         protected readonly IHeaderValidator[] headerValidators = { 
-            new Http11StandardHeaderValidators.ContentTypeHeaderValidator(),
+            new Http11StandardHeaderValidators.ContentLengthHeaderValidator(),
             new Http11StandardHeaderValidators.TransferEncodingHeaderValidator(),
         };
 
@@ -52,6 +52,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                             if (requestLine != null)
                             {
+                                logger.LogDebug("Parsed request line: {requestLine}", requestLine);
+
                                 var method = GetHttpMethod(requestLine.Method);
 
                                 // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
@@ -109,11 +111,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         {
                             if (d.HeaderStringBuilder.Length == 0) // header part ends with an empty line
                             {
-                                if (d.ContentLength == 0)
-                                    state = BuildRequestStates.Succeeded; // nothing in body to read
-                                else
-                                    state = BuildRequestStates.InProgress;
-
                                 if (!ValidateRequestHeader(d))
                                 {
                                     state = BuildRequestStates.Failed; // reject request for whatever reason
@@ -131,9 +128,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                             {
                                 var headerLine = http11Parser.ParseHeaderLine(d.HeaderStringBuilder.ToString());
 
+                                logger.LogDebug("Found header: {headerLine}", headerLine);
+
                                 if (headerLine != null)
                                 {
-                                    if (!IsValidHeader(headerLine.Name, headerLine.Name, d))
+                                    if (!IsValidHeader(headerLine.Name, headerLine.Value, d))
                                     {
                                         logger.LogError("Validating header failed: {line}", d.HeaderStringBuilder);
                                         state = BuildRequestStates.Failed;
@@ -142,6 +141,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                                     httpWebRequestBuilder.AddHeader(headerLine.Name, headerLine.Value);
                                     d.RequestHeaders.Add(headerLine.Name, headerLine.Value);
+
+
                                     d.HeaderStringBuilder.Clear();
                                 }
                                 else
@@ -169,16 +170,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
             else
             {
-                if (!ValidateRequestHeader(d))
-                {
-                    bytesProcessed = buffer.Length; // simulate consumming the buffer
-                    state = BuildRequestStates.Failed;
-                }
-                else
-                {
-                    bytesProcessed = buffer.Length;
-                    state = BuildRequestStates.Succeeded;
-                }
+                bytesProcessed = buffer.Length;
+                state = BuildRequestStates.Succeeded;
             }
 
             return state;
@@ -188,16 +181,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         {
             if ((d.HttpMethod == HttpMethod.Post || d.HttpMethod == HttpMethod.Put))
             {
-                if (d.RequestBodySize == 0)
-                { // POST and PUT require body part
+                if (d.ContentLength == 0)
+                { 
+                    // POST and PUT require body part
                     return false;
                 }
                 if (string.IsNullOrEmpty(d.RequestHeaders.ContentType))
                 { 
-                    return false;
-                }
-                else if (!HttpRequestHeaders.ValidContentTypes.Contains(d.RequestHeaders.ContentType))
-                {
                     return false;
                 }
             }

@@ -39,9 +39,16 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
                 {
                     return new StaticFileCallable(file, mimeTypeMapping, logger);
                 }
+                else
+                {
+                    return NotFoundCallable.Instance;
+                }
+            }
+            else
+            {
+                return NotFoundCallable.Instance;
             }
 
-            return null;
         }
     }
 }

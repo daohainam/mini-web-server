@@ -30,5 +30,18 @@
                 }
             }
         }
+
+        public async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        {
+            foreach (var cf in callableServices)
+            {
+                var callable = cf.Find(request);
+
+                if (callable != null)
+                {
+                    await callable.Post(request, response, cancellationToken);
+                }
+            }
+        }
     }
 }

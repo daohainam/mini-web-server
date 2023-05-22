@@ -17,6 +17,11 @@ namespace MiniWebServer.Abstractions.HttpParser.Http11
 
         public string Major { get; }
         public string Minor { get; }
+
+        public override string ToString()
+        {
+            return $"HTTP/{Major}.{Minor}";
+        }
     }
     public class Http11RequestLine
     {
@@ -44,6 +49,11 @@ namespace MiniWebServer.Abstractions.HttpParser.Http11
         public string QueryString { get; }
         public HttpParameters Parameters { get; }
         public Http11ProtocolVersion ProtocolVersion { get; }
+
+        public override string ToString()
+        {
+            return $"{Method} {Url} {ProtocolVersion}";
+        }
     }
 
     public class Http11HeaderLine
@@ -56,5 +66,10 @@ namespace MiniWebServer.Abstractions.HttpParser.Http11
 
         public string Name { get; }
         public string Value { get; }
+
+        public override string ToString()
+        {
+            return $"{Name}: {Value}";
+        }
     }
 }
