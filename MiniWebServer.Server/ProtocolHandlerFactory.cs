@@ -25,14 +25,14 @@ namespace MiniWebServer.Server
             this.services = services ?? throw new ArgumentNullException(nameof(services));
         }
 
-        public IProtocolHandler Create(int protocolVersion)
+        public IProtocolHandler Create(ProtocolHandlerConfiguration config)
         {
-            if (protocolVersion == HTTP11)
+            if (config.ProtocolVersion == HTTP11)
             {
-                return new Http11IProtocolHandler(services.GetService<ILogger<Http11IProtocolHandler>>(), services.GetService<IHttp11Parser>());
+                return new Http11IProtocolHandler(config, services.GetService<ILogger<Http11IProtocolHandler>>(), services.GetService<IHttp11Parser>(), services.GetService<IProtocolHandlerStorageManager>());
             }
 
-            throw new ArgumentOutOfRangeException(nameof(protocolVersion), "Unknown protocol version");
+            throw new ArgumentOutOfRangeException(nameof(config.ProtocolVersion), "Unknown protocol version");
         }
     }
 }

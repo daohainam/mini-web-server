@@ -73,7 +73,6 @@ namespace MiniWebServer.Server
 
             bool isKeepAlive = true;
 
-
             try
             {
                 // allocate buffers
@@ -127,12 +126,12 @@ namespace MiniWebServer.Server
 
                     int bytesProcessed = 0;
 
-                    var readRequestResult = ProtocolHandler.ReadRequest(readBuffer[bytesProcessed..].Span, requestBuilder, protocolHandlerData, out bytesProcessed);
+                    var readRequestResult = ProtocolHandler.ReadRequestAsync(readBuffer[bytesProcessed..].Span, requestBuilder, protocolHandlerData, out bytesProcessed);
                     if (readRequestResult == ProtocolHandlerStates.BuildRequestStates.InProgress)
                     {
                         while (readRequestResult == ProtocolHandlerStates.BuildRequestStates.InProgress && bytesProcessed < readBuffer.Length)
                         {
-                            readRequestResult = ProtocolHandler.ReadRequest(readBuffer[bytesProcessed..].Span, requestBuilder, protocolHandlerData, out int bp);
+                            readRequestResult = ProtocolHandler.ReadRequestAsync(readBuffer[bytesProcessed..].Span, requestBuilder, protocolHandlerData, out int bp);
 
                             bytesProcessed += bp;
                         }

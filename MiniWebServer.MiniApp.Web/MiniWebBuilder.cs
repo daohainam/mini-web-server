@@ -11,7 +11,7 @@ namespace MiniWebServer.MiniApp.Web
 {
     public class MiniWebBuilder: IMiniWebBuilder
     {
-        private string rootPath = string.Empty;
+        private string rootPath = "wwwroot";
         private bool useStaticFiles = false;
         private readonly ILogger logger;
 
@@ -25,9 +25,9 @@ namespace MiniWebServer.MiniApp.Web
 
             return this;
         }
-        public MiniWeb Build()
+        public virtual MiniWeb Build()
         {
-            var app = new MiniWeb(rootPath);
+            var app = new MiniWeb();
 
             if (useStaticFiles)
             {

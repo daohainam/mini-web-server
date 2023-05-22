@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -24,8 +25,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         public Memory<byte> ResponseHeaderBuffer { get; internal set; } = Array.Empty<byte>().AsMemory();
         public int ResponseHeaderBufferIndex { get; internal set; } = 0;
         public int ResponseBodyContentIndex { get; internal set; } = 0;
-        public int RequestBodySize { get; internal set; } = 0;
-        public int CurrentRequestBodyBytes { get; internal set; } = 0;
+        public long CurrentRequestBodyBytes { get; internal set; } = 0;
         public HttpRequestHeaders RequestHeaders { get; internal set; } = new();
+        public IProtocolHandlerStorage? ProtocolHandlerStorage { get; internal set; }
     }
 }

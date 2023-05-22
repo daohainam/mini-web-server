@@ -46,21 +46,21 @@ Cache-Control:no-cache
             Assert.AreEqual(request.Headers.CacheControl, "no-cache");
         }
 
-        private ReadRequestTestResult ReadRequest(string requestContent)
+        private static ReadRequestTestResult ReadRequest(string requestContent)
         {
             var memory = String2Span(requestContent);
 
             var http11Parser = new RegexHttp11Parsers();
-            var handler = new Http11IProtocolHandler(NullLogger.Instance, http11Parser);
+            var handler = new Http11IProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), NullLogger.Instance, http11Parser, null);
 
             var requestBuilder = new HttpWebRequestBuilder();
             var protocolData = new ProtocolHandlerData();
             int bp = 0;
 
-            var result = handler.ReadRequest(memory[bp..].Span, requestBuilder, protocolData, out bp);
+            var result = handler.ReadRequestAsync(memory[bp..].Span, requestBuilder, protocolData, out bp);
             while (result == ProtocolHandlerStates.BuildRequestStates.InProgress)
             {
-                result = handler.ReadRequest(memory[bp..].Span, requestBuilder, protocolData, out bp);
+                result = handler.ReadRequestAsync(memory[bp..].Span, requestBuilder, protocolData, out bp);
             }
 
             return new ReadRequestTestResult(result, requestBuilder);

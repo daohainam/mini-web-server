@@ -12,12 +12,24 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
     {
         public class ContentLengthHeaderValidator : IHeaderValidator
         {
+            private long maxLength;
+
+            public ContentLengthHeaderValidator(long maxLength)
+            {
+                this.maxLength = maxLength;
+            }
+
             public bool Validate(string name, string value, Http11ProtocolData stateObject)
             {
                 if ("Content-Length".Equals(name))
                 {
                     if (long.TryParse(value, out long length))
                     {
+                        if (length > maxLength)
+                        {
+                            return false;
+                        }
+
                         stateObject.ContentLength = length;
                     }
                     else

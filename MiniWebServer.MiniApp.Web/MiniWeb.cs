@@ -2,12 +2,10 @@
 {
     public class MiniWeb : IMiniApp
     {
-        private readonly string root;
         private readonly List<ICallableService> callableServices;
 
-        public MiniWeb(string root)
+        public MiniWeb()
         {
-            this.root = root ?? throw new ArgumentNullException(nameof(root));
             callableServices = new List<ICallableService>();
         }
 

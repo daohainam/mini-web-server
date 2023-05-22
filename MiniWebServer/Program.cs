@@ -11,6 +11,7 @@ using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Web;
 using MiniWebServer.Server;
 using MiniWebServer.Server.MimeType;
+using MiniWebServer.Server.ProtocolHandlers.Storage;
 using System;
 
 namespace MiniWebServer
@@ -44,7 +45,8 @@ namespace MiniWebServer
                 .UseOptions(serverOptions)
                 .UseThreadPoolSize(Environment.ProcessorCount);
 
-            var app = BuildApp(serviceProvider);
+            IMiniApp app = BuildApp(serviceProvider);
+            app = MapRoutes(app, serviceProvider);
             serverBuilder.AddHost(string.Empty, app);
 
             var server = serverBuilder.Build();
@@ -57,16 +59,21 @@ namespace MiniWebServer
             server.Stop();
         }
 
-        private static MiniWeb BuildApp(ServiceProvider serviceProvider)
+        private static IMiniApp BuildApp(ServiceProvider serviceProvider)
         {
             var appBuilder = serviceProvider.GetRequiredService<IMiniWebBuilder>();
 
             appBuilder.UseRootDirectory("wwwroot")
             .UseStaticFiles();
 
-            //appBuilder.Get("/api/v1/time/current", );
-
             return appBuilder.Build();
+        }
+
+        private static IMiniApp MapRoutes(IMiniApp app, ServiceProvider serviceProvider)
+        {
+            //app.MapGet("/helpcheck", () = $"Help check at {DateTime.Now.ToShortTimeString()}: OK");
+
+            return app;
         }
 
         private static void ConfigureServices(IServiceCollection services)
@@ -75,6 +82,7 @@ namespace MiniWebServer
             services.AddDistributedMemoryCache();
             services.AddTransient<IHttp11Parser, RegexHttp11Parsers>();
             services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
+            services.AddTransient<IProtocolHandlerStorageManager, ProtocolHandlerStorageManager>();
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
             services.AddTransient<IServerBuilder>(
                 services => new MiniWebServerBuilder(

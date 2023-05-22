@@ -97,7 +97,9 @@ namespace MiniWebServer.Server
                     nextClientId++,
                     tcpClient,
                     stream,
-                    protocolHandlerFactory.Create(ProtocolHandlerFactory.HTTP11), // A connection always starts with HTTP 1.1 
+                    protocolHandlerFactory.Create(
+                        new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, config.MaxRequestBodySize)
+                        ), // A connection always starts with HTTP 1.1 
                     hostContainers,
                     TimeSpan.FromMilliseconds(config.ConnectionTimeout),
                     logger,

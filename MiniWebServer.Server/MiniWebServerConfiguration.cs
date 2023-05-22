@@ -25,5 +25,6 @@ namespace MiniWebServer.Server
 
         // advanced settings
         public int ReadBufferSize { get; init; } = 1024 * 8;
+        public long MaxRequestBodySize { get; internal set; } = 1024 * 1024 * 10; // 10MB 
     }
 }

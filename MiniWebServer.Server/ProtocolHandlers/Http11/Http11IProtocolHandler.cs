@@ -2,31 +2,40 @@
 using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Abstractions.HttpParser.Http11;
+using MiniWebServer.Server.ProtocolHandlers.Storage;
 using System.Net;
 using System.Text;
 using static MiniWebServer.Abstractions.ProtocolHandlerStates;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
+using System;
+using System.Buffers;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
-    public class Http11IProtocolHandler : IProtocolHandler
+    public class Http11IProtocolHandler : IProtocolHandler // should we use PipeLines to make the code simpler?
     {
+        private readonly ProtocolHandlerConfiguration config;
         protected readonly ILogger logger;
         protected readonly IHttp11Parser http11Parser;
-        protected readonly IHeaderValidator[] headerValidators = { 
-            new Http11StandardHeaderValidators.ContentLengthHeaderValidator(),
-            new Http11StandardHeaderValidators.TransferEncodingHeaderValidator(),
-        };
+        protected readonly IProtocolHandlerStorageManager protocolHandlerStorageManager;
+        protected readonly IHeaderValidator[] headerValidators;
 
-        public Http11IProtocolHandler(ILogger? logger, IHttp11Parser? http11Parser)
+        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILogger? logger, IHttp11Parser? http11Parser, IProtocolHandlerStorageManager? protocolHandlerStorageManager)
         {
+            this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.http11Parser = http11Parser ?? throw new ArgumentNullException(nameof(http11Parser));
+            this.protocolHandlerStorageManager = protocolHandlerStorageManager ?? throw new ArgumentNullException(nameof(protocolHandlerStorageManager));
+
+            headerValidators = new List<IHeaderValidator>() {
+                new Http11StandardHeaderValidators.ContentLengthHeaderValidator(config.MaxRequestBodySize),
+                new Http11StandardHeaderValidators.TransferEncodingHeaderValidator(),
+            }.ToArray();
         }
 
         public int ProtocolVersion => 101;
 
-        public BuildRequestStates ReadRequest(Span<byte> buffer, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data, out int bytesProcessed)
+        public BuildRequestStates ReadRequestAsync(Span<byte> buffer, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data, out int bytesProcessed)
         {
             BuildRequestStates state = BuildRequestStates.InProgress;
 
@@ -118,7 +127,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                 else
                                 {
                                     d.CurrentReadingPart = Http11RequestMessageParts.Body;
-                                    d.RequestBodySize = 0;
                                     d.CurrentRequestBodyBytes = 0;
                                 }
 
@@ -170,8 +178,24 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
             else
             {
-                bytesProcessed = buffer.Length;
-                state = BuildRequestStates.Succeeded;
+                int bytesToRead = (int)Math.Max(d.ContentLength - d.CurrentRequestBodyBytes, buffer.Length); // todo: fix this to prevent buffer overflow
+                if (bytesToRead > 0)
+                {
+                    d.ProtocolHandlerStorage ??= protocolHandlerStorageManager.GetStorage(d.ContentLength);
+
+                    var stream = d.ProtocolHandlerStorage.GetWriter();
+                    stream.Write(buffer);
+                }
+
+                bytesProcessed = bytesToRead;
+                d.CurrentRequestBodyBytes += bytesToRead;
+
+
+                state = d.CurrentRequestBodyBytes < d.ContentLength ? BuildRequestStates.InProgress : BuildRequestStates.Succeeded;
+                if (state == BuildRequestStates.Succeeded && d.ProtocolHandlerStorage != null)
+                {
+                    d.ProtocolHandlerStorage.GetWriter().Close();
+                }
             }
 
             return state;

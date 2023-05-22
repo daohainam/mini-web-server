@@ -8,6 +8,6 @@ namespace MiniWebServer.Abstractions
 {
     public interface IProtocolHandlerFactory
     {
-        IProtocolHandler Create(int protocolVersion);
+        IProtocolHandler Create(ProtocolHandlerConfiguration config);
     }
 }
