@@ -18,16 +18,13 @@ namespace MiniWebServer.Server
         private TcpListener? server;
         private bool running;
         private int nextClientId = 1;
-        private int threadInThreadPoolCount = 0;
-        private readonly ConcurrentQueue<MiniWebClientConnection> waitingClients = new();
-        private static readonly EventWaitHandle waitingClientsWaitHandle = new(false, EventResetMode.AutoReset);
         private bool disposed = false;
 
-        private CancellationTokenSource cancellationTokenSource; // we use this to cancel system-wise threads
-        private CancellationToken cancellationToken;
+        private readonly CancellationTokenSource cancellationTokenSource; // we use this to cancel system-wise threads
+        private readonly CancellationToken cancellationToken;
 
         public MiniWebServer(
-            MiniWebServerConfiguration config, 
+            MiniWebServerConfiguration config,
             IProtocolHandlerFactory? protocolHandlerFactory,
             IDictionary<string, Host.Host>? hostContainers,
             ILogger<MiniWebServer> logger
@@ -85,7 +82,8 @@ namespace MiniWebServer.Server
                         ServerCertificate = config.Certificate,
                         EnabledSslProtocols = SslProtocols.None, // use the system default version
                         ClientCertificateRequired = false,
-                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                        RemoteCertificateValidationCallback = ValidateClientCertificate
                     };
 
                     sslStream.AuthenticateAsServer(options);
@@ -94,14 +92,17 @@ namespace MiniWebServer.Server
                 }
 
                 var client = new MiniWebClientConnection(
-                    nextClientId++,
-                    tcpClient,
-                    stream,
-                    protocolHandlerFactory.Create(
+                    new MiniWebConnectionConfiguration(
+                        nextClientId++,
+                        tcpClient,
+                        stream,
+                        protocolHandlerFactory.Create(
                         new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, config.MaxRequestBodySize)
-                        ), // A connection always starts with HTTP 1.1 
+                    ), // A connection always starts with HTTP 1.1 
                     hostContainers,
                     TimeSpan.FromMilliseconds(config.ConnectionTimeout),
+                    config.ReadBufferSize
+),
                     logger,
                     cancellationToken
                 );
@@ -111,11 +112,19 @@ namespace MiniWebServer.Server
                 await client.HandleRequestAsync();
 
                 //waitingClientsWaitHandle.Set();
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 logger.LogError(ex, "Error accepting client");
                 CloseConnection(tcpClient);
             }
+        }
+
+        private bool ValidateClientCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+        {
+            logger.LogInformation("Validating certificate: {certificate}", certificate);
+
+            return true; // accept all :D
         }
 
         public void Stop()
@@ -123,23 +132,7 @@ namespace MiniWebServer.Server
             running = false;
             server?.Stop();
 
-            cancellationTokenSource.Cancel();
-
-            // wait for all client threads stopped, we can use wait handles to make it more resource effective, but we use a loop here because it is more understandable :)
-            int seconds10 = 15 * 10; // we will wait max 15 seconds
-            for (int i = threadInThreadPoolCount; i >= 0; i-- )
-            {
-                waitingClientsWaitHandle.Set();
-            }
-
-            while (threadInThreadPoolCount > 0 && seconds10 > 0)
-            {
-                waitingClientsWaitHandle.Set();
-
-                Task.Delay(100).Wait();
-
-                seconds10--;
-            }
+            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(3));
         }
 
         private async Task ClientConnectionListeningProc()
@@ -310,28 +303,11 @@ namespace MiniWebServer.Server
         //}
 
 
-
-        private static void ReleaseResources(MiniWebClientConnection client)
-        {
-            CloseConnection(client.TcpClient);
-        }
-
         private static void CloseConnection(TcpClient tcpClient)
         {
             tcpClient.Close();
             tcpClient.Dispose();
         }
-
-        private static MiniWebClientConnection.States NextState(MiniWebClientConnection.States state, bool keepAlive) => state switch
-        {
-            MiniWebClientConnection.States.Pending => MiniWebClientConnection.States.BuildingRequestObject,
-            MiniWebClientConnection.States.BuildingRequestObject => MiniWebClientConnection.States.RequestObjectReady,
-            MiniWebClientConnection.States.RequestObjectReady => MiniWebClientConnection.States.CallingResource,
-            MiniWebClientConnection.States.CallingResource => MiniWebClientConnection.States.CallingResourceReady,
-            MiniWebClientConnection.States.CallingResourceReady => MiniWebClientConnection.States.ResponseObjectReady,
-            MiniWebClientConnection.States.ResponseObjectReady => keepAlive ? MiniWebClientConnection.States.Pending : MiniWebClientConnection.States.ReadyToClose,
-            _ => throw new InvalidOperationException()
-        };
 
         #region IDisposable
         public void Dispose()

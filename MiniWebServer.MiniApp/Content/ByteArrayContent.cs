@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,15 +16,13 @@ namespace MiniWebServer.MiniApp.Content
             this.content = content ?? throw new ArgumentNullException(nameof(content));
         }
 
-        public override int CopyTo(Span<byte> buffer, int contentIndex)
+        public override long ContentLength => content.LongLength;
+
+        public override async Task<int> WriteToAsync(IBufferWriter<byte> writer, CancellationToken cancellationToken)
         {
-            if (contentIndex >= content.Length)
-                return 0; // no data copied
+            writer.Write(content);
 
-            int length = Math.Min(buffer.Length, content.Length - contentIndex);
-            content.AsSpan().Slice(contentIndex, length).CopyTo(buffer);
-
-            return length;
+            return await Task.FromResult(content.Length);
         }
     }
 }

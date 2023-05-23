@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static MiniWebServer.Abstractions.ProtocolHandlerStates;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
@@ -12,14 +11,14 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
     {
         public class ContentLengthHeaderValidator : IHeaderValidator
         {
-            private long maxLength;
+            private readonly long maxLength;
 
             public ContentLengthHeaderValidator(long maxLength)
             {
                 this.maxLength = maxLength;
             }
 
-            public bool Validate(string name, string value, Http11ProtocolData stateObject)
+            public bool Validate(string name, string value)
             {
                 if ("Content-Length".Equals(name))
                 {
@@ -29,8 +28,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         {
                             return false;
                         }
-
-                        stateObject.ContentLength = length;
                     }
                     else
                     {
@@ -49,7 +46,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             {
                 return true; // we virtually support everything for now :|
             }
-            public bool Validate(string name, string value, Http11ProtocolData stateObject)
+            public bool Validate(string name, string value)
             {
                 if (!string.IsNullOrEmpty(value) && "Transfer-Encoding".Equals(name))
                 {
@@ -62,8 +59,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                             return false;
                         }
                     }
-
-                    stateObject.TransferEncoding = encodings;
                 }
 
                 return true;
@@ -72,7 +67,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         public class FallbackHeadervalidator : IHeaderValidator
         {
-            public bool Validate(string name, string value, Http11ProtocolData stateObject)
+            public bool Validate(string name, string value)
             {
                 return true;
             }

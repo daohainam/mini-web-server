@@ -10,13 +10,13 @@ namespace Http11ProtocolTests.ProtocolHandlers.Http11
 {
     internal class ReadRequestTestResult
     {
-        public ReadRequestTestResult(ProtocolHandlerStates.BuildRequestStates state, HttpWebRequestBuilder httpWebRequestBuilder)
+        public ReadRequestTestResult(bool success, HttpWebRequestBuilder httpWebRequestBuilder)
         {
-            State = state;
+            Success = success;
             HttpWebRequestBuilder = httpWebRequestBuilder;
         }
 
-        public ProtocolHandlerStates.BuildRequestStates State { get; set; } 
+        public bool Success { get; set; } 
         public HttpWebRequestBuilder HttpWebRequestBuilder { get; set; }
     }
 }

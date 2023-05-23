@@ -1,13 +1,14 @@
 ﻿using MiniWebServer.Abstractions.Http;
-using static MiniWebServer.Abstractions.ProtocolHandlerStates;
+using System.Buffers;
+using System.IO.Pipelines;
 
 namespace MiniWebServer.Abstractions
 {
     public interface IProtocolHandler
     {
         int ProtocolVersion { get; }
-        BuildRequestStates ReadRequestAsync(Span<byte> buffer, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data, out int bytesProcessed);
-        WriteResponseStates WriteResponse(Span<byte> buffer, HttpResponse response, ProtocolHandlerData protocolHandlerData, out int bytesProcessed);
-        void Reset(ProtocolHandlerData data);
+        Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder httpWebRequestBuilder, CancellationToken cancellationToken);
+        Task<bool> WriteResponseAsync(IBufferWriter<byte> writer, HttpResponse response, CancellationToken cancellationToken);
+        void Reset();
     }
 }

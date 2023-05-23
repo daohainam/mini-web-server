@@ -29,7 +29,7 @@ namespace MiniWebServer.Server
         {
             if (config.ProtocolVersion == HTTP11)
             {
-                return new Http11IProtocolHandler(config, services.GetService<ILogger<Http11IProtocolHandler>>(), services.GetService<IHttp11Parser>(), services.GetService<IProtocolHandlerStorageManager>());
+                return new Http11IProtocolHandler(config, services.GetService<ILogger<Http11IProtocolHandler>>(), services.GetService<IHttp11Parser>());
             }
 
             throw new ArgumentOutOfRangeException(nameof(config.ProtocolVersion), "Unknown protocol version");

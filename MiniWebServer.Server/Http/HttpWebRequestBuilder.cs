@@ -2,6 +2,7 @@
 using MiniWebServer.Abstractions.Http;
 using System;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ namespace MiniWebServer.Server.Http
         private string url = "/";
         private string queryString = string.Empty;
         private string hash = string.Empty;
+        private PipeReader? reader;
         private readonly HttpParameters parameters = new();
 
         public IHttpRequestBuilder AddHeader(string name, string value)
@@ -39,7 +41,7 @@ namespace MiniWebServer.Server.Http
 
         public HttpRequest Build()
         {
-            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters);
+            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters, reader);
 
             return request;
         }
@@ -94,6 +96,13 @@ namespace MiniWebServer.Server.Http
         public IHttpRequestBuilder SetHash(string hash)
         {
             this.hash = hash;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetBodyReader(PipeReader reader)
+        {
+            this.reader = reader;
 
             return this;
         }

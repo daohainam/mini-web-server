@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,5 +19,6 @@ namespace MiniWebServer.Abstractions.Http
         IHttpRequestBuilder SetParameters(HttpParameters parameters);
         IHttpRequestBuilder SetQueryString(string queryString);
         IHttpRequestBuilder SetHash(string hash);
+        IHttpRequestBuilder SetBodyReader(PipeReader reader);
     }
 }

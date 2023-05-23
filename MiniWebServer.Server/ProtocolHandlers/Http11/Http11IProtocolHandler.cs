@@ -5,27 +5,29 @@ using MiniWebServer.Abstractions.HttpParser.Http11;
 using MiniWebServer.Server.ProtocolHandlers.Storage;
 using System.Net;
 using System.Text;
-using static MiniWebServer.Abstractions.ProtocolHandlerStates;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 using System;
 using System.Buffers;
+using System.IO.Pipelines;
+using System.Reflection.PortableExecutable;
+using System.Threading;
+using System.Xml.Linq;
+using System.Net.Http;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
     public class Http11IProtocolHandler : IProtocolHandler // should we use PipeLines to make the code simpler?
     {
-        private readonly ProtocolHandlerConfiguration config;
+        protected readonly ProtocolHandlerConfiguration config;
         protected readonly ILogger logger;
         protected readonly IHttp11Parser http11Parser;
-        protected readonly IProtocolHandlerStorageManager protocolHandlerStorageManager;
         protected readonly IHeaderValidator[] headerValidators;
 
-        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILogger? logger, IHttp11Parser? http11Parser, IProtocolHandlerStorageManager? protocolHandlerStorageManager)
+        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILogger? logger, IHttp11Parser? http11Parser)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.http11Parser = http11Parser ?? throw new ArgumentNullException(nameof(http11Parser));
-            this.protocolHandlerStorageManager = protocolHandlerStorageManager ?? throw new ArgumentNullException(nameof(protocolHandlerStorageManager));
 
             headerValidators = new List<IHeaderValidator>() {
                 new Http11StandardHeaderValidators.ContentLengthHeaderValidator(config.MaxRequestBodySize),
@@ -35,183 +37,170 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         public int ProtocolVersion => 101;
 
-        public BuildRequestStates ReadRequestAsync(Span<byte> buffer, IHttpRequestBuilder httpWebRequestBuilder, ProtocolHandlerData data, out int bytesProcessed)
+        public async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder httpWebRequestBuilder, CancellationToken cancellationToken)
         {
-            BuildRequestStates state = BuildRequestStates.InProgress;
+            long contentLength = 0;
+            var httpMethod = HttpMethod.Get;
+            string contentType = string.Empty;
 
-            data.Data ??= new Http11ProtocolData(
-                );
+            ReadResult readResult = await reader.ReadAsync(cancellationToken);
+            ReadOnlySequence<byte> buffer = readResult.Buffer;
 
-            var d = (Http11ProtocolData)data.Data;
-
-            if (d.CurrentReadingPart == Http11RequestMessageParts.RequestLine)
+            // read request line
+            if (TryReadLine(ref buffer, out ReadOnlySequence<byte> line))
             {
-                // request-line = method SP request-target SP HTTP-version
-                int i = 0;
-                while (i < buffer.Length)
+                var sb = new StringBuilder();
+                sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
+                var requestLineText = sb.ToString();
+                var requestLine = http11Parser.ParseRequestLine(requestLineText);
+
+                if (requestLine != null)
                 {
-                    byte b = buffer[i];
+                    logger.LogDebug("Parsed request line: {requestLine}", requestLine);
 
-                    if (b == '\n' || b == '\r')
-                    {
-                        // we will process only LF, CR (\r) can be skipped
-                        if (b == '\n')
-                        {
-                            var requestLine = http11Parser.ParseRequestLine(d.HeaderStringBuilder.ToString());
+                    var method = GetHttpMethod(requestLine.Method);
 
-                            if (requestLine != null)
-                            {
-                                logger.LogDebug("Parsed request line: {requestLine}", requestLine);
+                    // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
+                    // if Url length exceeds Url buffer length, you should return 414 URI Too Long
 
-                                var method = GetHttpMethod(requestLine.Method);
+                    httpMethod = method;
+                    httpWebRequestBuilder
+                        .SetMethod(method)
+                        .SetUrl(requestLine.Url)
+                        .SetParameters(requestLine.Parameters)
+                        .SetQueryString(requestLine.QueryString)
+                        .SetHash(requestLine.Hash);
+                }
+                else
+                {
+                    logger.LogError("Invalid request line: {line}", sb.ToString());
 
-                                // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
-                                // if Url length exceeds Url buffer length, you should return 414 URI Too Long
-
-                                d.HttpMethod = method;
-                                httpWebRequestBuilder
-                                    .SetMethod(method)
-                                    .SetUrl(requestLine.Url)
-                                    .SetParameters(requestLine.Parameters)
-                                    .SetQueryString(requestLine.QueryString)
-                                    .SetHash(requestLine.Hash);
-
-                                state = BuildRequestStates.InProgress;
-                                d.CurrentReadingPart = Http11RequestMessageParts.Header;
-                                d.HeaderStringBuilder.Clear();
-
-                                // why don't we continue reading headers here?
-                                break;
-                            }
-                            else
-                            {
-                                logger.LogError("Invalid request line: {line}", d.HeaderStringBuilder);
-                                state = BuildRequestStates.Failed;
-                                break;
-                            }
-                        }
-                    }
-                    else if (b >= 32 && b <= 127) // it must be a 7-bit USASCII character, but here we denied control characters also
-                    {
-                        d.HeaderStringBuilder.Append((char)b);
-                    }
-                    else
-                    {
-                        state = BuildRequestStates.Failed;
-                        break;
-                    }
-
-                    i++;
+                    return false;
                 }
 
-                bytesProcessed = i + 1;
+                reader.AdvanceTo(buffer.Start); // after a successful TryReadLine, buffer.Start advanced to the byte after '\n'
             }
-            else if (d.CurrentReadingPart == Http11RequestMessageParts.Header)
+
+            // now we read headers
+            while (TryReadLine(ref buffer, out line))
             {
-                int i = 0;
-                while (i < buffer.Length)
+                var sb = new StringBuilder();
+                sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
+
+                if (sb.Length == 0) // found an empty line
                 {
-                    byte b = buffer[i];
-
-                    if (b == '\n' || b == '\r')
+                    if (!ValidateRequestHeader(httpMethod, contentLength, contentType))
                     {
-                        // we will process only LF, CR (\r) can be skipped
-                        if (b == '\n')
-                        {
-                            if (d.HeaderStringBuilder.Length == 0) // header part ends with an empty line
-                            {
-                                if (!ValidateRequestHeader(d))
-                                {
-                                    state = BuildRequestStates.Failed; // reject request for whatever reason
-                                }
-                                else
-                                {
-                                    d.CurrentReadingPart = Http11RequestMessageParts.Body;
-                                    d.CurrentRequestBodyBytes = 0;
-                                }
+                        return false; // reject request for whatever reason
+                    }
 
-                                break;
+                    reader.AdvanceTo(buffer.Start);
+                    break;
+                }
+                else
+                {
+                    var headerLineText = sb.ToString();
+                    var headerLine = http11Parser.ParseHeaderLine(headerLineText);
+
+                    logger.LogDebug("Found header: {headerLine}", headerLine);
+
+                    if (headerLine != null)
+                    {
+                        if (!IsValidHeader(headerLine.Name, headerLine.Value))
+                        {
+                            logger.LogError("Header line rejected: {line}", headerLineText);
+
+                            return false;
+                        }
+
+                        httpWebRequestBuilder.AddHeader(headerLine.Name, headerLine.Value);
+
+                        if ("Content-Length".Equals(headerLine.Name)) // todo: we should use in-casesensitive compare
+                        {
+                            if (long.TryParse(headerLine.Value, out long length))
+                            {
+                                contentLength = length;
                             }
                             else
                             {
-                                var headerLine = http11Parser.ParseHeaderLine(d.HeaderStringBuilder.ToString());
-
-                                logger.LogDebug("Found header: {headerLine}", headerLine);
-
-                                if (headerLine != null)
-                                {
-                                    if (!IsValidHeader(headerLine.Name, headerLine.Value, d))
-                                    {
-                                        logger.LogError("Validating header failed: {line}", d.HeaderStringBuilder);
-                                        state = BuildRequestStates.Failed;
-                                        break;
-                                    }
-
-                                    httpWebRequestBuilder.AddHeader(headerLine.Name, headerLine.Value);
-                                    d.RequestHeaders.Add(headerLine.Name, headerLine.Value);
-
-
-                                    d.HeaderStringBuilder.Clear();
-                                }
-                                else
-                                {
-                                    logger.LogError("Invalid header line: {line}", d.HeaderStringBuilder);
-                                    state = BuildRequestStates.Failed;
-                                    break;
-                                }
+                                return false;
                             }
                         }
-                    }
-                    else if (b >= 32 && b <= 127) // it must be a 7-bit USASCII character, but here we denied control characters also
-                    {
-                        d.HeaderStringBuilder.Append((char)b);
+                        else if ("Content-Type".Equals(headerLine.Name)) // todo: we should use in-casesensitive compare
+                        {
+                            contentType = headerLine.Value;
+                        }
                     }
                     else
                     {
-                        state = BuildRequestStates.Failed;
-                        break;
+                        logger.LogError("Invalid header line: {line}", headerLineText);
+
+                        return false;
                     }
-                    i++;
+
+                    reader.AdvanceTo(buffer.Start);
+                }
+            }
+
+            // read body part, we read only contentLength bytes
+            long bytesRead = 0;
+            Pipe bodyPipeline = new();
+            while (bytesRead < contentLength)
+            {
+                long maxBytesToRead = contentLength - bytesRead;
+                if (buffer.Length >= maxBytesToRead)
+                {
+                    var writingPart = buffer.Slice(0, maxBytesToRead);
+                    await bodyPipeline.Writer.WriteAsync(writingPart.ToArray(), cancellationToken); // todo: use a better way than 'ToArray'
+
+                    reader.AdvanceTo(new SequencePosition(buffer, (int)maxBytesToRead));
+
+                    break;
+                }
+                else if (buffer.Length > 0)
+                {
+                    await bodyPipeline.Writer.WriteAsync(buffer.ToArray(), cancellationToken); // todo: use a better way than 'ToArray'
+
+                    reader.AdvanceTo(new SequencePosition(buffer, (int)buffer.Length));
+
+                    bytesRead += buffer.Length;
                 }
 
-                bytesProcessed = i + 1;
+                readResult = await reader.ReadAsync(cancellationToken);
+                buffer = readResult.Buffer;
+            }
+
+            return true;
+        }
+
+        private static bool TryReadLine(ref ReadOnlySequence<byte> buffer, out ReadOnlySequence<byte> line)
+        {
+            SequencePosition? pos = buffer.PositionOf((byte)'\n');
+
+            if (pos != null)
+            {
+                line = buffer.Slice(0, pos.Value);
+                buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
+                return true;
             }
             else
             {
-                int bytesToRead = (int)Math.Max(d.ContentLength - d.CurrentRequestBodyBytes, buffer.Length); // todo: fix this to prevent buffer overflow
-                if (bytesToRead > 0)
-                {
-                    d.ProtocolHandlerStorage ??= protocolHandlerStorageManager.GetStorage(d.ContentLength);
-
-                    var stream = d.ProtocolHandlerStorage.GetWriter();
-                    stream.Write(buffer);
-                }
-
-                bytesProcessed = bytesToRead;
-                d.CurrentRequestBodyBytes += bytesToRead;
-
-
-                state = d.CurrentRequestBodyBytes < d.ContentLength ? BuildRequestStates.InProgress : BuildRequestStates.Succeeded;
-                if (state == BuildRequestStates.Succeeded && d.ProtocolHandlerStorage != null)
-                {
-                    d.ProtocolHandlerStorage.GetWriter().Close();
-                }
+                line = default;
+                return false;
             }
-
-            return state;
         }
 
-        private static bool ValidateRequestHeader(Http11ProtocolData d)
+        private static bool ValidateRequestHeader(HttpMethod httpMethod, long contentLength, string contentType)
         {
-            if ((d.HttpMethod == HttpMethod.Post || d.HttpMethod == HttpMethod.Put))
+            if ((httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put))
             {
-                if (d.ContentLength == 0)
-                { 
+                if (contentLength == 0)
+                {
                     // POST and PUT require body part
                     return false;
                 }
-                if (string.IsNullOrEmpty(d.RequestHeaders.ContentType))
-                { 
+                if (string.IsNullOrEmpty(contentType))
+                {
                     return false;
                 }
             }
@@ -220,11 +209,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             return true;
         }
 
-        protected bool IsValidHeader(string name, string value, Http11ProtocolData stateObject)
+        protected bool IsValidHeader(string name, string value)
         {
             foreach (var validator in headerValidators)
             {
-                if (validator.Validate(name, value, stateObject) == false)
+                if (validator.Validate(name, value) == false)
                 {
                     return false;
                 }
@@ -233,66 +222,24 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             return true;
         }
 
-        private static void Write(Stream stream, string s)
+        private static void Write(IBufferWriter<byte> writer, string s)
         {
             var bytes = Encoding.ASCII.GetBytes(s);
-            stream.Write(bytes, 0, bytes.Length);
+            writer.Write(bytes.AsSpan());
         }
 
-        public WriteResponseStates WriteResponse(Span<byte> buffer, HttpResponse response, ProtocolHandlerData protocolHandlerData, out int bytesProcessed)
+        public async Task<bool> WriteResponseAsync(IBufferWriter<byte> writer, HttpResponse response, CancellationToken cancellationToken)
         {
-            if (protocolHandlerData.Data == null)
-                throw new InvalidOperationException("WriteResponse should be called after ReadRequest");
-
-            WriteResponseStates state = WriteResponseStates.InProgress;
-            var d = (Http11ProtocolData)protocolHandlerData.Data;
-            bytesProcessed = 0;
-
-            if (d.ResponseHeaderBuffer.Length == 0)
+            Write(writer, $"HTTP/1.1 {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
+            foreach (var header in response.Headers)
             {
-                var stream = new MemoryStream();
-                // write status line and headers
-                Write(stream, $"HTTP/1.1 {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
-                foreach (var header in response.Headers)
-                {
-                    Write(stream, $"{header.Key}: {string.Join(',', header.Value.Value)}\r\n");
-                }
-
-                Write(stream, "\r\n");
-
-                d.ResponseHeaderBuffer = stream.ToArray().AsMemory(); // don't use GetBuffer 
-                d.ResponseHeaderBufferIndex = 0;
+                Write(writer, $"{header.Key}: {string.Join(',', header.Value.Value)}\r\n");
             }
-            
-            if (d.CurrentWritingPart == Http11ResponseMessageParts.StatusLine)
-            {
-                int length = Math.Min(buffer.Length, d.ResponseHeaderBuffer.Length) - d.ResponseHeaderBufferIndex;
+            Write(writer, "\r\n");
 
-                d.ResponseHeaderBuffer.Slice(d.ResponseHeaderBufferIndex, length).Span.CopyTo(buffer);
-                bytesProcessed = length;
+            await response.Content.WriteToAsync(writer, cancellationToken);
 
-                d.ResponseHeaderBufferIndex = length;
-                if (d.ResponseHeaderBufferIndex >= d.ResponseHeaderBuffer.Length)
-                {
-                    d.CurrentWritingPart = Http11ResponseMessageParts.Body;
-                    d.ResponseBodyContentIndex = 0; // start writing body from beginning
-                }
-            }
-            else if (d.CurrentWritingPart == Http11ResponseMessageParts.Body)
-            {
-                int bytesCopied = response.Content.CopyTo(buffer, d.ResponseBodyContentIndex);
-                d.ResponseBodyContentIndex += bytesCopied;
-
-                bytesProcessed = bytesCopied;
-
-                if (bytesCopied == 0)
-                {
-                    d.CurrentWritingPart = Http11ResponseMessageParts.Done;
-                    state = WriteResponseStates.Succeeded;
-                }
-            }
-
-            return state;
+            return true;
         }
 
         private static HttpMethod GetHttpMethod(string method)
@@ -317,13 +264,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             throw new ArgumentException("Unknown method", nameof(method));
         }
 
-        public void Reset(ProtocolHandlerData data)
+        public void Reset()
         {
-            if (data.Data != null)
-            {
-                var d = (Http11ProtocolData)data.Data;
-                d.CurrentReadingPart = Http11RequestMessageParts.Header;
-            }
         }
     }
 

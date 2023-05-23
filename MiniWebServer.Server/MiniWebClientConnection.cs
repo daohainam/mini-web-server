@@ -6,7 +6,9 @@ using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
 using System.Buffers;
+using System.IO.Pipelines;
 using System.Net.Sockets;
+using System.Reflection.PortableExecutable;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server
@@ -26,37 +28,22 @@ namespace MiniWebServer.Server
         }
 
         public MiniWebClientConnection(
-            int id,
-            TcpClient tcpClient,
-            Stream clientStream,
-            IProtocolHandler connectionHandler,
-            IDictionary<string, Host.Host> hostContainers,
-            TimeSpan executeTimeout,
+            MiniWebConnectionConfiguration config,
             ILogger logger,
             CancellationToken cancellationToken
             )
         {
-            Id = id;
-            TcpClient = tcpClient;
-            ClientStream = clientStream;
-            ProtocolHandler = connectionHandler;
-            this.hostContainers = hostContainers ?? throw new ArgumentNullException(nameof(hostContainers));
-            ExecuteTimeout = executeTimeout;
+            this.config = config;
             this.cancellationToken = cancellationToken;
             this.logger = logger;
 
-            ProtocolHandlerData = new ProtocolHandlerData();
             requestBuilder = new HttpWebRequestBuilder();
             responseBuilder = new HttpWebResponseBuilder();
         }
 
-        public int Id { get; }
-        public TcpClient TcpClient { get; }
-        public Stream ClientStream { get; }
-        public IProtocolHandler ProtocolHandler { get; }
-        public readonly IDictionary<string, Host.Host> hostContainers;
+        private readonly MiniWebConnectionConfiguration config;
 
-        public ProtocolHandlerData ProtocolHandlerData { get; }
+        public int Id => config.Id;
         public TimeSpan ExecuteTimeout { get; }
 
         private readonly CancellationToken cancellationToken;
@@ -64,7 +51,6 @@ namespace MiniWebServer.Server
 
         private readonly IHttpRequestBuilder requestBuilder;
         private readonly IHttpResponseBuilder responseBuilder;
-        private readonly ProtocolHandlerData protocolHandlerData = new(); // protocol handler uses this to hold it's own state data
 
         public async Task HandleRequestAsync()
         {
@@ -75,11 +61,16 @@ namespace MiniWebServer.Server
 
             try
             {
+                PipeReader requestPipeReader = PipeReader.Create(config.ClientStream);
+                PipeWriter responsePipeWriter = PipeWriter.Create(config.ClientStream);
+
                 // allocate buffers
+                //Task fillRequestPipeTask = FillPipeFromStreamAsync(config.ClientStream, requestPipe.Writer, cancellationToken);
+                //Task fillResponsePipeTask = FillStreamFromPipeAsync(config.ClientStream, responsePipe.Reader, cancellationToken);
 
                 while (isKeepAlive)
                 {
-                    if (!await ReadRequestAsync(cancellationToken))
+                    if (!await ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken))
                     {
                         isKeepAlive = false; // we always close wrongly working connections
                         break;
@@ -98,10 +89,11 @@ namespace MiniWebServer.Server
                         }
 
                         var response = responseBuilder.Build();
-                        await SendResponseAsync(response, cancellationToken);
+                        await SendResponseAsync(responsePipeWriter, response, cancellationToken);
                     }
                 }
 
+                //Task.WaitAll(fillRequestPipeTask, fillResponsePipeTask);
                 CloseConnection();
             }
             catch (Exception ex)
@@ -110,52 +102,110 @@ namespace MiniWebServer.Server
             }
         }
 
-        private async Task<bool> ReadRequestAsync(CancellationToken cancellationToken)
+        private async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
         {
             bool succeed = false;
 
-            IMemoryOwner<byte> owner = MemoryPool<byte>.Shared.Rent(BufferSize); // rfc9112: we should have ability to process request line length at minimum 8000 octets
-            var buffer = owner.Memory;
-
             try
             {
-                while (true)
+                var readRequestResult = await config.ProtocolHandler.ReadRequestAsync(reader, requestBuilder, cancellationToken);
+                if (readRequestResult)
                 {
-                    var bytesRead = await ClientStream.ReadAsync(buffer, cancellationToken);
-                    var readBuffer = buffer[..bytesRead];
-
-                    int bytesProcessed = 0;
-
-                    var readRequestResult = ProtocolHandler.ReadRequestAsync(readBuffer[bytesProcessed..].Span, requestBuilder, protocolHandlerData, out bytesProcessed);
-                    if (readRequestResult == ProtocolHandlerStates.BuildRequestStates.InProgress)
-                    {
-                        while (readRequestResult == ProtocolHandlerStates.BuildRequestStates.InProgress && bytesProcessed < readBuffer.Length)
-                        {
-                            readRequestResult = ProtocolHandler.ReadRequestAsync(readBuffer[bytesProcessed..].Span, requestBuilder, protocolHandlerData, out int bp);
-
-                            bytesProcessed += bp;
-                        }
-                    }
-
-                    if (readRequestResult == ProtocolHandlerStates.BuildRequestStates.Succeeded)
-                    {
-                        succeed = true;
-                        break;
-                    }
-                    else
-                    {
-                        // failed
-                        break;
-                    }
+                    succeed = true;
                 }
             }
-            finally
+            catch (Exception ex) 
             {
-                owner.Dispose();
+                logger.LogError(ex, "Error reading request");
             }
 
             return succeed;
         }
+
+        private async Task SendResponseAsync(PipeWriter writer, HttpResponse response, CancellationToken cancellationToken)
+        {
+            await config.ProtocolHandler.WriteResponseAsync(writer, response, cancellationToken);
+
+            await writer.FlushAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// send available data from pipeWriter to stream (socket's stream)
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="pipeWriter"></param>
+        /// <returns></returns>
+        //private async Task FillPipeFromStreamAsync(Stream stream, PipeWriter pipeWriter, CancellationToken cancellationToken)
+        //{
+        //    while (true)
+        //    {
+        //        Memory<byte> memory = pipeWriter.GetMemory(config.ReadRequestBufferSize);
+        //        try
+        //        {
+        //            int bytesRead = await stream.ReadAsync(memory, cancellationToken);
+        //            if (bytesRead == 0)
+        //            {
+        //                break;
+        //            }
+        //            // Tell the PipeWriter how much was read from the Socket.
+        //            pipeWriter.Advance(bytesRead);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            logger.LogError(ex, "Error reading from socket");
+        //            break;
+        //        }
+
+
+        //        FlushResult result = await pipeWriter.FlushAsync();
+        //        if (result.IsCompleted)
+        //        {
+        //            break;
+        //        }
+        //    }
+
+        //    // By completing PipeWriter, tell the PipeReader that there's no more data coming.
+        //    await pipeWriter.CompleteAsync();
+        //}
+
+        /// <summary>
+        /// send data from pipeReader to stream (socket's stream)
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="pipeReader"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        //private async Task FillStreamFromPipeAsync(Stream stream, PipeReader pipeReader, CancellationToken cancellationToken)
+        //{
+        //    while (true)
+        //    {
+        //        ReadResult result = await pipeReader.ReadAsync(cancellationToken);
+        //        ReadOnlySequence<byte> buffer = result.Buffer;
+
+        //        try
+        //        {
+        //            int bytesWrite = await stream.WriteAsync(buffer, cancellationToken);
+        //            if (bytesWrite == 0)
+        //            {
+        //                break;
+        //            }
+
+        //            if (result.IsCompleted)
+        //                break;
+
+        //            pipeReader.AdvanceTo(buffer.Start, buffer.End);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            logger.LogError(ex, "Error writing to socket");
+        //            break;
+        //        }
+        //    }
+
+        //    await pipeReader.CompleteAsync();
+        //}
+
+
 
         private IMiniApp? FindApp(HttpRequest request)
         {
@@ -165,13 +215,13 @@ namespace MiniWebServer.Server
                 return null;
             }
 
-            if (hostContainers.TryGetValue(host, out var container))
+            if (config.HostContainers.TryGetValue(host, out var container))
             {
                 return container.App;
             }
             else
             {
-                if (hostContainers.TryGetValue(string.Empty, out container)) // Host "" is a catch-all host
+                if (config.HostContainers.TryGetValue(string.Empty, out container)) // Host "" is a catch-all host
                 {
                     return container.App;
                 }
@@ -197,34 +247,8 @@ namespace MiniWebServer.Server
 
         private void CloseConnection()
         {
-            TcpClient.GetStream().Flush();
-            TcpClient.Close();
-        }
-
-
-        private async Task SendResponseAsync(HttpResponse response, CancellationToken cancellationToken)
-        {
-            IMemoryOwner<byte> owner = MemoryPool<byte>.Shared.Rent(BufferSize); // rfc9112: we should have ability to process request line length at minimum 8000 octets
-            var buffer = owner.Memory;
-
-            var state = ProtocolHandler.WriteResponse(buffer.Span, response, protocolHandlerData, out int bytesProcessed);
-            if (state == ProtocolHandlerStates.WriteResponseStates.InProgress)
-            {
-                if (bytesProcessed > 0)
-                {
-                     await ClientStream.WriteAsync(buffer[..bytesProcessed], cancellationToken);
-                }
-            }
-
-            while (state == ProtocolHandlerStates.WriteResponseStates.InProgress)
-            {
-                state = ProtocolHandler.WriteResponse(buffer.Span, response, protocolHandlerData, out bytesProcessed);
-
-                if (bytesProcessed > 0)
-                {
-                    await ClientStream.WriteAsync(buffer[..bytesProcessed], cancellationToken);
-                }
-            }
+            config.TcpClient.GetStream().Flush();
+            config.TcpClient.Close();
         }
 
         private async Task CallByMethod(IMiniApp app, HttpRequest httpRequest, IHttpResponseBuilder responseBuilder, CancellationToken cancellationToken)
@@ -254,19 +278,19 @@ namespace MiniWebServer.Server
             }
         }
 
-        private MiniContext BuildMiniContext(IMiniApp app, HttpRequest httpRequest)
+        private static MiniContext BuildMiniContext(IMiniApp app, HttpRequest httpRequest)
         {
             return new MiniContext(app);
         }
 
-        private MiniRequest BuildMiniAppRequest(MiniContext context, HttpRequest httpRequest)
+        private static MiniRequest BuildMiniAppRequest(MiniContext context, HttpRequest httpRequest)
         {
             var request = new MiniRequest(context, httpRequest);
 
             return request;
         }
 
-        private MiniResponse BuildMiniAppResponse(MiniContext context, IHttpResponseBuilder responseBuilder)
+        private static MiniResponse BuildMiniAppResponse(MiniContext context, IHttpResponseBuilder responseBuilder)
         {
             var response = new MiniResponse(context, responseBuilder);
 

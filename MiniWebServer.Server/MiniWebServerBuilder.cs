@@ -56,7 +56,7 @@ namespace MiniWebServer.Server
                 {
                     BindToAddress(serverOptions.BindingOptions.Address);
                 }
-                if (!string.IsNullOrEmpty(serverOptions.BindingOptions.Certificate))
+                if (serverOptions.BindingOptions.SSL && !string.IsNullOrEmpty(serverOptions.BindingOptions.Certificate))
                 {
                     // note that a certificate might have empty password
                     AddCertificate(serverOptions.BindingOptions.Certificate, serverOptions.BindingOptions.CertificatePassword);
