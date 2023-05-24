@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "MiniWebServer": {
+      "commandName": "Project",
+      "commandLineArgs": "-d"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

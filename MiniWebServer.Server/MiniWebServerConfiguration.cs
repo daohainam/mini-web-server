@@ -10,10 +10,7 @@ namespace MiniWebServer.Server
 {
     public class MiniWebServerConfiguration
     {
-        public const int DefaultThreadPoolSize = 4;
-
         public IPEndPoint HttpEndPoint { get; init; } = new(IPAddress.Loopback, 80);
-        public int ThreadPoolSize { get; init; } = DefaultThreadPoolSize;
         /// <summary>
         /// a connection will be closed if it has no data in ConnectionTimeout (in ms)
         /// </summary>

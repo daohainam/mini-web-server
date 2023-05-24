@@ -18,7 +18,6 @@ namespace MiniWebServer.Server.Abstractions
         IServerBuilder BindToAddress(string ipAddress);
         IServerBuilder AddHost(string hostName, IMiniApp host);
         IServerBuilder UseCache(IDistributedCache cache);
-        IServerBuilder UseThreadPoolSize(int size);
         IServerBuilder UseOptions(ServerOptions serverOptions);
 
         /// <summary>

@@ -32,8 +32,7 @@ namespace MiniWebServer
             // Get values from the config given their key and their target type.
             ServerOptions serverOptions = config.Get<ServerOptions>() ?? new ServerOptions();
             serverBuilder = serverBuilder
-                .UseOptions(serverOptions)
-                .UseThreadPoolSize(Environment.ProcessorCount);
+                .UseOptions(serverOptions);
 
             IMiniApp app = BuildApp(); // or server.CreateAppBuilder(); ?
             app = MapRoutes(app);
@@ -42,8 +41,18 @@ namespace MiniWebServer
             var server = serverBuilder.Build();
             server.Start();
 
-            Console.WriteLine("Press Enter to stop...");
-            Console.ReadLine();
+            if (args.Contains("-d"))
+            {
+                Console.WriteLine("Mini-Web-Server started in deamon mode");
+
+                // todo: to support deamon mode better when need to use IHostedService or BackgroundService instead of this ugly way
+                Thread.Sleep(Timeout.Infinite);
+            }
+            else
+            {
+                Console.WriteLine("Press Enter to stop...");
+                Console.ReadLine();
+            }
 
             server.Stop();
         }
