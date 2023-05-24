@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.MiniApp
 {
-    public class MiniContext : IAppContext
+    public class MiniAppContext : IAppContext
     {
-        public MiniContext(IMiniApp app)
+        public MiniAppContext(IMiniApp app)
         {
             App = app ?? throw new ArgumentNullException(nameof(app));
         }

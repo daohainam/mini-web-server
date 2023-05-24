@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.MiniApp
+namespace MiniWebServer.Quote
 {
-    public class Cookie
+    public interface IQuoteService
     {
+        Task<string> GetRandomAsync();
     }
 }

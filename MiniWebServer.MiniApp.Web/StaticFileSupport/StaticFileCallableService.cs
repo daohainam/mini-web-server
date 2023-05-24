@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using MiniWebServer.Server.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,10 +15,10 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
         private readonly ILogger logger;
         private readonly IMimeTypeMapping mimeTypeMapping;
 
-        public StaticFileCallableService(DirectoryInfo directoryInfo, IMimeTypeMapping mimeTypeMapping, ILogger logger)
+        public StaticFileCallableService(DirectoryInfo directoryInfo, IMimeTypeMapping mimeTypeMapping, ILogger? logger)
         {
             this.directoryInfo = directoryInfo ?? throw new ArgumentNullException(nameof(directoryInfo));
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.logger = logger ?? NullLogger.Instance;
             this.mimeTypeMapping = mimeTypeMapping ?? throw new ArgumentNullException(nameof(mimeTypeMapping));
         }
 

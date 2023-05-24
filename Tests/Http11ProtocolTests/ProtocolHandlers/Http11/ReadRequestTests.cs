@@ -1,11 +1,8 @@
 ﻿using Http11ProtocolTests.ProtocolHandlers.Http11;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.HttpParser.Http11;
 using MiniWebServer.HttpParser.Http11;
+using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Http;
-using MiniWebServer.Server.ProtocolHandlers.Http11;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -41,7 +38,7 @@ Cache-Control:no-cache
             Assert.AreEqual(true, result.Success);
 
             var request = result.HttpWebRequestBuilder.Build();
-            Assert.AreEqual(Abstractions.Http.HttpMethod.Get, request.Method);
+            Assert.AreEqual(HttpMethod.Get, request.Method);
             Assert.AreEqual(request.Url, "/index.html");
             Assert.AreEqual(request.Headers.Host, "localhost:8443");
             Assert.AreEqual(request.Headers.Connection, "keep-alive");

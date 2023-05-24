@@ -21,12 +21,16 @@
     <ProjectReference Include="..\MiniWebServer.Configuration\MiniWebServer.Configuration.csproj" />
     <ProjectReference Include="..\MiniWebServer.MiniApp.Web\MiniWebServer.MiniApp.Web.csproj" />
     <ProjectReference Include="..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
+    <ProjectReference Include="..\MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj" />
     <ProjectReference Include="..\MiniWebServer.Server\MiniWebServer.Server.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="Certs\localhost.pfx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="log4net-demoapp.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="log4net.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

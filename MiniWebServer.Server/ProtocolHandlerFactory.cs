@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.HttpParser.Http11;
-using MiniWebServer.HttpParser.Http11;
-using MiniWebServer.Server.ProtocolHandlers;
+using MiniWebServer.Server.Abstractions;
+using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 using MiniWebServer.Server.ProtocolHandlers.Http11;
 using System;
 using System.Collections.Generic;

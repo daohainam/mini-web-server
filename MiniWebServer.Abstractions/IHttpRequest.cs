@@ -1,6 +1,7 @@
 ﻿using MiniWebServer.Abstractions.Http;
 using System;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,5 +14,10 @@ namespace MiniWebServer.Abstractions
         string Url { get; }
         HttpRequestHeaders Headers { get; }
         bool KeepAliveRequested { get; }
+        HttpCookies Cookies { get; }
+        PipeReader? BodyReader { get; }
+        HttpParameters QueryParameters { get; }
+        string Hash { get; }
+        string QueryString { get; }
     }
 }

@@ -1,8 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
-using MiniWebServer.Abstractions.HttpParser.Http11;
-using MiniWebServer.Server.ProtocolHandlers.Storage;
+using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 using System.Net;
 using System.Text;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
@@ -13,11 +12,15 @@ using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Xml.Linq;
 using System.Net.Http;
+using MiniWebServer.Server.Abstractions;
+using MiniWebServer.Server.Abstractions.Http;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
     public class Http11IProtocolHandler : IProtocolHandler // should we use PipeLines to make the code simpler?
     {
+        public const string HttpVersionString = "HTTP/1.1";
+
         protected readonly ProtocolHandlerConfiguration config;
         protected readonly ILogger logger;
         protected readonly IHttp11Parser http11Parser;
@@ -130,6 +133,19 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         {
                             contentType = headerLine.Value;
                         }
+                        else if ("Cookie".Equals(headerLine.Name))
+                        {
+                            var cookies = http11Parser.ParseCookieHeader(headerLine.Value);
+                            if (cookies == null)
+                            {
+                                logger.LogError("Error parsing cookie value: {cookie}", headerLine.Value);
+                                return false;
+                            }
+                            else
+                            {
+                                httpWebRequestBuilder.AddCookie(cookies);
+                            }
+                        }
                     }
                     else
                     {
@@ -228,9 +244,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             writer.Write(bytes.AsSpan());
         }
 
-        public async Task<bool> WriteResponseAsync(IBufferWriter<byte> writer, HttpResponse response, CancellationToken cancellationToken)
+        public async Task<bool> WriteResponseAsync(IBufferWriter<byte> writer, IHttpResponse response, CancellationToken cancellationToken)
         {
-            Write(writer, $"HTTP/1.1 {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
+            Write(writer, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
             foreach (var header in response.Headers)
             {
                 Write(writer, $"{header.Key}: {string.Join(',', header.Value.Value)}\r\n");
@@ -267,21 +283,5 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         public void Reset()
         {
         }
-    }
-
-    public enum Http11RequestMessageParts
-    {
-        RequestLine,
-        Header,
-        Body,
-        Done
-    }
-
-    public enum Http11ResponseMessageParts
-    {
-        StatusLine,
-        Header, // we will normally write status and header at the same time so we don't use this
-        Body,
-        Done
     }
 }

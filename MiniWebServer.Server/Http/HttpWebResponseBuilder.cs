@@ -1,6 +1,7 @@
 ﻿using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
+using MiniWebServer.Server.Abstractions.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,11 +17,12 @@ namespace MiniWebServer.Server.Http
         private HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
         private readonly HttpResponseHeaders headers = new();
         private string reasonPhrase = string.Empty;
+        private readonly List<HttpCookie> cookies = new();
         private MiniContent content = new global::MiniWebServer.MiniApp.Content.StringContent(string.Empty);
 
         public HttpResponse Build()
         {
-            var response = new HttpResponse(statusCode, reasonPhrase, headers, content);
+            var response = new HttpResponse(statusCode, reasonPhrase, headers, new HttpCookies(cookies), content);
 
             return response;
         }
@@ -79,6 +81,12 @@ namespace MiniWebServer.Server.Http
         public IHttpResponseBuilder SetHeaderConnection(string connectionStatus)
         {
             return AddHeader(HttpResponseHeader.Connection, connectionStatus);
+        }
+        public IHttpResponseBuilder AddCookie(IEnumerable<HttpCookie> cookies)
+        {
+            this.cookies.AddRange(cookies);
+
+            return this;
         }
     }
 }

@@ -8,6 +8,7 @@ using MimeMapping;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Configuration;
 using MiniWebServer.MiniApp;
+using MiniWebServer.Server.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,20 +25,22 @@ namespace MiniWebServer.Server
         private IPAddress address = IPAddress.Loopback;
         private int httpPort = 80;
         private readonly ILogger<MiniWebServerBuilder> logger;
-        private IDistributedCache cache;
         private string certificateFile = string.Empty;
         private string certificatePassword = string.Empty;
         private readonly Dictionary<string, HostConfiguration> hosts = new();
         private readonly List<IRoutingServiceFactory> routingServiceFactories = new();
         private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
         private int threadPoolSize = MiniWebServerConfiguration.DefaultThreadPoolSize;
-        private ServiceProvider? serviceProvider;
+        private IDistributedCache? cache;
 
-        public MiniWebServerBuilder(ILogger<MiniWebServerBuilder> logger, IDistributedCache? cache)
+        public MiniWebServerBuilder(ILogger<MiniWebServerBuilder>? logger = null)
         {
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            this.logger = logger ?? new NullLogger<MiniWebServerBuilder>();
+            
+            Services = new ServiceCollection();
         }
+
+        public IServiceCollection Services { get; }
 
         public IServerBuilder UseOptions(ServerOptions serverOptions)
         {
@@ -122,13 +125,6 @@ namespace MiniWebServer.Server
             return this;
         }
 
-        public IServerBuilder UseDependencyInjectionService(ServiceProvider serviceProvider)
-        {
-            this.serviceProvider = serviceProvider;
-
-            return this;
-        }
-
         public IServerBuilder UseCache(IDistributedCache cache)
         {
             this.cache = cache;
@@ -159,18 +155,18 @@ namespace MiniWebServer.Server
                 hostContainers.Add(host.HostName, new Host.Host(host.HostName, host.App));
             }
 
-            var services = serviceProvider!; // it should be a Non-Null value
+            var serviceProvider = Services.BuildServiceProvider();
 
             var server = new MiniWebServer(new MiniWebServerConfiguration()
-            {
-                HttpEndPoint = new IPEndPoint(address, httpPort),
-                Hosts = hosts.Values.ToList(),
-                Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword),
-                ThreadPoolSize = threadPoolSize
-            },
-                services.GetService<IProtocolHandlerFactory>(),
-                hostContainers,
-                services.GetService<ILogger<MiniWebServer>>() ?? new NullLogger<MiniWebServer>()
+                {
+                    HttpEndPoint = new IPEndPoint(address, httpPort),
+                    Hosts = hosts.Values.ToList(),
+                    Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword),
+                    ThreadPoolSize = threadPoolSize
+                },
+                serviceProvider,
+                serviceProvider.GetService<IProtocolHandlerFactory>(),
+                hostContainers
             );
 
             return server;
@@ -189,18 +185,8 @@ namespace MiniWebServer.Server
             }
         }
 
-        private void Validate() // move validating routines here so we can make Build function shorter 
+        private void Validate() // move validating routines here so we can make Build function cleaner 
         {
-            if (serviceProvider == null)
-            {
-                throw new InvalidOperationException("ServiceProvider required");
-            }
-
-            if (cache == null)
-            {
-                // Opps, this will never happen
-                throw new InvalidOperationException("Cache required");
-            }
         }
     }
 }

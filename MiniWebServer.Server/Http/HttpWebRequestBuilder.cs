@@ -1,5 +1,5 @@
-﻿using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.Http;
+﻿using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Server.Abstractions.Http;
 using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -16,6 +16,7 @@ namespace MiniWebServer.Server.Http
         private HttpMethod httpMethod = HttpMethod.Get;
         private readonly HttpRequestHeaders headers = new();
         private readonly List<HttpTransferEncoding> transferEncodings = new();
+        private readonly List<HttpCookie> cookies = new();
         private string url = "/";
         private string queryString = string.Empty;
         private string hash = string.Empty;
@@ -41,7 +42,7 @@ namespace MiniWebServer.Server.Http
 
         public HttpRequest Build()
         {
-            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters, reader);
+            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters, new HttpCookies(cookies), reader);
 
             return request;
         }
@@ -103,6 +104,13 @@ namespace MiniWebServer.Server.Http
         public IHttpRequestBuilder SetBodyReader(PipeReader reader)
         {
             this.reader = reader;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder AddCookie(IEnumerable<HttpCookie> cookies)
+        {
+            this.cookies.AddRange(cookies);
 
             return this;
         }

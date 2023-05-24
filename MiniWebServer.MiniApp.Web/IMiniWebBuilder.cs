@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,5 +12,6 @@ namespace MiniWebServer.MiniApp.Web
         MiniWeb Build();
         IMiniWebBuilder UseStaticFiles();
         IMiniWebBuilder UseRootDirectory(string path);
+        IServiceCollection Services { get; }
     }
 }

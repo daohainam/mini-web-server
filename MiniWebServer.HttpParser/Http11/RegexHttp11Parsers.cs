@@ -1,5 +1,5 @@
 ﻿using MiniWebServer.Abstractions.Http;
-using MiniWebServer.Abstractions.HttpParser.Http11;
+using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MiniWebServer.HttpParser.Http11
 {
@@ -59,11 +60,36 @@ namespace MiniWebServer.HttpParser.Http11
             return null;
         }
 
+        public IEnumerable<HttpCookie>? ParseCookieHeader(string text)
+        {
+            var httpRegex = HttpCookieValueRegex();
+            var match = httpRegex.Match(text);
+            if (match.Success)
+            {
+                var paramNameGroup = match.Groups["cookieName"];
+                var paramValueGroup = match.Groups["cookieValue"];
+
+                var cookies = new List<HttpCookie>();
+                for (int i = 0; i < paramNameGroup.Captures.Count; i++)
+                {
+                    cookies.Add(new HttpCookie(paramNameGroup.Captures[i].Value, paramValueGroup.Captures[i].Value));
+                }
+
+                return cookies;
+            }
+
+            return null;
+        }
+
         // https://regex101.com/r/QLes5d/1
         [GeneratedRegex("^(?<method>[a-zA-Z]+)\\s(?<url>/[^\\r\\n\\?]*)(?<queryString>\\?((?<params>(?<paramName>\\w+)+=(?<paramValue>[\\w|%]*))&?)*)?(?<hash>#\\w*)?\\sHTTP/(?<major>\\d)\\.(?<minor>\\d+)$")]
         private static partial Regex HttpRequestLineRegex();
 
         [GeneratedRegex(@"(?<name>[\w-_]+): ?(?<value>[\w\-  _ :;.,\\/'?!(){}\[\]@<>=\-+\*#$&`|~^%""]+) ?")]
         private static partial Regex HttpHeaderLineRegex();
+
+        [GeneratedRegex(@"^(((?<cookieName>[\w-_\.]+)=(?<cookieValue>[\w\-  _ :.,\\/'?!(){}\[\]@<>=\-+\*#$&`|~^%""]*))(; )?)*$")]
+        private static partial Regex HttpCookieValueRegex();
+
     }
 }

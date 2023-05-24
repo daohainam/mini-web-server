@@ -9,14 +9,14 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Server.Abstractions
 {
     public interface IServerBuilder
     {
+        IServiceCollection Services { get; }
         IServerBuilder UseHttpPort(int httpPort);
         IServerBuilder BindToAddress(string ipAddress);
         IServerBuilder AddHost(string hostName, IMiniApp host);
-        IServerBuilder UseDependencyInjectionService(ServiceProvider serviceProvider);
         IServerBuilder UseCache(IDistributedCache cache);
         IServerBuilder UseThreadPoolSize(int size);
         IServerBuilder UseOptions(ServerOptions serverOptions);

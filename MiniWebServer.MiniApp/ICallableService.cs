@@ -8,7 +8,6 @@ namespace MiniWebServer.MiniApp
 {
     public interface ICallableService
     {
-        bool IsGetSupported { get; }
         ICallable? Find(IMiniAppRequest request);
     }
 }

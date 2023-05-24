@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj" />
     <ProjectReference Include="..\..\MiniWebServer.Server\MiniWebServer.Server.csproj" />
   </ItemGroup>
 

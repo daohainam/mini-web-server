@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
+    <ProjectReference Include="..\MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

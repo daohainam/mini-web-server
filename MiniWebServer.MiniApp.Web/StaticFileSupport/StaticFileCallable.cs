@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.MiniApp.Content;
+using MiniWebServer.Server.Abstractions;
 
 namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 {
@@ -64,9 +65,11 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
             }
         }
 
-        public async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
         {
             response.SetStatus(HttpResponseCodes.Forbidden);
+
+            return Task.CompletedTask;
         }
     }
 }

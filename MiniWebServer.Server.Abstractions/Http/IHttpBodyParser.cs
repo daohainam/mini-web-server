@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Abstractions.Http
+namespace MiniWebServer.Server.Abstractions.Http
 {
     public interface IHttpBodyParser
     {

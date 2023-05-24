@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using MimeMapping;
 using MiniWebServer.MiniApp.Web.StaticFileSupport;
 using System;
@@ -13,10 +15,17 @@ namespace MiniWebServer.MiniApp.Web
     {
         private string rootPath = "wwwroot";
         private bool useStaticFiles = false;
-        private readonly ILogger logger;
+        public IServiceCollection Services { get; }
 
-        public MiniWebBuilder(ILogger<MiniWebBuilder> logger) {
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        public MiniWebBuilder(IServiceCollection? services = null) {
+            if (services == null)
+            {
+                Services = new ServiceCollection();
+            }
+            else
+            {
+                Services = services;
+            }
         }
 
         public IMiniWebBuilder UseRootDirectory(string path)
@@ -28,11 +37,14 @@ namespace MiniWebServer.MiniApp.Web
         public virtual MiniWeb Build()
         {
             var app = new MiniWeb();
+            var sp = Services.BuildServiceProvider();
 
             if (useStaticFiles)
             {
+                // it is good if we can prevent Service Locator pattern here and in action methods
+
                 app.AddCallableService(
-                    new StaticFileCallableService(new DirectoryInfo(rootPath), StaticMimeMapping.Instance, logger));
+                    new StaticFileCallableService(new DirectoryInfo(rootPath), StaticMimeMapping.Instance, sp.GetService<ILogger<StaticFileCallableService>>()));
             }
 
             return app;

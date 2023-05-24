@@ -1,6 +1,4 @@
-﻿using MiniWebServer.Abstractions;
-using MiniWebServer.MiniApp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
@@ -12,7 +10,7 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpRequest : IHttpRequest
     {
-        public HttpRequest(HttpMethod method, string url, HttpRequestHeaders headers, string queryString, string hash, HttpParameters queryParameters, PipeReader? bodyReader)
+        public HttpRequest(HttpMethod method, string url, HttpRequestHeaders headers, string queryString, string hash, HttpParameters queryParameters, HttpCookies cookies, PipeReader? bodyReader)
         {
             if (queryParameters is null)
             {
@@ -24,7 +22,8 @@ namespace MiniWebServer.Abstractions.Http
             Headers = headers ?? throw new ArgumentNullException(nameof(headers));
             QueryString = queryString ?? string.Empty;
             Hash = hash ?? string.Empty;
-            QueryParameters = queryParameters;
+            QueryParameters = queryParameters ?? throw new ArgumentNullException(nameof(queryParameters));
+            Cookies = cookies ?? throw new ArgumentNullException(nameof(cookies));
             BodyReader = bodyReader;
         }
 
@@ -43,5 +42,7 @@ namespace MiniWebServer.Abstractions.Http
                 return Headers.Any(h => string.Equals("Connection", h.Value.Name, StringComparison.InvariantCultureIgnoreCase) && h.Value.Value.Any() && string.Equals("Keep-Alive", h.Value.Value.First(), StringComparison.InvariantCultureIgnoreCase));
             } 
         }
+
+        public HttpCookies Cookies { get; }
     }
 }

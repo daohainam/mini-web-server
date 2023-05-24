@@ -1,4 +1,5 @@
-﻿using MiniWebServer.MiniApp;
+﻿using MiniWebServer.Abstractions.Http;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Abstractions.Http
+namespace MiniWebServer.Server.Abstractions.Http
 {
     public interface IHttpResponseBuilder
     {
@@ -17,11 +18,9 @@ namespace MiniWebServer.Abstractions.Http
         IHttpResponseBuilder AddHeader(HttpResponseHeader header, string value);
         IHttpResponseBuilder SetReasonPhrase(string message);
         IHttpResponseBuilder SetContent(MiniApp.MiniContent content);
-
-        #region Predefined headers
+        IHttpResponseBuilder AddCookie(IEnumerable<HttpCookie> cookies);
         IHttpResponseBuilder SetHeaderContentEncoding(string contentEncoding);
         IHttpResponseBuilder SetHeaderContentLength(long contentLength);
         IHttpResponseBuilder SetHeaderConnection(string connectionStatus);
-        #endregion
     }
 }

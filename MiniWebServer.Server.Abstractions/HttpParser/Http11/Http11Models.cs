@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Abstractions.HttpParser.Http11
+namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
 {
     public class Http11ProtocolVersion
     {

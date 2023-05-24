@@ -1,4 +1,4 @@
-﻿using MiniWebServer.MiniApp;
+﻿using MiniWebServer.Server.Abstractions;
 
 namespace MimeMapping
 {

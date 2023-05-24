@@ -1,17 +1,18 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions.Http;
+using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Abstractions.Http
+namespace MiniWebServer.Server.Abstractions.Http
 {
     public interface IHttpRequestBuilder
     {
         HttpRequest Build();
 
-        IHttpRequestBuilder SetMethod(HttpMethod method);
+        IHttpRequestBuilder SetMethod(MiniWebServer.Abstractions.Http.HttpMethod method);
         IHttpRequestBuilder SetUrl(string url);
         IHttpRequestBuilder AddHeader(string name, string value);
         IHttpRequestBuilder AddHeaders(IEnumerable<KeyValuePair<string, string>> headers);
@@ -20,5 +21,6 @@ namespace MiniWebServer.Abstractions.Http
         IHttpRequestBuilder SetQueryString(string queryString);
         IHttpRequestBuilder SetHash(string hash);
         IHttpRequestBuilder SetBodyReader(PipeReader reader);
+        IHttpRequestBuilder AddCookie(IEnumerable<HttpCookie> cookies);
     }
 }

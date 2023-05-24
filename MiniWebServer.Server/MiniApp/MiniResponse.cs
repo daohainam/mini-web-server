@@ -1,5 +1,5 @@
-﻿using MiniWebServer.Abstractions.Http;
-using MiniWebServer.MiniApp;
+﻿using MiniWebServer.MiniApp;
+using MiniWebServer.Server.Abstractions.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;

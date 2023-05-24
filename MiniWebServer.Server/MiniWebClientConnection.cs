@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
+using MiniWebServer.Server.Abstractions.Http;
 using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
@@ -15,7 +17,6 @@ namespace MiniWebServer.Server
 {
     public class MiniWebClientConnection
     {
-        public const int BufferSize = 1024 * 64;
         public enum States
         {
             Pending,
@@ -29,26 +30,27 @@ namespace MiniWebServer.Server
 
         public MiniWebClientConnection(
             MiniWebConnectionConfiguration config,
-            ILogger logger,
+            IServiceProvider serviceProvider,
             CancellationToken cancellationToken
             )
         {
             this.config = config;
             this.cancellationToken = cancellationToken;
-            this.logger = logger;
+            this.serviceProvider = serviceProvider;
 
             requestBuilder = new HttpWebRequestBuilder();
             responseBuilder = new HttpWebResponseBuilder();
+
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+            logger = loggerFactory.CreateLogger<MiniWebClientConnection>();
         }
 
         private readonly MiniWebConnectionConfiguration config;
-
-        public int Id => config.Id;
+        private readonly ILogger logger;
         public TimeSpan ExecuteTimeout { get; }
 
         private readonly CancellationToken cancellationToken;
-        private readonly ILogger logger;
-
+        private readonly IServiceProvider serviceProvider;
         private readonly IHttpRequestBuilder requestBuilder;
         private readonly IHttpResponseBuilder responseBuilder;
 
@@ -64,10 +66,6 @@ namespace MiniWebServer.Server
                 PipeReader requestPipeReader = PipeReader.Create(config.ClientStream);
                 PipeWriter responsePipeWriter = PipeWriter.Create(config.ClientStream);
 
-                // allocate buffers
-                //Task fillRequestPipeTask = FillPipeFromStreamAsync(config.ClientStream, requestPipe.Writer, cancellationToken);
-                //Task fillResponsePipeTask = FillStreamFromPipeAsync(config.ClientStream, responsePipe.Reader, cancellationToken);
-
                 while (isKeepAlive)
                 {
                     if (!await ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken))
@@ -81,7 +79,7 @@ namespace MiniWebServer.Server
 
                         var request = requestBuilder.Build();
 
-                        var app = FindApp(request);
+                        var app = FindApp(request); // should we reuse apps???
 
                         if (app != null)
                         {
@@ -93,7 +91,6 @@ namespace MiniWebServer.Server
                     }
                 }
 
-                //Task.WaitAll(fillRequestPipeTask, fillResponsePipeTask);
                 CloseConnection();
             }
             catch (Exception ex)
@@ -128,84 +125,6 @@ namespace MiniWebServer.Server
 
             await writer.FlushAsync(cancellationToken);
         }
-
-        /// <summary>
-        /// send available data from pipeWriter to stream (socket's stream)
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="pipeWriter"></param>
-        /// <returns></returns>
-        //private async Task FillPipeFromStreamAsync(Stream stream, PipeWriter pipeWriter, CancellationToken cancellationToken)
-        //{
-        //    while (true)
-        //    {
-        //        Memory<byte> memory = pipeWriter.GetMemory(config.ReadRequestBufferSize);
-        //        try
-        //        {
-        //            int bytesRead = await stream.ReadAsync(memory, cancellationToken);
-        //            if (bytesRead == 0)
-        //            {
-        //                break;
-        //            }
-        //            // Tell the PipeWriter how much was read from the Socket.
-        //            pipeWriter.Advance(bytesRead);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            logger.LogError(ex, "Error reading from socket");
-        //            break;
-        //        }
-
-
-        //        FlushResult result = await pipeWriter.FlushAsync();
-        //        if (result.IsCompleted)
-        //        {
-        //            break;
-        //        }
-        //    }
-
-        //    // By completing PipeWriter, tell the PipeReader that there's no more data coming.
-        //    await pipeWriter.CompleteAsync();
-        //}
-
-        /// <summary>
-        /// send data from pipeReader to stream (socket's stream)
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="pipeReader"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        //private async Task FillStreamFromPipeAsync(Stream stream, PipeReader pipeReader, CancellationToken cancellationToken)
-        //{
-        //    while (true)
-        //    {
-        //        ReadResult result = await pipeReader.ReadAsync(cancellationToken);
-        //        ReadOnlySequence<byte> buffer = result.Buffer;
-
-        //        try
-        //        {
-        //            int bytesWrite = await stream.WriteAsync(buffer, cancellationToken);
-        //            if (bytesWrite == 0)
-        //            {
-        //                break;
-        //            }
-
-        //            if (result.IsCompleted)
-        //                break;
-
-        //            pipeReader.AdvanceTo(buffer.Start, buffer.End);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            logger.LogError(ex, "Error writing to socket");
-        //            break;
-        //        }
-        //    }
-
-        //    await pipeReader.CompleteAsync();
-        //}
-
-
 
         private IMiniApp? FindApp(HttpRequest request)
         {
@@ -255,21 +174,30 @@ namespace MiniWebServer.Server
         {
             try
             {
-                var context = BuildMiniContext(app, httpRequest);
+                var context = BuildMiniContext(app);
                 var request = BuildMiniAppRequest(context, httpRequest);
                 var response = BuildMiniAppResponse(context, responseBuilder);
 
-                if (httpRequest.Method == HttpMethod.Get)
+                var action = app.Find(request);
+
+                if (action != null)
                 {
-                    await app.Get(request, response, cancellationToken);
-                }
-                else if (httpRequest.Method == HttpMethod.Post)
-                {
-                    await app.Post(request, response, cancellationToken);
+                    if (httpRequest.Method == HttpMethod.Get)
+                    {
+                        await action.Get(request, response, cancellationToken);
+                    }
+                    else if (httpRequest.Method == HttpMethod.Post)
+                    {
+                        await action.Post(request, response, cancellationToken);
+                    }
+                    else
+                    {
+                        StandardResponseBuilderHelpers.NotFound(responseBuilder);
+                    }
                 }
                 else
                 {
-                    StandardResponseBuilderHelpers.MethodNotAllowed(responseBuilder);
+                    StandardResponseBuilderHelpers.NotFound(responseBuilder);
                 }
             }
             catch (Exception ex)
@@ -278,19 +206,19 @@ namespace MiniWebServer.Server
             }
         }
 
-        private static MiniContext BuildMiniContext(IMiniApp app, HttpRequest httpRequest)
+        private static MiniAppContext BuildMiniContext(IMiniApp app)
         {
-            return new MiniContext(app);
+            return new MiniAppContext(app);
         }
 
-        private static MiniRequest BuildMiniAppRequest(MiniContext context, HttpRequest httpRequest)
+        private static MiniRequest BuildMiniAppRequest(MiniAppContext context, HttpRequest httpRequest)
         {
             var request = new MiniRequest(context, httpRequest);
 
             return request;
         }
 
-        private static MiniResponse BuildMiniAppResponse(MiniContext context, IHttpResponseBuilder responseBuilder)
+        private static MiniResponse BuildMiniAppResponse(MiniAppContext context, IHttpResponseBuilder responseBuilder)
         {
             var response = new MiniResponse(context, responseBuilder);
 

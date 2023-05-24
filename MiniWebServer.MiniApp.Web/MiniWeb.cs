@@ -1,6 +1,8 @@
-﻿namespace MiniWebServer.MiniApp.Web
+﻿using System.Threading;
+
+namespace MiniWebServer.MiniApp.Web
 {
-    public class MiniWeb : IMiniApp
+    public class MiniWeb : BaseMiniApp
     {
         private readonly List<ICallableService> callableServices;
 
@@ -16,30 +18,50 @@
             return this;
         }
 
-        public async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
-        {
-            foreach (var cf in callableServices)
-            {
-                var callable = cf.Find(request);
+        //public override async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        //{
+        //    foreach (var cf in callableServices)
+        //    {
+        //        var callable = cf.Find(request);
 
-                if (callable != null)
+        //        if (callable != null)
+        //        {
+        //            await callable.Get(request, response, cancellationToken);
+        //        }
+        //    }
+        //}
+
+        //public override async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        //{
+        //    foreach (var cf in callableServices)
+        //    {
+        //        var callable = cf.Find(request);
+
+        //        if (callable != null)
+        //        {
+        //            await callable.Post(request, response, cancellationToken);
+        //        }
+        //    }
+        //}
+
+        public override ICallable? Find(IMiniAppRequest request)
+        {
+            var mapedCalls = base.Find(request);
+
+            if (mapedCalls == null)
+            {
+                foreach (var cf in callableServices)
                 {
-                    await callable.Get(request, response, cancellationToken);
+                    var callable = cf.Find(request);
+
+                    if (callable != null)
+                    {
+                        return callable;
+                    }
                 }
             }
-        }
 
-        public async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
-        {
-            foreach (var cf in callableServices)
-            {
-                var callable = cf.Find(request);
-
-                if (callable != null)
-                {
-                    await callable.Post(request, response, cancellationToken);
-                }
-            }
+            return mapedCalls;
         }
     }
 }

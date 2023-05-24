@@ -3,15 +3,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MimeMapping;
-using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.HttpParser.Http11;
 using MiniWebServer.Configuration;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Web;
+using MiniWebServer.Quote;
 using MiniWebServer.Server;
+using MiniWebServer.Server.Abstractions;
+using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 using MiniWebServer.Server.MimeType;
-using MiniWebServer.Server.ProtocolHandlers.Storage;
 using System;
 
 namespace MiniWebServer
@@ -20,37 +20,26 @@ namespace MiniWebServer
     {
         static void Main(string[] args)
         {
-            var serviceCollection = new ServiceCollection();
-            ConfigureServices(serviceCollection);
-
-            var serviceProvider = serviceCollection.BuildServiceProvider();
-            var serverBuilder = serviceProvider.GetService<IServerBuilder>();
-            if (serverBuilder == null)
-            {
-                Console.WriteLine("Error creating ServerBuilder");
-                return;
-            };
-
+            IServerBuilder serverBuilder = new MiniWebServerBuilder();
             IConfiguration config = new ConfigurationBuilder()
                 .AddJsonFile("mini-web-server.json")
                 .AddEnvironmentVariables()
                 .AddCommandLine(args)
                 .Build();
 
+            ConfigureServices(serverBuilder.Services);
+
             // Get values from the config given their key and their target type.
             ServerOptions serverOptions = config.Get<ServerOptions>() ?? new ServerOptions();
-
             serverBuilder = serverBuilder
-                .UseDependencyInjectionService(serviceProvider)
                 .UseOptions(serverOptions)
                 .UseThreadPoolSize(Environment.ProcessorCount);
 
-            IMiniApp app = BuildApp(serviceProvider);
-            app = MapRoutes(app, serviceProvider);
+            IMiniApp app = BuildApp(); // or server.CreateAppBuilder(); ?
+            app = MapRoutes(app);
             serverBuilder.AddHost(string.Empty, app);
 
             var server = serverBuilder.Build();
-
             server.Start();
 
             Console.WriteLine("Press Enter to stop...");
@@ -59,9 +48,11 @@ namespace MiniWebServer
             server.Stop();
         }
 
-        private static IMiniApp BuildApp(ServiceProvider serviceProvider)
+        private static IMiniApp BuildApp()
         {
-            var appBuilder = serviceProvider.GetRequiredService<IMiniWebBuilder>();
+            var appBuilder = new MiniWebBuilder();
+
+            appBuilder.Services.AddLogging(loggingBuilder => loggingBuilder.AddLog4Net("log4net-demoapp.xml").SetMinimumLevel(LogLevel.Debug));
 
             appBuilder.UseRootDirectory("wwwroot")
             .UseStaticFiles();
@@ -69,9 +60,19 @@ namespace MiniWebServer
             return appBuilder.Build();
         }
 
-        private static IMiniApp MapRoutes(IMiniApp app, ServiceProvider serviceProvider)
+        private static IMiniApp MapRoutes(IMiniApp app)
         {
-            //app.MapGet("/helpcheck", () = $"Help check at {DateTime.Now.ToShortTimeString()}: OK");
+            app.MapGet("/helpcheck", (request, response, cancellationToken) => {
+                response.SetContent(new MiniApp.Content.StringContent($"Service status: OK {DateTime.Now}"));
+
+                return Task.CompletedTask;
+            });
+
+            app.MapGet("/quote/random", async (request, response, cancellationToken) => {
+                string quote = await QuoteServiceFactory.GetQuoteService().GetRandomAsync();
+
+                response.SetContent(new MiniApp.Content.StringContent(quote));
+            });
 
             return app;
         }
@@ -82,18 +83,7 @@ namespace MiniWebServer
             services.AddDistributedMemoryCache();
             services.AddTransient<IHttp11Parser, RegexHttp11Parsers>();
             services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
-            services.AddTransient<IProtocolHandlerStorageManager, ProtocolHandlerStorageManager>();
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
-            services.AddTransient<IServerBuilder>(
-                services => new MiniWebServerBuilder(
-                    services.GetRequiredService<ILogger<MiniWebServerBuilder>>(),
-                    services.GetService<IDistributedCache>()
-                    )
-                );
-            services.AddTransient<IMiniWebBuilder>(
-                services => new MiniWebBuilder(
-                    services.GetRequiredService<ILogger<MiniWebBuilder>>())
-                );
         }
     }
 }

@@ -19,6 +19,7 @@
     <ProjectReference Include="..\MiniWebServer.Configuration\MiniWebServer.Configuration.csproj" />
     <ProjectReference Include="..\MiniWebServer.HttpParser\MiniWebServer.HttpParser.csproj" />
     <ProjectReference Include="..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
+    <ProjectReference Include="..\MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

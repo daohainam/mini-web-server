@@ -1,5 +1,5 @@
-using MiniWebServer.Abstractions.HttpParser.Http11;
 using MiniWebServer.HttpParser.Http11;
+using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 
 namespace ParserTests
 {
