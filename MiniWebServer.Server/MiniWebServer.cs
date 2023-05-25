@@ -95,6 +95,8 @@ namespace MiniWebServer.Server
                         new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, config.MaxRequestBodySize)
                     ), // A connection always starts with HTTP 1.1 
                     hostContainers,
+                    TimeSpan.FromMilliseconds(config.ReadRequestTimeout),
+                    TimeSpan.FromMilliseconds(config.SendResponseTimeout),
                     TimeSpan.FromMilliseconds(config.ConnectionTimeout),
                     config.ReadBufferSize
                     ),
@@ -104,6 +106,11 @@ namespace MiniWebServer.Server
 
                 logger.LogInformation("New client connected {tcpClient}", tcpClient.Client.RemoteEndPoint);
                 await client.HandleRequestAsync();
+            }
+            catch (AuthenticationException ex)
+            {
+                logger.LogError(ex, "Error accepting client");
+                CloseConnection(tcpClient);
             }
             catch (Exception ex)
             {

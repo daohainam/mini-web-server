@@ -48,5 +48,10 @@ namespace MiniWebServer.Abstractions.Http
         {
             return GetEnumerator();
         }
+
+        public bool HasName(string name)
+        {
+            return headers.ContainsKey(name);
+        }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp.Content;
 using MiniWebServer.Server.Abstractions.Http;
 using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
@@ -68,6 +69,8 @@ namespace MiniWebServer.Server
 
                 while (isKeepAlive)
                 {
+                    cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
+
                     if (!await ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken))
                     {
                         isKeepAlive = false; // we always close wrongly working connections
@@ -83,19 +86,24 @@ namespace MiniWebServer.Server
 
                         if (app != null)
                         {
+                            cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
+
                             await ExecuteCallableAsync(request, app, cancellationToken);
                         }
 
                         var response = responseBuilder.Build();
+
+                        cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
                         await SendResponseAsync(responsePipeWriter, response, cancellationToken);
                     }
                 }
-
-                CloseConnection();
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error processing request");
+            }
+            finally {
+                CloseConnection();
             }
         }
 
@@ -182,17 +190,25 @@ namespace MiniWebServer.Server
 
                 if (action != null)
                 {
-                    if (httpRequest.Method == HttpMethod.Get)
+
+                    try
                     {
-                        await action.Get(request, response, cancellationToken);
-                    }
-                    else if (httpRequest.Method == HttpMethod.Post)
+                        if (httpRequest.Method == HttpMethod.Get)
+                        {
+                            await action.Get(request, response, cancellationToken);
+                        }
+                        else if (httpRequest.Method == HttpMethod.Post)
+                        {
+                            await action.Post(request, response, cancellationToken);
+                        }
+                        else
+                        {
+                            StandardResponseBuilderHelpers.NotFound(responseBuilder);
+                        }
+                    } catch (Exception ex)
                     {
-                        await action.Post(request, response, cancellationToken);
-                    }
-                    else
-                    {
-                        StandardResponseBuilderHelpers.NotFound(responseBuilder);
+                        logger.LogError(ex, "Error executing action handler");
+                        response.SetStatus(HttpResponseCodes.InternalServerError);
                     }
                 }
                 else
@@ -221,6 +237,12 @@ namespace MiniWebServer.Server
         private static MiniResponse BuildMiniAppResponse(MiniAppContext context, IHttpResponseBuilder responseBuilder)
         {
             var response = new MiniResponse(context, responseBuilder);
+
+            response.SetStatus(HttpResponseCodes.Ok);
+            response.SetContent(EmptyContent.Instance);
+            response.AddHeader("Content-Type", "text/html");
+            response.AddHeader("Connection", "close"); // todo: we will improve connection handling later
+            
 
             return response;
         }

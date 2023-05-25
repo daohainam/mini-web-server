@@ -251,6 +251,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             {
                 Write(writer, $"{header.Key}: {string.Join(',', header.Value.Value)}\r\n");
             }
+            foreach (var cookie in response.Cookies)
+            {
+                Write(writer, $"Set-Cookie: {string.Join("; ", cookie.Value.Value)}\r\n");
+            }
             Write(writer, "\r\n");
 
             await response.Content.WriteToAsync(writer, cancellationToken);

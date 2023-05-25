@@ -22,6 +22,19 @@ namespace MiniWebServer.Server.Http
 
         public HttpResponse Build()
         {
+            if (!headers.HasName("Content-Length"))
+            {
+                headers.Add("Content-Length", content.ContentLength.ToString());
+            }
+            if (!headers.HasName("Content-Type"))
+            {
+                headers.Add("Content-Type", "text/plain");
+            }           
+            if (!headers.HasName("Server"))
+            {
+                headers.Add("Server", "Mini-Web-Server/alpha");
+            }
+
             var response = new HttpResponse(statusCode, reasonPhrase, headers, new HttpCookies(cookies), content);
 
             return response;

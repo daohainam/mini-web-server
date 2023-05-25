@@ -1,6 +1,6 @@
 {
   "BindingOptions": {
-    "Port": 8080,
+    "Port": 80,
     "Address": "0.0.0.0",
     "Certificate": "",
     "CertificatePassword": "",

@@ -33,11 +33,13 @@ namespace MiniWebServer.Server.MiniApp
         public void SetStatus(int statusCode)
         {
             responseBuilder.SetStatusCode((System.Net.HttpStatusCode)statusCode);
+            responseBuilder.SetReasonPhrase(HttpResponseReasonPhrases.ReasonPhrases.GetValueOrDefault(statusCode) ?? string.Empty);
         }
 
         public void SetContent(MiniContent content)
         {
             responseBuilder.SetContent(content);
+            responseBuilder.SetHeaderContentLength(content.ContentLength);
         }
     }
 }

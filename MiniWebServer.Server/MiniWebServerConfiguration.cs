@@ -14,7 +14,6 @@ namespace MiniWebServer.Server
         /// <summary>
         /// a connection will be closed if it has no data in ConnectionTimeout (in ms)
         /// </summary>
-        public int ConnectionTimeout { get; init; } = 3000; 
         public string Root { get; init; } = string.Empty;
         public X509Certificate2? Certificate { get; internal set; }
 
@@ -22,6 +21,9 @@ namespace MiniWebServer.Server
 
         // advanced settings
         public int ReadBufferSize { get; init; } = 1024 * 8;
-        public long MaxRequestBodySize { get; internal set; } = 1024 * 1024 * 10; // 10MB 
+        public long MaxRequestBodySize { get; set; } = 1024 * 1024 * 10; // 10MB 
+        public int ReadRequestTimeout { get; set; } = 180000;
+        public int SendResponseTimeout { get; set; } = 300000;
+        public int ConnectionTimeout { get; set; } = 180000;
     }
 }
