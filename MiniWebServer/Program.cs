@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MimeMapping;
@@ -11,7 +10,6 @@ using MiniWebServer.Quote;
 using MiniWebServer.Server;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.HttpParser.Http11;
-using MiniWebServer.Server.MimeType;
 using System;
 
 namespace MiniWebServer

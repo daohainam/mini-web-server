@@ -18,23 +18,14 @@ namespace MiniWebServer.Server
 {
     public class MiniWebClientConnection
     {
-        public enum States
-        {
-            Pending,
-            BuildingRequestObject,
-            RequestObjectReady,
-            CallingResource,
-            CallingResourceReady,
-            ResponseObjectReady,
-            ReadyToClose
-        }
-
         public MiniWebClientConnection(
             MiniWebConnectionConfiguration config,
             IServiceProvider serviceProvider,
             CancellationToken cancellationToken
             )
         {
+            ConnectionId = config.Id;
+
             this.config = config;
             this.cancellationToken = cancellationToken;
             this.serviceProvider = serviceProvider;
@@ -43,10 +34,10 @@ namespace MiniWebServer.Server
             logger = loggerFactory.CreateLogger<MiniWebClientConnection>();
         }
 
+        public ulong ConnectionId { get; }
+
         private readonly MiniWebConnectionConfiguration config;
         private readonly ILogger logger;
-        public TimeSpan ExecuteTimeout { get; }
-
         private readonly CancellationToken cancellationToken;
         private readonly IServiceProvider serviceProvider;
 
@@ -66,7 +57,7 @@ namespace MiniWebServer.Server
                 {
                     cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
 
-                    logger.LogDebug("Reading request...");
+                    logger.LogDebug("[{cid}] - Reading request...", ConnectionId);
 
                     var requestBuilder = new HttpWebRequestBuilder();
                     var responseBuilder = new HttpWebResponseBuilder();
@@ -79,7 +70,7 @@ namespace MiniWebServer.Server
                         var response = responseBuilder.Build();
 
                         cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
-                        logger.LogDebug("Sending back response..."); // send back Bad Request
+                        logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
                         await SendResponseAsync(responsePipeWriter, response, cancellationToken);
 
                         break;
@@ -95,21 +86,21 @@ namespace MiniWebServer.Server
                         if (app != null)
                         {
                             cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
-                            logger.LogDebug("Processing request...");
+                            logger.LogDebug("[{cid}] - Processing request...", ConnectionId);
                             await ExecuteCallableAsync(request, responseBuilder, app, cancellationToken);
                         }
 
                         var response = responseBuilder.Build();
 
                         cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
-                        logger.LogDebug("Sending back response...");
+                        logger.LogDebug("[{cid}] - Sending back response...", ConnectionId);
                         await SendResponseAsync(responsePipeWriter, response, cancellationToken);
                     }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error processing request");
+                logger.LogError(ex, "[{cid}] - Error processing request", ConnectionId);
             }
             finally {
                 CloseConnection();
@@ -130,7 +121,7 @@ namespace MiniWebServer.Server
             }
             catch (Exception ex) 
             {
-                logger.LogError(ex, "Error reading request");
+                logger.LogError(ex, "[{cid}] - Error reading request", ConnectionId);
             }
 
             return succeed;
@@ -177,13 +168,13 @@ namespace MiniWebServer.Server
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error calling resource");
+                logger.LogError(ex, "[{cid}] - Error calling resource", ConnectionId);
             }
         }
 
         private void CloseConnection()
         {
-            logger.LogDebug("Closing connection...");
+            logger.LogDebug("[{cid}] - Closing connection...", ConnectionId);
             config.TcpClient.GetStream().Flush();
             config.TcpClient.Close();
         }
@@ -217,7 +208,7 @@ namespace MiniWebServer.Server
                         }
                     } catch (Exception ex)
                     {
-                        logger.LogError(ex, "Error executing action handler");
+                        logger.LogError(ex, "[{cid}] - Error executing action handler", ConnectionId);
                         response.SetStatus(HttpResponseCodes.InternalServerError);
                     }
                 }
@@ -228,7 +219,7 @@ namespace MiniWebServer.Server
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error executing resource");
+                logger.LogError(ex, "[{cid}] - Error executing resource", ConnectionId);
             }
         }
 

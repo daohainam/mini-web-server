@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.Server.Abstractions;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -18,8 +19,10 @@ namespace MiniWebServer.Server
         private readonly ILogger<MiniWebServer> logger;
         private TcpListener? server;
         private bool running;
-        private int nextClientId = 1;
+        private ulong nextClientId = 0;
         private bool disposed = false;
+
+        private ConcurrentDictionary<ulong, Task> clientTasks = new ConcurrentDictionary<ulong, Task>();
 
         private readonly CancellationTokenSource cancellationTokenSource; // we use this to cancel system-wise threads
         private readonly CancellationToken cancellationToken;
@@ -59,7 +62,7 @@ namespace MiniWebServer.Server
             return ClientConnectionListeningProc();
         }
 
-        private async Task HandleNewClientConnectionAsync(TcpClient tcpClient)
+        private async Task HandleNewClientConnectionAsync(ulong connectionId, TcpClient tcpClient)
         {
             try
             {
@@ -88,7 +91,7 @@ namespace MiniWebServer.Server
 
                 var client = new MiniWebClientConnection(
                     new MiniWebConnectionConfiguration(
-                        nextClientId++,
+                        connectionId,
                         tcpClient,
                         stream,
                         protocolHandlerFactory.Create(
@@ -104,7 +107,7 @@ namespace MiniWebServer.Server
                     cancellationToken
                 );
 
-                logger.LogInformation("New client connected {tcpClient}", tcpClient.Client.RemoteEndPoint);
+                logger.LogInformation("New connection added {tcpClient}", tcpClient.Client.RemoteEndPoint);
                 await client.HandleRequestAsync();
             }
             catch (AuthenticationException ex)
@@ -129,7 +132,6 @@ namespace MiniWebServer.Server
         public void Stop()
         {
             running = false;
-            server?.Stop();
 
             cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(3));
         }
@@ -147,7 +149,15 @@ namespace MiniWebServer.Server
                 {
                     TcpClient client = await server.AcceptTcpClientAsync(cancellationToken);
 
-                    await HandleNewClientConnectionAsync(client);
+                    var connectionId = Interlocked.Increment(ref nextClientId); // this function can be called concurrently (or not?) so we cannot use ++
+
+                    Task t = HandleNewClientConnectionAsync(connectionId, client);
+
+                    if (!clientTasks.TryAdd(connectionId, t))
+                    {
+                        // hope this will never happen
+                        logger.LogError("Ooops! Cannot add task to client task list");
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -160,6 +170,10 @@ namespace MiniWebServer.Server
                     break;
                 }
             }
+
+            server.Stop();
+
+            Task.WaitAll(clientTasks.Values.ToArray(), TimeSpan.FromSeconds(30));
         }
 
         private static void CloseConnection(TcpClient tcpClient)

@@ -13,7 +13,7 @@ namespace MiniWebServer.Server
     {
 
         public MiniWebConnectionConfiguration(
-            int id, 
+            ulong id, 
             TcpClient tcpClient, 
             Stream clientStream, 
             IProtocolHandler protocolHandler, 
@@ -35,7 +35,7 @@ namespace MiniWebServer.Server
             ReadRequestBufferSize = readRequestBufferSize;
         }
 
-        public int Id { get; }
+        public ulong Id { get; }
         public TcpClient TcpClient { get; }
         public Stream ClientStream { get; }
         public IProtocolHandler ProtocolHandler { get; }
