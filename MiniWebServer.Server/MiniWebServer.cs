@@ -120,6 +120,8 @@ namespace MiniWebServer.Server
                 logger.LogError(ex, "Error accepting client");
                 CloseConnection(tcpClient);
             }
+
+            clientTasks.TryRemove(connectionId, out _);
         }
 
         private bool ValidateClientCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
