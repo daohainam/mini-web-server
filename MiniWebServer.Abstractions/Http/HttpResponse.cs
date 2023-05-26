@@ -9,7 +9,7 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpResponse : IHttpResponse
     {
-        public HttpResponse(HttpStatusCode statusCode, string reasonPhrase, HttpResponseHeaders headers, HttpCookies cookies, IHttpContent content)
+        public HttpResponse(HttpResponseCodes statusCode, string reasonPhrase, HttpResponseHeaders headers, HttpCookies cookies, IHttpContent content)
         {
             StatusCode = statusCode;
             ReasonPhrase = reasonPhrase ?? throw new ArgumentNullException(nameof(reasonPhrase));
@@ -18,7 +18,7 @@ namespace MiniWebServer.Abstractions.Http
             Content = content ?? throw new ArgumentNullException(nameof(content));
         }
 
-        public HttpStatusCode StatusCode { get; }
+        public HttpResponseCodes StatusCode { get; }
         public string ReasonPhrase { get; }
         public HttpResponseHeaders Headers { get; }
         public IHttpContent Content { get; }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions;
 using MiniWebServer.MiniApp.Content;
 using MiniWebServer.Server.Abstractions;
 
@@ -50,7 +51,7 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
                         response.SetContent(new Content.ByteArrayContent(content));
                     }
 
-                    response.SetStatus(HttpResponseCodes.Ok);
+                    response.SetStatus(HttpResponseCodes.OK);
                 }
                 catch (Exception ex)
                 {

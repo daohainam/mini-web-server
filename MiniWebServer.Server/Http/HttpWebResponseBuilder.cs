@@ -14,7 +14,7 @@ namespace MiniWebServer.Server.Http
 {
     public class HttpWebResponseBuilder : IHttpResponseBuilder
     {
-        private HttpStatusCode statusCode = HttpStatusCode.InternalServerError;
+        private HttpResponseCodes statusCode = HttpResponseCodes.InternalServerError;
         private readonly HttpResponseHeaders headers = new();
         private string reasonPhrase = string.Empty;
         private readonly List<HttpCookie> cookies = new();
@@ -40,7 +40,7 @@ namespace MiniWebServer.Server.Http
             return response;
         }
 
-        public IHttpResponseBuilder SetStatusCode(HttpStatusCode httpStatusCode)
+        public IHttpResponseBuilder SetStatusCode(HttpResponseCodes httpStatusCode)
         {
             statusCode = httpStatusCode;
 

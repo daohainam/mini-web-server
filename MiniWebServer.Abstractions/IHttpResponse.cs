@@ -10,7 +10,7 @@ namespace MiniWebServer.Abstractions
 {
     public interface IHttpResponse
     {
-        HttpStatusCode StatusCode { get; }
+        HttpResponseCodes StatusCode { get; }
         string ReasonPhrase { get; }
         HttpResponseHeaders Headers { get; }
         IHttpContent Content { get; }

@@ -1,4 +1,5 @@
-﻿using MiniWebServer.MiniApp;
+﻿using MiniWebServer.Abstractions;
+using MiniWebServer.MiniApp;
 using MiniWebServer.Server.Abstractions.Http;
 using System;
 using System.Collections.Generic;
@@ -24,15 +25,15 @@ namespace MiniWebServer.Server.MiniApp
             responseBuilder.AddHeader(name, mimeType);
         }
 
-        public void SetStatus(int statusCode, string reasonPhrase)
+        public void SetStatus(HttpResponseCodes statusCode, string reasonPhrase)
         {
-            responseBuilder.SetStatusCode((System.Net.HttpStatusCode)statusCode);
+            responseBuilder.SetStatusCode(statusCode);
             responseBuilder.SetReasonPhrase(reasonPhrase);
         }
 
-        public void SetStatus(int statusCode)
+        public void SetStatus(HttpResponseCodes statusCode)
         {
-            responseBuilder.SetStatusCode((System.Net.HttpStatusCode)statusCode);
+            responseBuilder.SetStatusCode(statusCode);
             responseBuilder.SetReasonPhrase(HttpResponseReasonPhrases.ReasonPhrases.GetValueOrDefault(statusCode) ?? string.Empty);
         }
 

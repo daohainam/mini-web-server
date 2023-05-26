@@ -1,5 +1,5 @@
-﻿using MiniWebServer.Abstractions.Http;
-using MiniWebServer.MiniApp;
+﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +12,7 @@ namespace MiniWebServer.Server.Abstractions.Http
     public interface IHttpResponseBuilder
     {
         HttpResponse Build();
-        IHttpResponseBuilder SetStatusCode(HttpStatusCode httpStatusCode);
+        IHttpResponseBuilder SetStatusCode(HttpResponseCodes httpStatusCode);
         IHttpResponseBuilder AddHeaders(IEnumerable<KeyValuePair<string, string>> keyValues);
         IHttpResponseBuilder AddHeader(string name, string value);
         IHttpResponseBuilder AddHeader(HttpResponseHeader header, string value);

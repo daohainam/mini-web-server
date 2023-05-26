@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +11,7 @@ namespace MiniWebServer.MiniApp
     {
         void AddHeader(string name, string mimeType);
         void SetContent(MiniContent content);
-        void SetStatus(int statusCode, string statusText);
-        void SetStatus(int statusCode);
+        void SetStatus(HttpResponseCodes statusCode, string reasonPhrase);
+        void SetStatus(HttpResponseCodes statusCode);
     }
 }

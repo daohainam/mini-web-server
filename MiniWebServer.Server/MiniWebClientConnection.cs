@@ -39,9 +39,6 @@ namespace MiniWebServer.Server
             this.cancellationToken = cancellationToken;
             this.serviceProvider = serviceProvider;
 
-            requestBuilder = new HttpWebRequestBuilder();
-            responseBuilder = new HttpWebResponseBuilder();
-
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             logger = loggerFactory.CreateLogger<MiniWebClientConnection>();
         }
@@ -52,8 +49,6 @@ namespace MiniWebServer.Server
 
         private readonly CancellationToken cancellationToken;
         private readonly IServiceProvider serviceProvider;
-        private readonly IHttpRequestBuilder requestBuilder;
-        private readonly IHttpResponseBuilder responseBuilder;
 
         public async Task HandleRequestAsync()
         {
@@ -71,9 +66,22 @@ namespace MiniWebServer.Server
                 {
                     cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
 
+                    logger.LogDebug("Reading request...");
+
+                    var requestBuilder = new HttpWebRequestBuilder();
+                    var responseBuilder = new HttpWebResponseBuilder();
+
                     if (!await ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken))
                     {
                         isKeepAlive = false; // we always close wrongly working connections
+
+                        responseBuilder.SetStatusCode(HttpResponseCodes.BadRequest);
+                        var response = responseBuilder.Build();
+
+                        cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
+                        logger.LogDebug("Sending back response..."); // send back Bad Request
+                        await SendResponseAsync(responsePipeWriter, response, cancellationToken);
+
                         break;
                     }
                     else
@@ -87,13 +95,14 @@ namespace MiniWebServer.Server
                         if (app != null)
                         {
                             cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
-
-                            await ExecuteCallableAsync(request, app, cancellationToken);
+                            logger.LogDebug("Processing request...");
+                            await ExecuteCallableAsync(request, responseBuilder, app, cancellationToken);
                         }
 
                         var response = responseBuilder.Build();
 
                         cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
+                        logger.LogDebug("Sending back response...");
                         await SendResponseAsync(responsePipeWriter, response, cancellationToken);
                     }
                 }
@@ -157,7 +166,7 @@ namespace MiniWebServer.Server
             return null;
         }
 
-        private async Task ExecuteCallableAsync(HttpRequest request, IMiniApp app, CancellationToken cancellationToken)
+        private async Task ExecuteCallableAsync(HttpRequest request, HttpWebResponseBuilder responseBuilder, IMiniApp app, CancellationToken cancellationToken)
         {
             if (app == null)
                 throw new ArgumentNullException(nameof(app));
@@ -174,6 +183,7 @@ namespace MiniWebServer.Server
 
         private void CloseConnection()
         {
+            logger.LogDebug("Closing connection...");
             config.TcpClient.GetStream().Flush();
             config.TcpClient.Close();
         }
@@ -238,7 +248,7 @@ namespace MiniWebServer.Server
         {
             var response = new MiniResponse(context, responseBuilder);
 
-            response.SetStatus(HttpResponseCodes.Ok);
+            response.SetStatus(HttpResponseCodes.OK);
             response.SetContent(EmptyContent.Instance);
             response.AddHeader("Content-Type", "text/html");
             response.AddHeader("Connection", "close"); // todo: we will improve connection handling later

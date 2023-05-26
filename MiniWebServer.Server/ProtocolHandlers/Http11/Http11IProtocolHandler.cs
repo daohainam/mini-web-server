@@ -20,6 +20,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
     public class Http11IProtocolHandler : IProtocolHandler // should we use PipeLines to make the code simpler?
     {
         public const string HttpVersionString = "HTTP/1.1";
+        public const int HttpMaxRequestLineLength = 8 * 1024; // max 8KB each line
+        public const int HttpMaxHeaderLineLength = 8 * 1024; // max 8KB each line
+        public SortedList<string, string> allowedMethods = new() {
+            { "GET ", string.Empty },
+            { "POST ", string.Empty }
+        };
 
         protected readonly ProtocolHandlerConfiguration config;
         protected readonly ILogger logger;
@@ -52,6 +58,18 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             // read request line
             if (TryReadLine(ref buffer, out ReadOnlySequence<byte> line))
             {
+                if (line.Length > HttpMaxRequestLineLength)
+                {
+                    logger.LogError("Request line too long");
+                    return false;
+                }
+
+                if (line.Length < 14) // no request line is shorter than 'GET / HTTP/1.1' 
+                {
+                    logger.LogError("Request line too short");
+                    return false;
+                }
+
                 var sb = new StringBuilder();
                 sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
                 var requestLineText = sb.ToString();
@@ -87,6 +105,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             // now we read headers
             while (TryReadLine(ref buffer, out line))
             {
+                if (line.Length > HttpMaxHeaderLineLength)
+                {
+                    logger.LogError("Header line too long");
+                    return false;
+                }
+
                 var sb = new StringBuilder();
                 sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
 
