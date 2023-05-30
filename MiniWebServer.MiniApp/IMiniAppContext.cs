@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp
 {
-    public interface IAppContext
+    public interface IMiniAppContext
     {
-        IMiniApp App { get; }
+        IMiniAppRequest Request { get; }
+        IMiniAppResponse Response { get; }
     }
 }

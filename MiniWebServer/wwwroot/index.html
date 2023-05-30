@@ -23,6 +23,18 @@
         <div class="message-panel" id="random-quote"></div>
     </div>
 
+    <div class="panel">
+        <form id="form1" action="/post/form1" method="post">
+            <label for="fname">First name:</label><br>
+            <input type="text" id="fname" name="fname"><br>
+            <label for="lname">Last name:</label><br>
+            <input type="text" id="lname" name="lname">
+        </form>
+
+        <button id="form1-submit" onclick="submitform1(); return false;">Submit form!</button>
+        <div class="message-panel" id="form1-message"></div>
+    </div>
+
     <script type="text/javascript">
         window.onload = function () {
             clock('clock');
@@ -43,6 +55,27 @@
             fetchFromUrl("/quote/random").then((value) => {
                 document.getElementById("random-quote").innerHTML = value;
             });
+        }
+
+        function submitform1() {
+            const XHR = new XMLHttpRequest();
+            const FD = new FormData();
+
+            FD.append("First-Name", document.getElementById("fname").value);
+            FD.append("Last-Name", document.getElementById("lname").value);
+
+            XHR.addEventListener("load", (event) => {
+                document.getElementById("form1-message").innerHTML = event.currentTarget.response;
+            });
+
+            XHR.addEventListener("error", (event) => {
+                document.getElementById("form1-message").innerHTML = "Oops! Something went wrong.";
+            });
+
+            XHR.open("POST", "/post/form1");
+            XHR.send(FD);
+
+            return false;
         }
     </script>
 </body>

@@ -20,7 +20,9 @@ namespace MiniWebServer.Server.Abstractions.Http
         IHttpRequestBuilder SetParameters(HttpParameters parameters);
         IHttpRequestBuilder SetQueryString(string queryString);
         IHttpRequestBuilder SetHash(string hash);
-        IHttpRequestBuilder SetBodyReader(PipeReader reader);
+        IHttpRequestBuilder SetBodyPipeline(Pipe bodyPipeline);
         IHttpRequestBuilder AddCookie(IEnumerable<HttpCookie> cookies);
+        IHttpRequestBuilder SetContentLength(long contentLength);
+        IHttpRequestBuilder SetContentType(string contentType);
     }
 }

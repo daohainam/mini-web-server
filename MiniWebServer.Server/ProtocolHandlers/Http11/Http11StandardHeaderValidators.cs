@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -12,10 +13,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         public class ContentLengthHeaderValidator : IHeaderValidator
         {
             private readonly long maxLength;
+            private readonly ILogger<ContentLengthHeaderValidator> logger;
 
-            public ContentLengthHeaderValidator(long maxLength)
+            public ContentLengthHeaderValidator(long maxLength, ILoggerFactory loggerFactory)
             {
                 this.maxLength = maxLength;
+                logger = loggerFactory.CreateLogger<ContentLengthHeaderValidator>();
             }
 
             public bool Validate(string name, string value)
@@ -26,6 +29,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                     {
                         if (length > maxLength)
                         {
+                            logger.LogError("Length too long ({length} > {max})", length, maxLength);
                             return false;
                         }
                     }
@@ -41,7 +45,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         public class TransferEncodingHeaderValidator : IHeaderValidator
         {
-            
+            private readonly ILogger logger;
+
+            public TransferEncodingHeaderValidator(ILoggerFactory loggerFactory)
+            {
+                logger = loggerFactory.CreateLogger(typeof(TransferEncodingHeaderValidator));
+            }
+
             protected virtual bool IsSupportedEncoding(string encoding)
             {
                 return true; // we virtually support everything for now :|
@@ -56,6 +66,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                     {
                         if (!IsSupportedEncoding(encoding))
                         {
+                            logger.LogError("Unsupported encoding: {encoding}", encoding);
                             return false;
                         }
                     }

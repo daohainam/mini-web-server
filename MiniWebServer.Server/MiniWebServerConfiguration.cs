@@ -14,7 +14,6 @@ namespace MiniWebServer.Server
         /// <summary>
         /// a connection will be closed if it has no data in ConnectionTimeout (in ms)
         /// </summary>
-        public string Root { get; init; } = string.Empty;
         public X509Certificate2? Certificate { get; internal set; }
 
         public List<HostConfiguration> Hosts = new();

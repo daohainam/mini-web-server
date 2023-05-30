@@ -14,6 +14,7 @@ using System.Xml.Linq;
 using System.Net.Http;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
+using MiniWebServer.Server.Host;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
@@ -23,30 +24,34 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         public const int HttpMaxRequestLineLength = 8 * 1024; // max 8KB each line
         public const int HttpMaxHeaderLineLength = 8 * 1024; // max 8KB each line
         public SortedList<string, string> allowedMethods = new() {
-            { "GET ", string.Empty },
-            { "POST ", string.Empty }
+            { "GET", string.Empty },
+            { "POST", string.Empty }
         };
 
         protected readonly ProtocolHandlerConfiguration config;
-        protected readonly ILogger logger;
+        protected readonly ILoggerFactory loggerFactory;
         protected readonly IHttp11Parser http11Parser;
         protected readonly IHeaderValidator[] headerValidators;
 
-        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILogger? logger, IHttp11Parser? http11Parser)
+        private readonly ILogger<Http11IProtocolHandler> logger;
+
+        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttp11Parser? http11Parser)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.http11Parser = http11Parser ?? throw new ArgumentNullException(nameof(http11Parser));
+            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+
+            logger = loggerFactory.CreateLogger<Http11IProtocolHandler>();
 
             headerValidators = new List<IHeaderValidator>() {
-                new Http11StandardHeaderValidators.ContentLengthHeaderValidator(config.MaxRequestBodySize),
-                new Http11StandardHeaderValidators.TransferEncodingHeaderValidator(),
+                new Http11StandardHeaderValidators.ContentLengthHeaderValidator(config.MaxRequestBodySize, loggerFactory),
+                new Http11StandardHeaderValidators.TransferEncodingHeaderValidator(loggerFactory),
             }.ToArray();
         }
 
         public int ProtocolVersion => 101;
 
-        public async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder httpWebRequestBuilder, CancellationToken cancellationToken)
+        public async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
         {
             long contentLength = 0;
             var httpMethod = HttpMethod.Get;
@@ -54,6 +59,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
             ReadResult readResult = await reader.ReadAsync(cancellationToken);
             ReadOnlySequence<byte> buffer = readResult.Buffer;
+
+            requestBuilder.SetBodyPipeline(new Pipe());
 
             // read request line
             if (TryReadLine(ref buffer, out ReadOnlySequence<byte> line))
@@ -72,10 +79,19 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 }
 
                 string firstChars = Encoding.ASCII.GetString(line.Slice(0, 5));
-                if (allowedMethods.ContainsKey(firstChars))
+                int idx = firstChars.IndexOf(' ');
+                if (idx < 0)
                 {
-                    logger.LogError("Not supported method");
+                    logger.LogError("Invalid method");
                     return false;
+                }
+                else
+                {
+                    if (!allowedMethods.ContainsKey(firstChars[..idx]))
+                    {
+                        logger.LogError("Not supported method");
+                        return false;
+                    }
                 }
 
                 var sb = new StringBuilder();
@@ -92,8 +108,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                     // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
                     // if Url length exceeds Url buffer length, you should return 414 URI Too Long
 
+                    // todo: parse the Url with percent-encoding (https://www.rfc-editor.org/rfc/rfc3986)
+
                     httpMethod = method;
-                    httpWebRequestBuilder
+                    requestBuilder
                         .SetMethod(method)
                         .SetUrl(requestLine.Url)
                         .SetParameters(requestLine.Parameters)
@@ -148,13 +166,14 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                             return false;
                         }
 
-                        httpWebRequestBuilder.AddHeader(headerLine.Name, headerLine.Value);
+                        requestBuilder.AddHeader(headerLine.Name, headerLine.Value);
 
                         if ("Content-Length".Equals(headerLine.Name)) // todo: we should use in-casesensitive compare
                         {
-                            if (long.TryParse(headerLine.Value, out long length))
+                            if (long.TryParse(headerLine.Value, out long length) && length >= 0)
                             {
                                 contentLength = length;
+                                requestBuilder.SetContentLength(length);
                             }
                             else
                             {
@@ -164,6 +183,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         else if ("Content-Type".Equals(headerLine.Name)) // todo: we should use in-casesensitive compare
                         {
                             contentType = headerLine.Value;
+                            requestBuilder.SetContentType(contentType);
                         }
                         else if ("Cookie".Equals(headerLine.Name))
                         {
@@ -175,7 +195,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                             }
                             else
                             {
-                                httpWebRequestBuilder.AddCookie(cookies);
+                                requestBuilder.AddCookie(cookies);
                             }
                         }
                     }
@@ -190,35 +210,53 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 }
             }
 
+            return true;
+        }
+
+        public async Task ReadBodyAsync(PipeReader reader, IHttpRequest request, CancellationToken cancellationToken)
+        {
+            // we don't read body part in ReadRequestAsync, because:
+            // 1. a body can be very large, and we want to read/process it when an app requests
+            // 2. we want to make it responsive, we can discard a connection right away without reading it's body, there is no reasons to waste our resouces to process an invalid request
+
             // read body part, we read only contentLength bytes
+            ReadResult readResult = await reader.ReadAsync(cancellationToken);
+            ReadOnlySequence<byte> buffer = readResult.Buffer;
+            var contentLength = request.ContentLength;
+
             long bytesRead = 0;
-            Pipe bodyPipeline = new();
             while (bytesRead < contentLength)
             {
                 long maxBytesToRead = contentLength - bytesRead;
                 if (buffer.Length >= maxBytesToRead)
                 {
                     var writingPart = buffer.Slice(0, maxBytesToRead);
-                    await bodyPipeline.Writer.WriteAsync(writingPart.ToArray(), cancellationToken); // todo: use a better way than 'ToArray'
+                    await request.BodyPipeline.Writer.WriteAsync(writingPart.ToArray(), cancellationToken); // todo: use a better way than 'ToArray'
 
-                    reader.AdvanceTo(new SequencePosition(buffer, (int)maxBytesToRead));
+                    reader.AdvanceTo(buffer.GetPosition(maxBytesToRead));
+
+                    bytesRead += maxBytesToRead;
+                    //logger.LogDebug("Read {b} bytes from body, total {t}", buffer.Length, bytesRead);
 
                     break;
                 }
                 else if (buffer.Length > 0)
                 {
-                    await bodyPipeline.Writer.WriteAsync(buffer.ToArray(), cancellationToken); // todo: use a better way than 'ToArray'
 
-                    reader.AdvanceTo(new SequencePosition(buffer, (int)buffer.Length));
+                    await request.BodyPipeline.Writer.WriteAsync(buffer.ToArray(), cancellationToken); // todo: use a better way than 'ToArray'
+
+                    reader.AdvanceTo(buffer.GetPosition(buffer.Length));
 
                     bytesRead += buffer.Length;
+                    //logger.LogDebug("Read {b} bytes from body, total {t}", buffer.Length, bytesRead);
                 }
 
                 readResult = await reader.ReadAsync(cancellationToken);
                 buffer = readResult.Buffer;
             }
 
-            return true;
+            await request.BodyPipeline.Writer.FlushAsync(cancellationToken);
+            await request.BodyPipeline.Writer.CompleteAsync();
         }
 
         private static bool TryReadLine(ref ReadOnlySequence<byte> buffer, out ReadOnlySequence<byte> line)

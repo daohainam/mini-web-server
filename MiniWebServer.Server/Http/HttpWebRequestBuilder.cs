@@ -20,7 +20,9 @@ namespace MiniWebServer.Server.Http
         private string url = "/";
         private string queryString = string.Empty;
         private string hash = string.Empty;
-        private PipeReader? reader;
+        private Pipe? bodyPipeline;
+        private long contentLength;
+        private string contentType = string.Empty;
         private readonly HttpParameters parameters = new();
 
         public IHttpRequestBuilder AddHeader(string name, string value)
@@ -42,7 +44,7 @@ namespace MiniWebServer.Server.Http
 
         public HttpRequest Build()
         {
-            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters, new HttpCookies(cookies), reader);
+            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters, new HttpCookies(cookies), bodyPipeline ?? new Pipe(), contentLength, contentType);
 
             return request;
         }
@@ -101,9 +103,9 @@ namespace MiniWebServer.Server.Http
             return this;
         }
 
-        public IHttpRequestBuilder SetBodyReader(PipeReader reader)
+        public IHttpRequestBuilder SetBodyPipeline(Pipe bodyPipeline)
         {
-            this.reader = reader;
+            this.bodyPipeline = bodyPipeline;
 
             return this;
         }
@@ -111,6 +113,20 @@ namespace MiniWebServer.Server.Http
         public IHttpRequestBuilder AddCookie(IEnumerable<HttpCookie> cookies)
         {
             this.cookies.AddRange(cookies);
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetContentLength(long contentLength)
+        {
+            this.contentLength = contentLength;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetContentType(string contentType)
+        {
+            this.contentType = contentType;
 
             return this;
         }

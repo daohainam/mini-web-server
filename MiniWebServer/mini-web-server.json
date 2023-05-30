@@ -6,5 +6,8 @@
     "CertificatePassword": "mini-web-server",
     "SSL": true
   },
-  "HostOptions": []
+  "HostOptions": [],
+  "FeatureOptions": {
+    "MaxRequestBodySize":  10000000000
+  }
 }

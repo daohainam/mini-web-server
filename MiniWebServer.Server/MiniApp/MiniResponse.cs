@@ -11,14 +11,14 @@ namespace MiniWebServer.Server.MiniApp
 {
     public class MiniResponse : IMiniAppResponse
     {
-        public MiniResponse(IAppContext context, IHttpResponseBuilder responseBuilder)
+        public MiniResponse(MiniAppConnectionContext connectionContext, IHttpResponseBuilder responseBuilder)
         {
-            Context = context ?? throw new ArgumentNullException(nameof(context));
+            this.ConnectionContext = connectionContext ?? throw new ArgumentNullException(nameof(connectionContext));
             this.responseBuilder = responseBuilder ?? throw new ArgumentNullException(nameof(responseBuilder));
         }
 
-        public IAppContext Context { get; }
         private readonly IHttpResponseBuilder responseBuilder;
+        public MiniAppConnectionContext ConnectionContext { get; }
 
         public void AddHeader(string name, string mimeType)
         {

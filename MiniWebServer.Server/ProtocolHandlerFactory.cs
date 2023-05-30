@@ -15,12 +15,12 @@ namespace MiniWebServer.Server
     public class ProtocolHandlerFactory: IProtocolHandlerFactory
     {
         public const int HTTP11 = 101;
-        private readonly ILogger<ProtocolHandlerFactory> logger;
+        private readonly ILoggerFactory loggerFactory;
         private readonly IServiceProvider services;
 
-        public ProtocolHandlerFactory(ILogger<ProtocolHandlerFactory> logger, IServiceProvider services)
+        public ProtocolHandlerFactory(ILoggerFactory loggerFactory, IServiceProvider services)
         {
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             this.services = services ?? throw new ArgumentNullException(nameof(services));
         }
 
@@ -28,7 +28,7 @@ namespace MiniWebServer.Server
         {
             if (config.ProtocolVersion == HTTP11)
             {
-                return new Http11IProtocolHandler(config, services.GetService<ILogger<Http11IProtocolHandler>>(), services.GetService<IHttp11Parser>());
+                return new Http11IProtocolHandler(config, loggerFactory, services.GetService<IHttp11Parser>());
             }
 
             throw new ArgumentOutOfRangeException(nameof(config.ProtocolVersion), "Unknown protocol version");

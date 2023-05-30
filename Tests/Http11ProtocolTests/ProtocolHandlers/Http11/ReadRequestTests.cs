@@ -1,4 +1,6 @@
-﻿using Http11ProtocolTests.ProtocolHandlers.Http11;
+﻿using Http11ProtocolTests;
+using Http11ProtocolTests.ProtocolHandlers.Http11;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.Server.Abstractions;
@@ -48,10 +50,10 @@ Cache-Control:no-cache
 
         private static async Task<ReadRequestTestResult> ReadRequestAsync(string requestContent)
         {
-            var reader = String2Reader(requestContent);
+            var reader = PipeUtils.String2Reader(requestContent);
 
             var http11Parser = new RegexHttp11Parsers();
-            var handler = new Http11IProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), NullLogger.Instance, http11Parser);
+            var handler = new Http11IProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), new LoggerFactory(), http11Parser);
 
             var requestBuilder = new HttpWebRequestBuilder();
 
@@ -60,16 +62,6 @@ Cache-Control:no-cache
             return new ReadRequestTestResult(result, requestBuilder);
         }
 
-        public static PipeReader String2Reader(string s)
-        {
-            var stream = new MemoryStream();
-            var writer = new StreamWriter(stream);
-            
-            writer.Write(s);
-            writer.Flush();
-            stream.Position = 0;
 
-            return PipeReader.Create(new ReadOnlySequence<byte>(stream.GetBuffer()).Slice(0, stream.Length));
-        }
     }
 }

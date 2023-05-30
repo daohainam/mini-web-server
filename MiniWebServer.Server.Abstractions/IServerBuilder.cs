@@ -26,5 +26,11 @@ namespace MiniWebServer.Server.Abstractions
         /// </summary>
         /// <returns></returns>
         IServer Build();
+        IServerBuilder SetMaxRequestBodySize(long maxRequestBodySize);
+        IServerBuilder SetReadBufferSize(int readBufferSize);
+        IServerBuilder SetReadRequestTimeout(int readRequestTimeout);
+        IServerBuilder SetSendResponseTimeout(int sendResponseTimeout);
+        IServerBuilder SetConnectionTimeout(int connectionTimeout);
+        IServerBuilder AddCertificate(string certificateFile, string certificatePassword);
     }
 }

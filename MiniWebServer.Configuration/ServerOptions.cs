@@ -10,5 +10,6 @@ namespace MiniWebServer.Configuration
     {
         public HostOptions[] HostOptions { get; set; } = Array.Empty<HostOptions>();
         public BindingOptions BindingOptions { get; set; } = new();
+        public ServerFeatureOptions FeatureOptions { get; set; } = new();
     }
 }

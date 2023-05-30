@@ -10,7 +10,7 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpRequest : IHttpRequest
     {
-        public HttpRequest(HttpMethod method, string url, HttpRequestHeaders headers, string queryString, string hash, HttpParameters queryParameters, HttpCookies cookies, PipeReader? bodyReader)
+        public HttpRequest(HttpMethod method, string url, HttpRequestHeaders headers, string queryString, string hash, HttpParameters queryParameters, HttpCookies cookies, Pipe bodyPipeline, long contentLength, string contentType)
         {
             if (queryParameters is null)
             {
@@ -24,18 +24,21 @@ namespace MiniWebServer.Abstractions.Http
             Hash = hash ?? string.Empty;
             QueryParameters = queryParameters ?? throw new ArgumentNullException(nameof(queryParameters));
             Cookies = cookies ?? throw new ArgumentNullException(nameof(cookies));
-            BodyReader = bodyReader;
+            BodyPipeline = bodyPipeline;
+            ContentLength = contentLength;
+            ContentType = contentType;
         }
 
-        public HttpMethod Method { get; }
-
-        public string Url { get; }
-
-        public HttpRequestHeaders Headers { get; }
-        public string QueryString { get; }
+        public Pipe BodyPipeline { get; }
+        public HttpCookies Cookies { get; }
+        public long ContentLength { get; }
+        public string ContentType { get; }
         public string Hash { get; }
+        public HttpMethod Method { get; }
+        public HttpRequestHeaders Headers { get; }
         public HttpParameters QueryParameters { get; }
-        public PipeReader? BodyReader { get; }
+        public string QueryString { get; }
+        public string Url { get; }
 
         public bool KeepAliveRequested { get 
             {
@@ -43,6 +46,5 @@ namespace MiniWebServer.Abstractions.Http
             } 
         }
 
-        public HttpCookies Cookies { get; }
     }
 }

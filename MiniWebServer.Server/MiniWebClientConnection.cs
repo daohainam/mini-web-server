@@ -5,6 +5,7 @@ using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Content;
 using MiniWebServer.Server.Abstractions.Http;
+using MiniWebServer.Server.BodyReaders.Form;
 using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
@@ -53,6 +54,8 @@ namespace MiniWebServer.Server
                 PipeReader requestPipeReader = PipeReader.Create(config.ClientStream);
                 PipeWriter responsePipeWriter = PipeWriter.Create(config.ClientStream);
 
+                MiniAppConnectionContext connectionContext = BuildMiniAppConnectionContext();
+
                 while (isKeepAlive)
                 {
                     cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
@@ -62,7 +65,8 @@ namespace MiniWebServer.Server
                     var requestBuilder = new HttpWebRequestBuilder();
                     var responseBuilder = new HttpWebResponseBuilder();
 
-                    if (!await ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken))
+                    var readRequestResult = await config.ProtocolHandler.ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken);
+                    if (!readRequestResult)
                     {
                         isKeepAlive = false; // we always close wrongly working connections
 
@@ -87,7 +91,13 @@ namespace MiniWebServer.Server
                         {
                             cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
                             logger.LogDebug("[{cid}] - Processing request...", ConnectionId);
-                            await ExecuteCallableAsync(request, responseBuilder, app, cancellationToken);
+
+                            // now we continue reading body part
+                            Task readBodyTask = config.ProtocolHandler.ReadBodyAsync(requestPipeReader, request, cancellationToken);
+
+                            await ExecuteCallableAsync(connectionContext, request, responseBuilder, app, cancellationToken);
+
+                            readBodyTask.Wait(0, cancellationToken); // stop reading, remember that unprocessed bytes still remain in the socket buffer
                         }
 
                         var response = responseBuilder.Build();
@@ -107,24 +117,13 @@ namespace MiniWebServer.Server
             }
         }
 
-        private async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
+        private MiniAppConnectionContext BuildMiniAppConnectionContext()
         {
-            bool succeed = false;
+            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
-            try
-            {
-                var readRequestResult = await config.ProtocolHandler.ReadRequestAsync(reader, requestBuilder, cancellationToken);
-                if (readRequestResult)
-                {
-                    succeed = true;
-                }
-            }
-            catch (Exception ex) 
-            {
-                logger.LogError(ex, "[{cid}] - Error reading request", ConnectionId);
-            }
+            var connectionContext = new MiniAppConnectionContext(new DefaultFormReaderFactory(), loggerFactory);
 
-            return succeed;
+            return connectionContext;
         }
 
         private async Task SendResponseAsync(PipeWriter writer, HttpResponse response, CancellationToken cancellationToken)
@@ -157,14 +156,14 @@ namespace MiniWebServer.Server
             return null;
         }
 
-        private async Task ExecuteCallableAsync(HttpRequest request, HttpWebResponseBuilder responseBuilder, IMiniApp app, CancellationToken cancellationToken)
+        private async Task ExecuteCallableAsync(MiniAppConnectionContext connectionContext, HttpRequest request, HttpWebResponseBuilder responseBuilder, IMiniApp app, CancellationToken cancellationToken)
         {
             if (app == null)
                 throw new ArgumentNullException(nameof(app));
 
             try
             {
-                await CallByMethod(app, request, responseBuilder, cancellationToken);
+                await CallByMethod(connectionContext, app, request, responseBuilder, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -179,28 +178,28 @@ namespace MiniWebServer.Server
             config.TcpClient.Close();
         }
 
-        private async Task CallByMethod(IMiniApp app, HttpRequest httpRequest, IHttpResponseBuilder responseBuilder, CancellationToken cancellationToken)
+        private async Task CallByMethod(MiniAppConnectionContext connectionContext, IMiniApp app, HttpRequest httpRequest, IHttpResponseBuilder responseBuilder, CancellationToken cancellationToken)
         {
             try
             {
-                var context = BuildMiniContext(app);
-                var request = BuildMiniAppRequest(context, httpRequest);
-                var response = BuildMiniAppResponse(context, responseBuilder);
+                var request = BuildMiniAppRequest(connectionContext, httpRequest);
 
                 var action = app.Find(request);
 
                 if (action != null)
                 {
+                    var response = BuildMiniAppResponse(connectionContext, responseBuilder);
+                    var context = BuildMiniContext(connectionContext, app, request, response);
 
                     try
                     {
                         if (httpRequest.Method == HttpMethod.Get)
                         {
-                            await action.Get(request, response, cancellationToken);
+                            await action.Get(context, cancellationToken);
                         }
                         else if (httpRequest.Method == HttpMethod.Post)
                         {
-                            await action.Post(request, response, cancellationToken);
+                            await action.Post(context, cancellationToken);
                         }
                         else
                         {
@@ -223,21 +222,21 @@ namespace MiniWebServer.Server
             }
         }
 
-        private static MiniAppContext BuildMiniContext(IMiniApp app)
+        private static MiniAppContext BuildMiniContext(MiniAppConnectionContext connectionContext, IMiniApp app, MiniRequest request, MiniResponse response)
         {
-            return new MiniAppContext(app);
+            return new MiniAppContext(connectionContext, app, request, response);
         }
 
-        private static MiniRequest BuildMiniAppRequest(MiniAppContext context, HttpRequest httpRequest)
+        private static MiniRequest BuildMiniAppRequest(MiniAppConnectionContext connectionContext, HttpRequest httpRequest)
         {
-            var request = new MiniRequest(context, httpRequest);
+            var request = new MiniRequest(connectionContext, httpRequest);
 
             return request;
         }
 
-        private static MiniResponse BuildMiniAppResponse(MiniAppContext context, IHttpResponseBuilder responseBuilder)
+        private static MiniResponse BuildMiniAppResponse(MiniAppConnectionContext connectionContext, IHttpResponseBuilder responseBuilder)
         {
-            var response = new MiniResponse(context, responseBuilder);
+            var response = new MiniResponse(connectionContext, responseBuilder);
 
             response.SetStatus(HttpResponseCodes.OK);
             response.SetContent(EmptyContent.Instance);

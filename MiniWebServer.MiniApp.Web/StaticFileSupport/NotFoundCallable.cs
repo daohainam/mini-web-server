@@ -9,17 +9,17 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 {
     public class NotFoundCallable : ICallable
     {
-        public async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
         {
             await Task.Run(() => {
-                response.SetStatus(HttpResponseCodes.NotFound);
+                context.Response.SetStatus(HttpResponseCodes.NotFound);
             }, cancellationToken);
         }
 
-        public async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public async Task Post(IMiniAppContext context, CancellationToken cancellationToken)
         {
             await Task.Run(() => {
-                response.SetStatus(HttpResponseCodes.NotFound);
+                context.Response.SetStatus(HttpResponseCodes.NotFound);
             }, cancellationToken);
         }
 

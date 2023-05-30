@@ -34,7 +34,7 @@ namespace MiniWebServer.MiniApp.Web
 
             return this;
         }
-        public virtual MiniWeb Build()
+        public virtual IMiniApp Build()
         {
             var app = new MiniWeb();
             var sp = Services.BuildServiceProvider();

@@ -22,7 +22,7 @@ namespace MiniWebServer.Server
         private ulong nextClientId = 0;
         private bool disposed = false;
 
-        private ConcurrentDictionary<ulong, Task> clientTasks = new ConcurrentDictionary<ulong, Task>();
+        private readonly ConcurrentDictionary<ulong, Task> clientTasks = new();
 
         private readonly CancellationTokenSource cancellationTokenSource; // we use this to cancel system-wise threads
         private readonly CancellationToken cancellationToken;
@@ -107,7 +107,7 @@ namespace MiniWebServer.Server
                     cancellationToken
                 );
 
-                logger.LogInformation("New connection added {tcpClient}", tcpClient.Client.RemoteEndPoint);
+                logger.LogInformation("[{cid}] - New connection added {tcpClient}", connectionId, tcpClient.Client.RemoteEndPoint);
                 await client.HandleRequestAsync();
             }
             catch (AuthenticationException ex)

@@ -20,7 +20,7 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 
         private static bool IsText(string mimeType) => mimeType.StartsWith("text/");
 
-        public async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
         {
             if (file.Exists)
             {
@@ -34,9 +34,9 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
                         using var reader = file.OpenText();
                         var content = await reader.ReadToEndAsync(cancellationToken);
 
-                        response.AddHeader("Content-Type", mimeType);
-                        response.AddHeader("Content-Length", content.Length.ToString());
-                        response.SetContent(new Content.StringContent(content));
+                        context.Response.AddHeader("Content-Type", mimeType);
+                        context.Response.AddHeader("Content-Length", content.Length.ToString());
+                        context.Response.SetContent(new Content.StringContent(content));
                     }
                     else
                     {
@@ -46,29 +46,29 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 
                         stream.Read(content, 0, content.Length);
 
-                        response.AddHeader("Content-Type", mimeType);
-                        response.AddHeader("Content-Length", content.Length.ToString());
-                        response.SetContent(new Content.ByteArrayContent(content));
+                        context.Response.AddHeader("Content-Type", mimeType);
+                        context.Response.AddHeader("Content-Length", content.Length.ToString());
+                        context.Response.SetContent(new Content.ByteArrayContent(content));
                     }
 
-                    response.SetStatus(HttpResponseCodes.OK);
+                    context.Response.SetStatus(HttpResponseCodes.OK);
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex, message: null);
-                    response.SetStatus(HttpResponseCodes.InternalServerError);
+                    context.Response.SetStatus(HttpResponseCodes.InternalServerError);
                 }
             }
             else
             {
-                logger.LogError("Resource not found ({resource})", request.Url);
-                response.SetStatus(HttpResponseCodes.NotFound);
+                logger.LogError("Resource not found ({resource})", context.Request.Url);
+                context.Response.SetStatus(HttpResponseCodes.NotFound);
             }
         }
 
-        public Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public Task Post(IMiniAppContext context, CancellationToken cancellationToken)
         {
-            response.SetStatus(HttpResponseCodes.Forbidden);
+            context.Response.SetStatus(HttpResponseCodes.Forbidden);
 
             return Task.CompletedTask;
         }

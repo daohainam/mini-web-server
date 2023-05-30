@@ -10,14 +10,14 @@ namespace MiniWebServer.MiniApp
 {
     public interface IMiniAppRequest
     {
-        IAppContext Context { get; }
         string Url { get; }
-        PipeReader? BodyReader { get; }
+        IMiniBodyManager BodyManager { get; }
         HttpCookies Cookies { get; }
         string Hash { get; }
         HttpHeaders Headers { get; }
         Abstractions.Http.HttpMethod Method { get; }
         HttpParameters QueryParameters { get; }
         string QueryString { get; }
+        Task<IRequestForm> ReadFormAsync(CancellationToken cancellationToken = default);
     }
 }

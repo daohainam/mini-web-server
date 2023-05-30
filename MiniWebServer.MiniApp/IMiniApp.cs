@@ -8,10 +8,11 @@ namespace MiniWebServer.MiniApp
 {
     public interface IMiniApp: ICallableService
     {
-        Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken);
+        Task Get(IMiniAppContext context, CancellationToken cancellationToken);
         void MapGet(string route, RequestDelegate action);
-        Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken);
+        void MapPost(string route, RequestDelegate action);
+        Task Post(IMiniAppContext context, CancellationToken cancellationToken);
     }
 
-    public delegate Task RequestDelegate(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken);
+    public delegate Task RequestDelegate(IMiniAppContext context, CancellationToken cancellationToken);
 }

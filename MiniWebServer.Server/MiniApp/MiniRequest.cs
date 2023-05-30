@@ -1,6 +1,7 @@
 ﻿using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
+using MiniWebServer.Server.BodyReaders.Form;
 using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -13,16 +14,17 @@ namespace MiniWebServer.Server.MiniApp
 {
     public class MiniRequest : IMiniAppRequest
     {
+        public MiniAppConnectionContext ConnectionContext { get; }
         private readonly IHttpRequest httpRequest;
 
-        public MiniRequest(IAppContext context, 
-            IHttpRequest httpRequest)
-        {
-            Context = context ?? throw new ArgumentNullException(nameof(context));
-            this.httpRequest = httpRequest ?? throw new ArgumentNullException(nameof(httpRequest));
-        }
 
-        public IAppContext Context { get; }
+        public MiniRequest(MiniAppConnectionContext connectionContext, IHttpRequest httpRequest)
+        {
+            this.ConnectionContext = connectionContext ?? throw new ArgumentNullException(nameof(connectionContext));
+            this.httpRequest = httpRequest ?? throw new ArgumentNullException(nameof(httpRequest));
+            
+            BodyManager = new MiniBodyManager(httpRequest.BodyPipeline.Reader);
+        }
 
         public string Url => httpRequest.Url;
         public string QueryString => httpRequest.QueryString;
@@ -31,6 +33,33 @@ namespace MiniWebServer.Server.MiniApp
         public string Hash => httpRequest.Hash;
         public HttpHeaders Headers => httpRequest.Headers;
         public HttpMethod Method => httpRequest.Method;
-        public PipeReader? BodyReader => httpRequest.BodyReader;
+        public IMiniBodyManager BodyManager { get; }
+
+        public async Task<IRequestForm> ReadFormAsync(CancellationToken cancellationToken = default)
+        {
+            var form = new RequestForm();
+            
+            if (httpRequest.ContentType == null)
+                return form;
+
+            var reader = BodyManager.GetReader();
+
+            if (reader == null)
+            {
+                // empty form
+                return form;
+            }
+
+            var formReader = ConnectionContext.FormReaderFactory.CreateFormReader(httpRequest.ContentType, ConnectionContext.LoggerFactory) ?? throw new InvalidHttpStreamException("Not supported content type");
+            var readform = await formReader.ReadAsync(reader, cancellationToken);
+            if (readform != null)
+            {
+                return readform;
+            }
+            else
+            {
+                throw new InvalidHttpStreamException("Error reading form data");
+            }
+        }
     }
 }

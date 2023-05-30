@@ -15,14 +15,14 @@ namespace MiniWebServer.MiniApp
             this.action = action ?? throw new ArgumentNullException(nameof(action));
         }
 
-        public async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
         {
-            await action.RequestDelegate.Invoke(request, response, cancellationToken);
+            await action.RequestDelegate.Invoke(context, cancellationToken);
         }
 
-        public async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public async Task Post(IMiniAppContext context, CancellationToken cancellationToken)
         {
-            await action.RequestDelegate.Invoke(request, response, cancellationToken);
+            await action.RequestDelegate.Invoke(context, cancellationToken);
         }
     }
 }

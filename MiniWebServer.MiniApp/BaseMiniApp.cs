@@ -10,22 +10,33 @@ namespace MiniWebServer.MiniApp
     {
         internal readonly IDictionary<string, ActionDelegate> routes = new Dictionary<string, ActionDelegate>();
 
-        public virtual Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public virtual Task Get(IMiniAppContext context, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
 
-        public virtual Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
+        public virtual Task Post(IMiniAppContext context, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
+
         public void MapGet(string route, RequestDelegate action)
         {
             var r = new ActionDelegate(route, action, Abstractions.Http.HttpMethod.Get);
 
-            if (routes.ContainsKey(route)) 
+            if (routes.ContainsKey(route))
                 routes[route] = r;
-            else 
+            else
+                routes.Add(route, r);
+        }
+
+        public void MapPost(string route, RequestDelegate action)
+        {
+            var r = new ActionDelegate(route, action, Abstractions.Http.HttpMethod.Post);
+
+            if (routes.ContainsKey(route))
+                routes[route] = r;
+            else
                 routes.Add(route, r);
         }
 

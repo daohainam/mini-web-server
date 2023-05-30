@@ -24,18 +24,20 @@ namespace MiniWebServer.Server
     {
         private IPAddress address = IPAddress.Loopback;
         private int httpPort = 80;
-        private readonly ILogger<MiniWebServerBuilder> logger;
         private string certificateFile = string.Empty;
         private string certificatePassword = string.Empty;
         private readonly Dictionary<string, HostConfiguration> hosts = new();
         private readonly List<IRoutingServiceFactory> routingServiceFactories = new();
         private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
         private IDistributedCache? cache;
+        private int connectionTimeout;
+        private int readBufferSize;
+        private long maxRequestBodySize;
+        private int readRequestTimeout;
+        private int sendResponseTimeout;
 
-        public MiniWebServerBuilder(ILogger<MiniWebServerBuilder>? logger = null)
+        public MiniWebServerBuilder()
         {
-            this.logger = logger ?? new NullLogger<MiniWebServerBuilder>();
-            
             Services = new ServiceCollection();
         }
 
@@ -63,12 +65,55 @@ namespace MiniWebServer.Server
                     // note that a certificate might have empty password
                     AddCertificate(serverOptions.BindingOptions.Certificate, serverOptions.BindingOptions.CertificatePassword);
                 }
+                if (serverOptions.FeatureOptions != null)
+                {
+                    SetConnectionTimeout(serverOptions.FeatureOptions.ConnectionTimeout);
+                    SetSendResponseTimeout(serverOptions.FeatureOptions.SendResponseTimeout);
+                    SetReadRequestTimeout(serverOptions.FeatureOptions.ReadRequestTimeout);
+                    SetReadBufferSize(serverOptions.FeatureOptions.ReadBufferSize);
+                    SetMaxRequestBodySize(serverOptions.FeatureOptions.MaxRequestBodySize);
+                }
             }
 
             return this;
         }
 
-        private void AddCertificate(string certificateFile, string certificatePassword)
+        public IServerBuilder SetMaxRequestBodySize(long maxRequestBodySize)
+        {
+            this.maxRequestBodySize = maxRequestBodySize;
+
+            return this;
+        }
+
+        public IServerBuilder SetReadBufferSize(int readBufferSize)
+        {
+            this.readBufferSize = readBufferSize;
+
+            return this;
+        }
+
+        public IServerBuilder SetReadRequestTimeout(int readRequestTimeout)
+        {
+            this.readRequestTimeout = readRequestTimeout;
+
+            return this;
+        }
+
+        public IServerBuilder SetSendResponseTimeout(int sendResponseTimeout)
+        {
+            this.sendResponseTimeout = sendResponseTimeout;
+
+            return this;
+        }
+
+        public IServerBuilder SetConnectionTimeout(int connectionTimeout)
+        {
+            this.connectionTimeout = connectionTimeout;
+
+            return this;
+        }
+
+        public IServerBuilder AddCertificate(string certificateFile, string certificatePassword)
         {
             if (File.Exists(certificateFile))
             {
@@ -79,6 +124,8 @@ namespace MiniWebServer.Server
             {
                 throw new FileNotFoundException(nameof(certificateFile));
             }
+
+            return this;
         }
 
         public IServerBuilder BindToAddress(string ipAddress)
@@ -148,7 +195,12 @@ namespace MiniWebServer.Server
                 {
                     HttpEndPoint = new IPEndPoint(address, httpPort),
                     Hosts = hosts.Values.ToList(),
-                    Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword)
+                    Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword),
+                    MaxRequestBodySize = maxRequestBodySize,
+                    ConnectionTimeout = connectionTimeout,
+                    ReadBufferSize = readBufferSize,
+                    ReadRequestTimeout = readRequestTimeout,
+                    SendResponseTimeout = sendResponseTimeout,
                 },
                 serviceProvider,
                 serviceProvider.GetService<IProtocolHandlerFactory>(),

@@ -7,11 +7,9 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp.Web
 {
-    public interface IMiniWebBuilder
+    public interface IMiniWebBuilder: IMiniAppBuilder
     {
-        MiniWeb Build();
         IMiniWebBuilder UseStaticFiles();
         IMiniWebBuilder UseRootDirectory(string path);
-        IServiceCollection Services { get; }
     }
 }

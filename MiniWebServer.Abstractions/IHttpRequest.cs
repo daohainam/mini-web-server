@@ -15,9 +15,11 @@ namespace MiniWebServer.Abstractions
         HttpRequestHeaders Headers { get; }
         bool KeepAliveRequested { get; }
         HttpCookies Cookies { get; }
-        PipeReader? BodyReader { get; }
+        Pipe BodyPipeline { get; }
         HttpParameters QueryParameters { get; }
         string Hash { get; }
         string QueryString { get; }
+        long ContentLength { get; }
+        string ContentType { get; }
     }
 }

@@ -6,5 +6,8 @@
     "CertificatePassword": "",
     "SSL": false
   },
-  "HostOptions": []
+  "HostOptions": [],
+  "FeatureOptions": {
+    "MaxRequestBodySize": 1000000
+  }
 }

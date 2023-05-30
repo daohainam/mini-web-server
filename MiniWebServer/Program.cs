@@ -11,6 +11,7 @@ using MiniWebServer.Server;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 using System;
+using System.Text;
 
 namespace MiniWebServer
 {
@@ -69,16 +70,32 @@ namespace MiniWebServer
 
         private static IMiniApp MapRoutes(IMiniApp app)
         {
-            app.MapGet("/helpcheck", (request, response, cancellationToken) => {
-                response.SetContent(new MiniApp.Content.StringContent($"Service status: OK {DateTime.Now}"));
+            app.MapGet("/helpcheck", (context, cancellationToken) => {
+                context.Response.SetContent(new MiniApp.Content.StringContent($"Service status: OK {DateTime.Now}"));
 
                 return Task.CompletedTask;
             });
 
-            app.MapGet("/quote/random", async (request, response, cancellationToken) => {
+            app.MapGet("/quote/random", async (context, cancellationToken) => {
                 string quote = await QuoteServiceFactory.GetQuoteService().GetRandomAsync();
 
-                response.SetContent(new MiniApp.Content.StringContent(quote));
+                context.Response.SetContent(new MiniApp.Content.StringContent(quote));
+            });
+
+            app.MapPost("/post/form1", async (context, cancellationToken) => {
+                var form = await context.Request.ReadFormAsync(cancellationToken);
+
+                StringBuilder sb = new();
+                foreach (var item in form)
+                {
+                    sb.Append("<div>");
+                    sb.Append(item.Key);
+                    sb.Append(": ");
+                    sb.Append(item.Value);
+                    sb.Append("</div>");
+                }
+
+                context.Response.SetContent(new MiniApp.Content.StringContent(sb.ToString()));
             });
 
             return app;
