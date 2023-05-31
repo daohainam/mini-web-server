@@ -27,7 +27,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MiniApp.Web",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MiniApp", "MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj", "{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.Server.Abstractions", "MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj", "{B2A21BDA-7197-44B7-A57E-AF1B84659022}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Server.Abstractions", "MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj", "{B2A21BDA-7197-44B7-A57E-AF1B84659022}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.Helpers", "MiniWebServer.Helpers\MiniWebServer.Helpers.csproj", "{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -83,6 +85,10 @@ Global
 		{B2A21BDA-7197-44B7-A57E-AF1B84659022}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2A21BDA-7197-44B7-A57E-AF1B84659022}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2A21BDA-7197-44B7-A57E-AF1B84659022}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

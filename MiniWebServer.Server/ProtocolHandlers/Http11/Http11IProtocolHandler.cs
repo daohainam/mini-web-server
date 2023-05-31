@@ -168,7 +168,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                         requestBuilder.AddHeader(headerLine.Name, headerLine.Value);
 
-                        if ("Content-Length".Equals(headerLine.Name)) // todo: we should use in-casesensitive compare
+                        // here we have some checks for important headers
+                        if ("Content-Length".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
                             if (long.TryParse(headerLine.Value, out long length) && length >= 0)
                             {
@@ -180,12 +181,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                 return false;
                             }
                         }
-                        else if ("Content-Type".Equals(headerLine.Name)) // todo: we should use in-casesensitive compare
+                        else if ("Content-Type".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
                             contentType = headerLine.Value;
                             requestBuilder.SetContentType(contentType);
                         }
-                        else if ("Cookie".Equals(headerLine.Name))
+                        else if ("Cookie".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
                             var cookies = http11Parser.ParseCookieHeader(headerLine.Value);
                             if (cookies == null)
@@ -276,17 +277,21 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
         }
 
-        private static bool ValidateRequestHeader(HttpMethod httpMethod, long contentLength, string contentType)
+        private bool ValidateRequestHeader(HttpMethod httpMethod, long contentLength, string contentType)
         {
             if ((httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put))
             {
                 if (contentLength == 0)
                 {
                     // POST and PUT require body part
+                    logger.LogError("POST and GET require Content-Length > 0");
+
                     return false;
                 }
                 if (string.IsNullOrEmpty(contentType))
                 {
+                    logger.LogError("Content-Type cannot be empty");
+
                     return false;
                 }
             }

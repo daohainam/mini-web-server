@@ -37,46 +37,6 @@ namespace MiniWebServer.Server.BodyReaders.Form
 
         public async Task<IRequestForm?> ReadAsync(PipeReader pipeReader, CancellationToken cancellationToken = default)
         {
-            //ReadResult readResult = await pipeReader.ReadAsync(cancellationToken);
-            //ReadOnlySequence<byte> buffer = readResult.Buffer;
-            //var ms = new FileStream("debug-stream.txt", FileMode.Create, FileAccess.Write);
-            //long total = 0;
-
-            //while (true)
-            //{
-            //    total += buffer.Length;
-            //    ms.Write(buffer.ToArray());
-
-            //    pipeReader.AdvanceTo(buffer.End);
-
-            //    logger.LogDebug("Write {length} bytes, total {total}", buffer.Length, total);
-
-            //    if (readResult.IsCompleted)
-            //        break;
-
-            //    readResult = await pipeReader.ReadAsync(cancellationToken);
-            //    buffer = readResult.Buffer;
-            //}
-            //ms.Flush();
-            //ms.Close();
-
-
-            //var stream = pipeReader.AsStream();
-            //var ms = new FileStream("debug-stream.txt", FileMode.Create, FileAccess.Write);
-            //var buffer = new byte[4096];
-
-            //var l = stream.Read(buffer);
-            //while (l > 0)
-            //{
-            //    ms.Write(buffer, 0, l);
-            //    l = stream.Read(buffer);
-            //}
-
-            //ms.Flush();
-            //ms.Close();
-
-            //ms = new FileStream("debug-stream.txt", FileMode.Open, FileAccess.Read);
-
             form = new RequestForm();
             var parser = new StreamingMultipartFormDataParser(
                 pipeReader.AsStream(),

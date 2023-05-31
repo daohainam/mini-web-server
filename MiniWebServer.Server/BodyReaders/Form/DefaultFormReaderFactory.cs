@@ -13,7 +13,7 @@ namespace MiniWebServer.Server.BodyReaders.Form
         private const string MultipartFormDataContentType = "multipart/form-data";
         private const string XWwwFormUrlEncodedContentType = "application/x-www-form-urlencoded";
 
-        public IFormReader? CreateFormReader(string contentType, ILoggerFactory loggerFactory)
+        public IFormReader? CreateFormReader(string contentType, long contentLength, ILoggerFactory loggerFactory)
         {
             ArgumentException.ThrowIfNullOrEmpty(contentType);
 
@@ -36,7 +36,7 @@ namespace MiniWebServer.Server.BodyReaders.Form
             }
             else if (contentTypeParts[0] == XWwwFormUrlEncodedContentType)
             {
-                return new XWwwFormUrlencodedFormReader();
+                return new XWwwFormUrlencodedFormReader(contentLength);
             }
             else
             {

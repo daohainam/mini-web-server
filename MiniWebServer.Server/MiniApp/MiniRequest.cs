@@ -50,7 +50,7 @@ namespace MiniWebServer.Server.MiniApp
                 return form;
             }
 
-            var formReader = ConnectionContext.FormReaderFactory.CreateFormReader(httpRequest.ContentType, ConnectionContext.LoggerFactory) ?? throw new InvalidHttpStreamException("Not supported content type");
+            var formReader = ConnectionContext.FormReaderFactory.CreateFormReader(httpRequest.ContentType, httpRequest.ContentLength, ConnectionContext.LoggerFactory) ?? throw new InvalidHttpStreamException("Not supported content type");
             var readform = await formReader.ReadAsync(reader, cancellationToken);
             if (readform != null)
             {

@@ -9,6 +9,6 @@ namespace MiniWebServer.Server.BodyReaders.Form
 {
     public interface IFormReaderFactory
     {
-        IFormReader? CreateFormReader(string contentType, ILoggerFactory loggerFactory);
+        IFormReader? CreateFormReader(string contentType, long contentLength, ILoggerFactory loggerFactory);
     }
 }

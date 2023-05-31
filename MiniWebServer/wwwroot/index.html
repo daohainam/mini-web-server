@@ -29,6 +29,7 @@
             <input type="text" id="fname" name="fname"><br>
             <label for="lname">Last name:</label><br>
             <input type="text" id="lname" name="lname">
+            <input type="checkbox" id="use-form-urlencoded"><label for="use-form-urlencoded">Use application/x-www-form-urlencoded</label>
         </form>
 
         <button id="form1-submit" onclick="submitform1(); return false;">Submit form!</button>
@@ -59,10 +60,6 @@
 
         function submitform1() {
             const XHR = new XMLHttpRequest();
-            const FD = new FormData();
-
-            FD.append("First-Name", document.getElementById("fname").value);
-            FD.append("Last-Name", document.getElementById("lname").value);
 
             XHR.addEventListener("load", (event) => {
                 document.getElementById("form1-message").innerHTML = event.currentTarget.response;
@@ -73,7 +70,18 @@
             });
 
             XHR.open("POST", "/post/form1");
-            XHR.send(FD);
+
+            let useUrlEncoded = document.getElementById("use-form-urlencoded");
+            if (useUrlEncoded.checked == true) {
+                XHR.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                XHR.send("First-Name=" + document.getElementById("fname").value + "&Last-Name=" + document.getElementById("lname").value);
+            }
+            else {
+                const FD = new FormData();
+                FD.append("First-Name", document.getElementById("fname").value);
+                FD.append("Last-Name", document.getElementById("lname").value);
+                XHR.send(FD);
+            }
 
             return false;
         }
