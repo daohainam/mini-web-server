@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 using System.Net;
 using System.Text;
@@ -8,13 +7,11 @@ using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 using System;
 using System.Buffers;
 using System.IO.Pipelines;
-using System.Reflection.PortableExecutable;
 using System.Threading;
 using System.Xml.Linq;
 using System.Net.Http;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
-using MiniWebServer.Server.Host;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
@@ -217,7 +214,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         public async Task ReadBodyAsync(PipeReader reader, IHttpRequest request, CancellationToken cancellationToken)
         {
             // we don't read body part in ReadRequestAsync, because:
-            // 1. a body can be very large, and we want to read/process it when an app requests
+            // 1. a body can be very large, and we want to read/process it only when an app requests
             // 2. we want to make it responsive, we can discard a connection right away without reading it's body, there is no reasons to waste our resouces to process an invalid request
 
             // read body part, we read only contentLength bytes
@@ -236,7 +233,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                     reader.AdvanceTo(buffer.GetPosition(maxBytesToRead));
 
-                    bytesRead += maxBytesToRead;
+                    //bytesRead += maxBytesToRead;
                     //logger.LogDebug("Read {b} bytes from body, total {t}", buffer.Length, bytesRead);
 
                     break;

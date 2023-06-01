@@ -36,6 +36,11 @@
         <div class="message-panel" id="form1-message"></div>
     </div>
 
+    <div class="panel">
+        <button onclick="dos(); return false;">DOS the server!</button>
+        <div class="message-panel" id="dos-message"></div>
+    </div>
+
     <script type="text/javascript">
         window.onload = function () {
             clock('clock');
@@ -56,6 +61,32 @@
             fetchFromUrl("/quote/random").then((value) => {
                 document.getElementById("random-quote").innerHTML = value;
             });
+        }
+
+        function dos() {
+            const arr = new Array();
+            document.getElementById("dos-message").innerHTML = '';
+
+            for (let i = 1; i <= 1000; i++) {
+                const promise = fetchFromUrl(`/string-api/toupper?text=${generateRandomString(64)}-${i}`).then((value) => {
+                    document.getElementById("dos-message").innerHTML += value + '<br />\r\n';
+                });
+
+                arr.push(promise);
+            }
+
+            Promise.all(arr);
+        }
+
+        const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        function generateRandomString(length) {
+            let result = '';
+            const charactersLength = characters.length;
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+
+            return result;
         }
 
         function submitform1() {

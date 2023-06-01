@@ -82,6 +82,12 @@ namespace MiniWebServer
                 context.Response.SetContent(new MiniApp.Content.StringContent(quote));
             });
 
+            app.MapGet("/string-api/toupper", async (context, cancellationToken) => {
+                string p = context.Request.QueryParameters["text"].Value ?? string.Empty;
+
+                context.Response.SetContent(new MiniApp.Content.StringContent(p + " ===> " + p.ToUpper()));
+            });
+
             app.MapPost("/post/form1", async (context, cancellationToken) => {
                 var form = await context.Request.ReadFormAsync(cancellationToken);
 
