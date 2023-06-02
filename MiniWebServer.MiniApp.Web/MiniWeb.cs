@@ -18,32 +18,6 @@ namespace MiniWebServer.MiniApp.Web
             return this;
         }
 
-        //public override async Task Get(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
-        //{
-        //    foreach (var cf in callableServices)
-        //    {
-        //        var callable = cf.Find(request);
-
-        //        if (callable != null)
-        //        {
-        //            await callable.Get(request, response, cancellationToken);
-        //        }
-        //    }
-        //}
-
-        //public override async Task Post(IMiniAppRequest request, IMiniAppResponse response, CancellationToken cancellationToken)
-        //{
-        //    foreach (var cf in callableServices)
-        //    {
-        //        var callable = cf.Find(request);
-
-        //        if (callable != null)
-        //        {
-        //            await callable.Post(request, response, cancellationToken);
-        //        }
-        //    }
-        //}
-
         public override ICallable? Find(IMiniAppRequest request)
         {
             var mapedCalls = base.Find(request);

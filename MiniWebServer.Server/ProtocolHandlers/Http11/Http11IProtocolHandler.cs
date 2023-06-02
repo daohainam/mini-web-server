@@ -233,7 +233,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                     reader.AdvanceTo(buffer.GetPosition(maxBytesToRead));
 
-                    //bytesRead += maxBytesToRead;
                     //logger.LogDebug("Read {b} bytes from body, total {t}", buffer.Length, bytesRead);
 
                     break;
