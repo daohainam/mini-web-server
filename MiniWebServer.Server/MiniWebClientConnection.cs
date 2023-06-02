@@ -81,9 +81,10 @@ namespace MiniWebServer.Server
                     }
                     else
                     {
-                        isKeepAlive = false;
-
+                        isKeepAlive = false; // we will close the connection if there is any error while building request
                         var request = requestBuilder.Build();
+
+                        isKeepAlive = false; // request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later
 
                         var app = FindApp(request); // should we reuse apps???
 
@@ -93,16 +94,24 @@ namespace MiniWebServer.Server
                             logger.LogDebug("[{cid}] - Processing request...", ConnectionId);
 
                             // now we continue reading body part
+                            CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                             Task readBodyTask = config.ProtocolHandler.ReadBodyAsync(requestPipeReader, request, cancellationToken);
 
                             await ExecuteCallableAsync(connectionContext, request, responseBuilder, app, cancellationToken);
 
+                            readBodyCancellationTokenSource.Cancel();
                             readBodyTask.Wait(0, cancellationToken); // stop reading, remember that unprocessed bytes still remain in the socket buffer
+                        }
+
+                        var connectionHeader = responseBuilder.Headers.Connection;
+                        if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
+                        {
+                            responseBuilder.AddHeader("Connection", isKeepAlive ? "keep-alive" : "close");
                         }
 
                         var response = responseBuilder.Build();
 
-                        cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
+                        cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                         logger.LogDebug("[{cid}] - Sending back response...", ConnectionId);
                         await SendResponseAsync(responsePipeWriter, response, cancellationToken);
                     }
@@ -173,9 +182,15 @@ namespace MiniWebServer.Server
 
         private void CloseConnection()
         {
-            logger.LogDebug("[{cid}] - Closing connection...", ConnectionId);
-            config.TcpClient.GetStream().Flush();
-            config.TcpClient.Close();
+            try
+            {
+                logger.LogDebug("[{cid}] - Closing connection...", ConnectionId);
+                config.TcpClient.GetStream().Flush();
+                config.TcpClient.Close();
+            }
+            catch (Exception ex) { 
+                logger.LogError(ex, "Failed to close connection");
+            }   
         }
 
         private async Task CallByMethod(MiniAppConnectionContext connectionContext, IMiniApp app, HttpRequest httpRequest, IHttpResponseBuilder responseBuilder, CancellationToken cancellationToken)
@@ -241,7 +256,6 @@ namespace MiniWebServer.Server
             response.SetStatus(HttpResponseCodes.OK);
             response.SetContent(EmptyContent.Instance);
             response.AddHeader("Content-Type", "text/html");
-            response.AddHeader("Connection", "close"); // todo: we will improve connection handling later
             
 
             return response;

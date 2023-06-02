@@ -1,10 +1,10 @@
 {
   "BindingOptions": {
-    "Port": 8443,
+    "Port": 8080,
     "Address": "127.0.0.1",
     "Certificate": "certs\\localhost.pfx",
     "CertificatePassword": "mini-web-server",
-    "SSL": true
+    "SSL": false
   },
   "HostOptions": [],
   "FeatureOptions": {

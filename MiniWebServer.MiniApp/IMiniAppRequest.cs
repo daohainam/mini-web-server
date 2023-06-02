@@ -18,6 +18,9 @@ namespace MiniWebServer.MiniApp
         Abstractions.Http.HttpMethod Method { get; }
         HttpParameters QueryParameters { get; }
         string QueryString { get; }
+        long ContentLength { get; }
+        string ContentType { get; }
+
         Task<IRequestForm> ReadFormAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -12,13 +12,23 @@ using System.Xml.Linq;
 
 namespace MiniWebServer.Server.Http
 {
-    public class HttpWebResponseBuilder : IHttpResponseBuilder
+    public class HttpWebResponseBuilder : IHttpResponseBuilder, IHttpResponse
     {
         private HttpResponseCodes statusCode = HttpResponseCodes.InternalServerError;
         private readonly HttpResponseHeaders headers = new();
         private string reasonPhrase = string.Empty;
-        private readonly List<HttpCookie> cookies = new();
+        private readonly HttpCookies cookies = new();
         private MiniContent content = new global::MiniWebServer.MiniApp.Content.StringContent(string.Empty);
+
+        public HttpResponseCodes StatusCode => statusCode;
+
+        public string ReasonPhrase => reasonPhrase;
+
+        public HttpResponseHeaders Headers => headers;
+
+        public IHttpContent Content => content;
+
+        public HttpCookies Cookies => cookies;
 
         public HttpResponse Build()
         {
@@ -35,7 +45,7 @@ namespace MiniWebServer.Server.Http
                 headers.Add("Server", "Mini-Web-Server/alpha");
             }
 
-            var response = new HttpResponse(statusCode, reasonPhrase, headers, new HttpCookies(cookies), content);
+            var response = new HttpResponse(statusCode, reasonPhrase, headers, cookies, content);
 
             return response;
         }
@@ -97,7 +107,10 @@ namespace MiniWebServer.Server.Http
         }
         public IHttpResponseBuilder AddCookie(IEnumerable<HttpCookie> cookies)
         {
-            this.cookies.AddRange(cookies);
+            foreach (var cookie in cookies)
+            {
+                this.cookies.Add(cookie.Name, cookie);
+            }
 
             return this;
         }

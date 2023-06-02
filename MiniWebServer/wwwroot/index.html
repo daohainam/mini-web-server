@@ -37,6 +37,16 @@
     </div>
 
     <div class="panel">
+        <form id="form2" action="/post/form2" method="post">
+            <label for="fname">Enter a string:</label><br>
+            <input type="text" id="f2string" name="f2string"><br>
+        </form>
+
+        <button id="form2-submit" onclick="submitform2(); return false;">Post and read body using ReadAsStringAsync!</button>
+        <div class="message-panel" id="form2-message"></div>
+    </div>
+
+    <div class="panel">
         <button onclick="dos(); return false;">DOS the server!</button>
         <div class="message-panel" id="dos-message"></div>
     </div>
@@ -113,6 +123,26 @@
                 FD.append("Last-Name", document.getElementById("lname").value);
                 XHR.send(FD);
             }
+
+            return false;
+        }
+
+
+        function submitform2() {
+            const XHR = new XMLHttpRequest();
+
+            XHR.addEventListener("load", (event) => {
+                document.getElementById("form2-message").innerHTML = event.currentTarget.response;
+            });
+
+            XHR.addEventListener("error", (event) => {
+                document.getElementById("form2-message").innerHTML = "Oops! Something went wrong.";
+            });
+
+            XHR.open("POST", "/post/form2");
+
+            XHR.setRequestHeader("Content-type", "application/json");
+            XHR.send(document.getElementById("f2string").value);
 
             return false;
         }

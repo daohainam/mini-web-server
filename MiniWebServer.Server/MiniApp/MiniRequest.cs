@@ -34,7 +34,8 @@ namespace MiniWebServer.Server.MiniApp
         public HttpHeaders Headers => httpRequest.Headers;
         public HttpMethod Method => httpRequest.Method;
         public IMiniBodyManager BodyManager { get; }
-
+        public long ContentLength => httpRequest.ContentLength;
+        public string ContentType => httpRequest.ContentType;
         public async Task<IRequestForm> ReadFormAsync(CancellationToken cancellationToken = default)
         {
             var form = new RequestForm();
@@ -52,7 +53,7 @@ namespace MiniWebServer.Server.MiniApp
 
             var formReader = ConnectionContext.FormReaderFactory.CreateFormReader(httpRequest.ContentType, httpRequest.ContentLength, ConnectionContext.LoggerFactory) ?? throw new InvalidHttpStreamException("Not supported content type");
             var readform = await formReader.ReadAsync(reader, cancellationToken);
-            return readform == null ? throw new InvalidHttpStreamException("Error reading form data") : readform;
+            return readform ?? throw new InvalidHttpStreamException("Error reading form data");
         }
     }
 }

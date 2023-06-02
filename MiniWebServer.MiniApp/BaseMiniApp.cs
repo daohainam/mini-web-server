@@ -10,16 +10,6 @@ namespace MiniWebServer.MiniApp
     {
         internal readonly IDictionary<string, ActionDelegate> routes = new Dictionary<string, ActionDelegate>();
 
-        public virtual Task Get(IMiniAppContext context, CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
-        public virtual Task Post(IMiniAppContext context, CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
-
         public void MapGet(string route, RequestDelegate action)
         {
             var r = new ActionDelegate(route, action, Abstractions.Http.HttpMethod.Get);

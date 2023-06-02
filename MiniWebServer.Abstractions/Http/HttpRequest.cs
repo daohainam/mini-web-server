@@ -42,7 +42,7 @@ namespace MiniWebServer.Abstractions.Http
 
         public bool KeepAliveRequested { get 
             {
-                return Headers.Any(h => string.Equals("Connection", h.Value.Name, StringComparison.InvariantCultureIgnoreCase) && h.Value.Value.Any() && string.Equals("Keep-Alive", h.Value.Value.First(), StringComparison.InvariantCultureIgnoreCase));
+                return !"close".Equals(Headers.Connection, StringComparison.InvariantCultureIgnoreCase); // it is keep-alive by default
             } 
         }
 

@@ -22,7 +22,13 @@ namespace MiniWebServer.Abstractions.Http
                 return TryGetValueAsString("Connection");
             }
         }
-
+        public string ContentType
+        {
+            get
+            {
+                return TryGetValueAsString("Content-Type");
+            }
+        }
         private string TryGetValueAsString(string name, string defaultValue = "")
         {
             if (TryGetValue(name, out var value))
