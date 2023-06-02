@@ -329,7 +329,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
             Write(writer, "\r\n");
 
-            await response.Content.WriteToAsync(writer, cancellationToken);
+            await response.Content.WriteToAsync(writer, cancellationToken); // todo: what if we have an error while sending response content?
 
             return true;
         }

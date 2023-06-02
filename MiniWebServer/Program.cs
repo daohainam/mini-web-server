@@ -76,6 +76,12 @@ namespace MiniWebServer
                 return Task.CompletedTask;
             });
 
+            app.MapGet("/file/textfile.txt", (context, cancellationToken) => {
+                context.Response.SetContent(new MiniApp.Content.FileContent(Path.Combine("wwwroot", "textfile.txt")));
+
+                return Task.CompletedTask;
+            });
+
             app.MapGet("/quote/random", async (context, cancellationToken) => {
                 string quote = await QuoteServiceFactory.GetQuoteService().GetRandomAsync();
 

@@ -12,6 +12,6 @@ namespace MiniWebServer.Abstractions
     {
         HttpHeaders Headers { get; }
         long ContentLength { get; }
-        Task<int> WriteToAsync(IBufferWriter<byte> writer, CancellationToken cancellationToken);
+        Task<long> WriteToAsync(IBufferWriter<byte> writer, CancellationToken cancellationToken);
     }
 }
