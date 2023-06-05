@@ -5,7 +5,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
     public class Http11IProtocolHandlerOptions
     {
         public Http11IProtocolHandlerOptions(
-            IHttp11Parser http11Parser, 
+            IHttpComponentParser http11Parser, 
             int readBufferSize, 
             int writeBufferSize, 
             int textBufferSize)
@@ -16,7 +16,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             TextBufferSize = textBufferSize;
         }
 
-        public IHttp11Parser Http11Parser { get; }
+        public IHttpComponentParser Http11Parser { get; }
         public int ReadBufferSize { get; }
         public int WriteBufferSize { get; }
         public int TextBufferSize { get; }

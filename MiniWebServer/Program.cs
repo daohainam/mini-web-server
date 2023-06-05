@@ -124,7 +124,7 @@ namespace MiniWebServer
         {
             services.AddLogging(loggingBuilder => loggingBuilder.AddLog4Net("log4net.xml").SetMinimumLevel(LogLevel.Debug));
             services.AddDistributedMemoryCache();
-            services.AddTransient<IHttp11Parser, RegexHttp11Parsers>();
+            services.AddTransient<IHttpComponentParser, ByteSequenceHttpParser>();
             services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
         }

@@ -1,6 +1,7 @@
 ﻿using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,9 +16,9 @@ namespace MiniWebServer.HttpParser.Http11
     /// this class uses samples from: https://stackoverflow.com/questions/27457949/check-pattern-of-http-get-using-regexc
     /// we will need a ABNF-based parser 
     /// </summary>
-    public partial class RegexHttp11Parsers : IHttp11Parser
+    public partial class RegexHttp11Parsers : IHttpComponentParser
     {
-        public Http11RequestLine? ParseRequestLine(string text)
+        public virtual HttpRequestLine? ParseRequestLine(string text)
         {
             try
             {
@@ -34,12 +35,12 @@ namespace MiniWebServer.HttpParser.Http11
                         httpParameters.Add(new HttpParameter(paramNameGroup.Captures[i].Value, paramValueGroup.Captures[i].Value));
                     }
 
-                    return new Http11RequestLine(
+                    return new HttpRequestLine(
                         match.Groups["method"].Value,
                         match.Groups["url"].Value,
                         match.Groups["hash"].Value,
                         match.Groups["queryString"].Value,
-                        new Http11ProtocolVersion(match.Groups["major"].Value, match.Groups["minor"].Value),
+                        new HttpProtocolVersion(match.Groups["major"].Value, match.Groups["minor"].Value),
                         httpParameters
                         );
                 }
@@ -48,13 +49,13 @@ namespace MiniWebServer.HttpParser.Http11
             return null;
         }
 
-        public Http11HeaderLine? ParseHeaderLine(string text)
+        public virtual HttpHeaderLine? ParseHeaderLine(string text)
         {
             var httpRegex = HttpHeaderLineRegex();
             var match = httpRegex.Match(text);
             if (match.Success)
             {
-                return new Http11HeaderLine(
+                return new HttpHeaderLine(
                     match.Groups["name"].Value,
                     match.Groups["value"].Value
                     );
@@ -63,7 +64,7 @@ namespace MiniWebServer.HttpParser.Http11
             return null;
         }
 
-        public IEnumerable<HttpCookie>? ParseCookieHeader(string text)
+        public virtual IEnumerable<HttpCookie>? ParseCookieHeader(string text)
         {
             var httpRegex = HttpCookieValueRegex();
             var match = httpRegex.Match(text);
@@ -94,5 +95,9 @@ namespace MiniWebServer.HttpParser.Http11
         [GeneratedRegex(@"^(((?<cookieName>[\w-_\.]+)=(?<cookieValue>[\w\-  _ :.,\\/'?!(){}\[\]@<>=\-+\*#$&`|~^%""]*))(; )?)*$")]
         private static partial Regex HttpCookieValueRegex();
 
+        public virtual HttpRequestLine? ParseRequestLine(ReadOnlySequence<byte> lineBytes)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,10 +8,11 @@ using MiniWebServer.Abstractions.Http;
 
 namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
 {
-    public interface IHttp11Parser
+    public interface IHttpComponentParser
     {
-        Http11RequestLine? ParseRequestLine(string text);
-        Http11HeaderLine? ParseHeaderLine(string text);
+        HttpRequestLine? ParseRequestLine(string text);
+        HttpRequestLine? ParseRequestLine(ReadOnlySequence<byte> lineBytes);
+        HttpHeaderLine? ParseHeaderLine(string text);
         IEnumerable<HttpCookie>? ParseCookieHeader(string value);
     }
 }

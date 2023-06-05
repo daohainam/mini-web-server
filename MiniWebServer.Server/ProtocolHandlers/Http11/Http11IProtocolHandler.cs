@@ -27,15 +27,15 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         protected readonly ProtocolHandlerConfiguration config;
         protected readonly ILoggerFactory loggerFactory;
-        protected readonly IHttp11Parser http11Parser;
+        protected readonly IHttpComponentParser httpComponentParser;
         protected readonly IHeaderValidator[] headerValidators;
 
         private readonly ILogger<Http11IProtocolHandler> logger;
 
-        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttp11Parser? http11Parser)
+        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser? http11Parser)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.http11Parser = http11Parser ?? throw new ArgumentNullException(nameof(http11Parser));
+            this.httpComponentParser = http11Parser ?? throw new ArgumentNullException(nameof(http11Parser));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
             logger = loggerFactory.CreateLogger<Http11IProtocolHandler>();
@@ -91,10 +91,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                     }
                 }
 
-                var sb = new StringBuilder();
-                sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
-                var requestLineText = sb.ToString();
-                var requestLine = http11Parser.ParseRequestLine(requestLineText);
+                //var sb = new StringBuilder();
+                //sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
+                //var requestLineText = sb.ToString();
+                var requestLine = httpComponentParser.ParseRequestLine(line);
 
                 if (requestLine != null)
                 {
@@ -117,7 +117,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 }
                 else
                 {
-                    logger.LogError("Invalid request line: {line}", sb.ToString());
+                    logger.LogError("Invalid request line");
 
                     return false;
                 }
@@ -150,7 +150,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 else
                 {
                     var headerLineText = sb.ToString();
-                    var headerLine = http11Parser.ParseHeaderLine(headerLineText);
+                    var headerLine = httpComponentParser.ParseHeaderLine(headerLineText);
 
                     logger.LogDebug("Found header: {headerLine}", headerLine);
 
@@ -185,7 +185,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         }
                         else if ("Cookie".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            var cookies = http11Parser.ParseCookieHeader(headerLine.Value);
+                            var cookies = httpComponentParser.ParseCookieHeader(headerLine.Value);
                             if (cookies == null)
                             {
                                 logger.LogError("Error parsing cookie value: {cookie}", headerLine.Value);

@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
 {
-    public class Http11ProtocolVersion
+    public class HttpProtocolVersion
     {
-        public Http11ProtocolVersion(string major, string minor)
+        public HttpProtocolVersion(string major, string minor)
         {
             Major = major ?? throw new ArgumentNullException(nameof(major));
             Minor = minor ?? throw new ArgumentNullException(nameof(minor));
@@ -23,9 +23,9 @@ namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
             return $"HTTP/{Major}.{Minor}";
         }
     }
-    public class Http11RequestLine
+    public class HttpRequestLine
     {
-        public Http11RequestLine(string method, string url, string hash, string queryString, Http11ProtocolVersion protocolVersion, HttpParameters? parameters = null)
+        public HttpRequestLine(string method, string url, string hash, string queryString, HttpProtocolVersion protocolVersion, HttpParameters? parameters = null)
         {
             Method = method ?? throw new ArgumentNullException(nameof(method));
             Url = url ?? throw new ArgumentNullException(nameof(url));
@@ -48,7 +48,7 @@ namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
         public string Hash { get; }
         public string QueryString { get; }
         public HttpParameters Parameters { get; }
-        public Http11ProtocolVersion ProtocolVersion { get; }
+        public HttpProtocolVersion ProtocolVersion { get; }
 
         public override string ToString()
         {
@@ -56,9 +56,9 @@ namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
         }
     }
 
-    public class Http11HeaderLine
+    public class HttpHeaderLine
     {
-        public Http11HeaderLine(string name, string value)
+        public HttpHeaderLine(string name, string value)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Value = value ?? throw new ArgumentNullException(nameof(value));

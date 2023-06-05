@@ -13,6 +13,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using HttpMethod = global::MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11.Tests
 {
@@ -48,11 +49,26 @@ Cache-Control:no-cache
             Assert.AreEqual(request.Headers.CacheControl, "no-cache");
         }
 
+        [TestMethod()]
+        [DataRow("GET /index.html?id1=1&id2=2&t1=Mini%20Web%20Server HTTP/1.1\r\n", "GET", "/index.html")]
+        [DataRow("GET %2Fthis%27s%20a%20path HTTP/1.1\r\n", "GET", "/this's a path")]
+        public async Task RequestLineParserTestAsync(string requestLine, string method, string url)
+        {
+            var result = await ReadRequestAsync(requestLine);
+
+            Assert.AreEqual(true, result.Success);
+
+            var request = result.HttpWebRequestBuilder.Build();
+            Assert.AreEqual(method, request.Method.Method);
+            Assert.AreEqual(request.Url, url);
+        }
+
+
         private static async Task<ReadRequestTestResult> ReadRequestAsync(string requestContent)
         {
             var reader = PipeUtils.String2Reader(requestContent);
 
-            var http11Parser = new RegexHttp11Parsers();
+            var http11Parser = new ByteSequenceHttpParser();
             var handler = new Http11IProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), new LoggerFactory(), http11Parser);
 
             var requestBuilder = new HttpWebRequestBuilder();
