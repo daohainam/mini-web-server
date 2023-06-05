@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.Server.Abstractions;
 using System.Collections.Concurrent;
@@ -10,7 +11,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace MiniWebServer.Server
 {
-    public class MiniWebServer : IServer
+    public class MiniWebServer : BackgroundService, IServer
     {
         private readonly MiniWebServerConfiguration config;
         private readonly ServiceProvider serviceProvider;
@@ -46,20 +47,6 @@ namespace MiniWebServer.Server
             running = false;
             cancellationTokenSource = new();
             cancellationToken = cancellationTokenSource.Token;
-        }
-
-        public Task Start()
-        {
-            logger.LogInformation("Starting web server...");
-
-            if (config.Certificate != null)
-            {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
-            }
-
-            running = true;
-
-            return ClientConnectionListeningProc();
         }
 
         private async Task HandleNewClientConnectionAsync(ulong connectionId, TcpClient tcpClient)
@@ -131,21 +118,14 @@ namespace MiniWebServer.Server
             return true; // accept all :D
         }
 
-        public void Stop()
-        {
-            running = false;
-
-            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(3));
-        }
-
-        private async Task ClientConnectionListeningProc()
+        private async Task ClientConnectionListeningProc(CancellationToken cancellationToken)
         {
             server = new(config.HttpEndPoint);
             server.Start();
 
             logger.LogInformation("Server started on {binding}", config.HttpEndPoint);
 
-            while (running)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -184,26 +164,30 @@ namespace MiniWebServer.Server
             tcpClient.Dispose();
         }
 
-        #region IDisposable
-        public void Dispose()
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
+            logger.LogInformation("Starting web server...");
 
-        protected virtual void Dispose(bool disposing)
-        {
-            // Check to see if Dispose has already been called.
-            if (!disposed)
+            if (config.Certificate != null)
             {
-                if (running)
-                {
-                    Stop();
-                }
-
-                disposed = true;
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
             }
+
+            running = true;
+
+            await ClientConnectionListeningProc(stoppingToken);
         }
-        #endregion
+
+        public Task Start(CancellationToken? cancellationToken = null)
+        {
+            return ExecuteAsync(cancellationToken ?? CancellationToken.None);
+        }
+
+        public void Stop(CancellationToken? cancellationToken = null)
+        {
+            running = false;
+
+            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(3));
+        }
     }
 }

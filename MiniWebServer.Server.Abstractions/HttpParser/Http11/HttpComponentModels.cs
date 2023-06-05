@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
 {
@@ -25,13 +26,14 @@ namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
     }
     public class HttpRequestLine
     {
-        public HttpRequestLine(string method, string url, string hash, string queryString, HttpProtocolVersion protocolVersion, HttpParameters? parameters = null)
+        public HttpRequestLine(HttpMethod method, string url, string hash, string queryString, HttpProtocolVersion protocolVersion, string[] segments, HttpParameters? parameters = null)
         {
             Method = method ?? throw new ArgumentNullException(nameof(method));
             Url = url ?? throw new ArgumentNullException(nameof(url));
             ProtocolVersion = protocolVersion ?? throw new ArgumentNullException(nameof(protocolVersion));
             Hash = hash;
             QueryString = queryString;
+            Segments = segments;
 
             if (parameters != null)
             {
@@ -43,10 +45,11 @@ namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
             }
         }
 
-        public string Method { get; }
+        public HttpMethod Method { get; }
         public string Url { get; }
         public string Hash { get; }
         public string QueryString { get; }
+        public string[] Segments { get; }
         public HttpParameters Parameters { get; }
         public HttpProtocolVersion ProtocolVersion { get; }
 

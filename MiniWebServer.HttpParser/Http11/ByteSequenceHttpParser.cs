@@ -129,11 +129,12 @@ namespace MiniWebServer.HttpParser.Http11
                     if (HTTP1_1_CR_Bytes.SequenceEqual(ba) || HTTP1_1_Bytes.SequenceEqual(ba)) // todo: can we use memory pool instead of ToArray?
                     {
                         HttpRequestLine requestLine = new(
-                            httpMethod.Method,
+                            httpMethod,
                             url,
                             hash ?? string.Empty,
                             queryString ?? string.Empty,
                             new HttpProtocolVersion("1", "1"),
+                            segments ?? new string[] { },
                             parameters ?? new HttpParameters()
                             );
 
@@ -162,12 +163,12 @@ namespace MiniWebServer.HttpParser.Http11
             var s = "https://f" + Encoding.ASCII.GetString(readOnlySequence); // hack: add a faked scheme and host to make it an absolute uri
             var uri = new Uri(s);
 
-            url = uri.AbsolutePath;
+            url =  uri.AbsolutePath;
             hash = uri.Fragment;
-            queryString = uri.Query;
+            queryString = Uri.UnescapeDataString(uri.Query);
             segments = uri.Segments;
 
-            if (TryParseParameters(uri.Query, out HttpParameters? ps) && ps != null)
+            if (TryParseParameters(queryString, out HttpParameters? ps) && ps != null)
             {
                 parameters = ps;
             }

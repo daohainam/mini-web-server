@@ -24,5 +24,6 @@ namespace MiniWebServer.Server.Abstractions.Http
         IHttpRequestBuilder AddCookie(IEnumerable<HttpCookie> cookies);
         IHttpRequestBuilder SetContentLength(long contentLength);
         IHttpRequestBuilder SetContentType(string contentType);
+        IHttpRequestBuilder SetSegments(string[] segments);
     }
 }

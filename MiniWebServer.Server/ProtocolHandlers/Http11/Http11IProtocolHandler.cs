@@ -100,20 +100,20 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 {
                     logger.LogDebug("Parsed request line: {requestLine}", requestLine);
 
-                    var method = GetHttpMethod(requestLine.Method);
-
                     // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
                     // if Url length exceeds Url buffer length, you should return 414 URI Too Long
 
                     // todo: parse the Url with percent-encoding (https://www.rfc-editor.org/rfc/rfc3986)
 
-                    httpMethod = method;
+                    httpMethod = requestLine.Method;
                     requestBuilder
-                        .SetMethod(method)
+                        .SetMethod(requestLine.Method)
                         .SetUrl(requestLine.Url)
                         .SetParameters(requestLine.Parameters)
                         .SetQueryString(requestLine.QueryString)
-                        .SetHash(requestLine.Hash);
+                        .SetHash(requestLine.Hash)
+                        .SetSegments(requestLine.Segments)
+                        ;
                 }
                 else
                 {
@@ -333,27 +333,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             return true;
         }
 
-        private static HttpMethod GetHttpMethod(string method)
-        {
-            if (HttpMethod.Connect.Method == method)
-                return HttpMethod.Connect;
-            else if (HttpMethod.Delete.Method == method)
-                return HttpMethod.Delete;
-            else if (HttpMethod.Get.Method == method)
-                return HttpMethod.Get;
-            else if (HttpMethod.Head.Method == method)
-                return HttpMethod.Head;
-            else if (HttpMethod.Options.Method == method)
-                return HttpMethod.Options;
-            else if (HttpMethod.Post.Method == method)
-                return HttpMethod.Post;
-            else if (HttpMethod.Put.Method == method)
-                return HttpMethod.Put;
-            else if (HttpMethod.Trace.Method == method)
-                return HttpMethod.Trace;
-
-            throw new ArgumentException("Unknown method", nameof(method));
-        }
 
         public void Reset()
         {

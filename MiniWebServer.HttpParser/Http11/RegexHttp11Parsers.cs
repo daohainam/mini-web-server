@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
+using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.HttpParser.Http11
 {
@@ -36,11 +37,12 @@ namespace MiniWebServer.HttpParser.Http11
                     }
 
                     return new HttpRequestLine(
-                        match.Groups["method"].Value,
+                        GetHttpMethod(match.Groups["method"].Value),
                         match.Groups["url"].Value,
                         match.Groups["hash"].Value,
                         match.Groups["queryString"].Value,
                         new HttpProtocolVersion(match.Groups["major"].Value, match.Groups["minor"].Value),
+                        Array.Empty<string>(),
                         httpParameters
                         );
                 }
@@ -84,6 +86,29 @@ namespace MiniWebServer.HttpParser.Http11
 
             return null;
         }
+
+        private static HttpMethod GetHttpMethod(string method)
+        {
+            if (HttpMethod.Connect.Method == method)
+                return HttpMethod.Connect;
+            else if (HttpMethod.Delete.Method == method)
+                return HttpMethod.Delete;
+            else if (HttpMethod.Get.Method == method)
+                return HttpMethod.Get;
+            else if (HttpMethod.Head.Method == method)
+                return HttpMethod.Head;
+            else if (HttpMethod.Options.Method == method)
+                return HttpMethod.Options;
+            else if (HttpMethod.Post.Method == method)
+                return HttpMethod.Post;
+            else if (HttpMethod.Put.Method == method)
+                return HttpMethod.Put;
+            else if (HttpMethod.Trace.Method == method)
+                return HttpMethod.Trace;
+
+            throw new ArgumentException("Unknown method", nameof(method));
+        }
+
 
         // https://regex101.com/r/QLes5d/1
         [GeneratedRegex("^(?<method>[a-zA-Z]+)\\s(?<url>/[^\\r\\n\\?]*)(?<queryString>\\?((?<params>(?<paramName>\\w+)+=(?<paramValue>[\\w|%_-]*))&?)*)?(?<hash>#\\w*)?\\sHTTP/(?<major>\\d)\\.(?<minor>\\d+)$")]

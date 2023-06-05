@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MimeMapping;
 using MiniWebServer.Configuration;
@@ -38,22 +39,24 @@ namespace MiniWebServer
             serverBuilder.AddHost(string.Empty, app);
 
             var server = serverBuilder.Build();
-            server.Start();
-
-            if (args.Contains("-d"))
-            {
-                Console.WriteLine("Mini-Web-Server started in deamon mode");
-
-                // todo: to support deamon mode better when need to use IHostedService or BackgroundService instead of this ugly way
-                Thread.Sleep(Timeout.Infinite);
-            }
-            else
-            {
-                Console.WriteLine("Press Enter to stop...");
-                Console.ReadLine();
-            }
-
-            server.Stop();
+            var host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices(
+                    services => 
+                    {
+                        services.AddHostedService(services => server);
+                        services.AddWindowsService(options =>
+                        {
+                            options.ServiceName = "Mini-Web-Server";
+                        });
+                    }
+                )
+                .ConfigureLogging((hostingContext, logging) =>
+                {
+                    //logging.AddLog4Net("log4net.xml").SetMinimumLevel(LogLevel.Debug);
+                    logging.SetMinimumLevel(LogLevel.Debug);
+                })
+                .Build();
+            host.Run();
         }
 
         private static IMiniApp BuildApp()

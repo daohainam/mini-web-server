@@ -10,7 +10,7 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpRequest : IHttpRequest
     {
-        public HttpRequest(HttpMethod method, string url, HttpRequestHeaders headers, string queryString, string hash, HttpParameters queryParameters, HttpCookies cookies, Pipe bodyPipeline, long contentLength, string contentType)
+        public HttpRequest(HttpMethod method, string url, HttpRequestHeaders headers, string queryString, string hash, HttpParameters queryParameters, string[] segments, HttpCookies cookies, Pipe bodyPipeline, long contentLength, string contentType)
         {
             if (queryParameters is null)
             {
@@ -23,6 +23,7 @@ namespace MiniWebServer.Abstractions.Http
             QueryString = queryString ?? string.Empty;
             Hash = hash ?? string.Empty;
             QueryParameters = queryParameters ?? throw new ArgumentNullException(nameof(queryParameters));
+            Segments = segments ?? throw new ArgumentNullException(nameof(segments));
             Cookies = cookies ?? throw new ArgumentNullException(nameof(cookies));
             BodyPipeline = bodyPipeline;
             ContentLength = contentLength;
@@ -37,6 +38,7 @@ namespace MiniWebServer.Abstractions.Http
         public HttpMethod Method { get; }
         public HttpRequestHeaders Headers { get; }
         public HttpParameters QueryParameters { get; }
+        public string[] Segments { get; }
         public string QueryString { get; }
         public string Url { get; }
 

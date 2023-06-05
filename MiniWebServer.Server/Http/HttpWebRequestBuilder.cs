@@ -23,6 +23,7 @@ namespace MiniWebServer.Server.Http
         private Pipe? bodyPipeline;
         private long contentLength;
         private string contentType = string.Empty;
+        private string[] segments;
         private readonly HttpParameters parameters = new();
 
         public IHttpRequestBuilder AddHeader(string name, string value)
@@ -44,7 +45,7 @@ namespace MiniWebServer.Server.Http
 
         public HttpRequest Build()
         {
-            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters, new HttpCookies(cookies), bodyPipeline ?? new Pipe(), contentLength, contentType);
+            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters, segments, new HttpCookies(cookies), bodyPipeline ?? new Pipe(), contentLength, contentType);
 
             return request;
         }
@@ -127,6 +128,13 @@ namespace MiniWebServer.Server.Http
         public IHttpRequestBuilder SetContentType(string contentType)
         {
             this.contentType = contentType;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetSegments(string[] segments)
+        {
+            this.segments = segments;
 
             return this;
         }

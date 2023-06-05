@@ -51,7 +51,7 @@ Cache-Control:no-cache
 
         [TestMethod()]
         [DataRow("GET /index.html?id1=1&id2=2&t1=Mini%20Web%20Server HTTP/1.1\r\n", "GET", "/index.html")]
-        [DataRow("GET %2Fthis%27s%20a%20path HTTP/1.1\r\n", "GET", "/this's a path")]
+        [DataRow("GET /this/is/a/path? HTTP/1.1\r\n", "GET", "/this/is/a/path")]
         public async Task RequestLineParserTestAsync(string requestLine, string method, string url)
         {
             var result = await ReadRequestAsync(requestLine);
@@ -60,7 +60,7 @@ Cache-Control:no-cache
 
             var request = result.HttpWebRequestBuilder.Build();
             Assert.AreEqual(method, request.Method.Method);
-            Assert.AreEqual(request.Url, url);
+            Assert.AreEqual(url, request.Url);
         }
 
 
