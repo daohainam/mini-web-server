@@ -112,8 +112,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         .SetParameters(requestLine.Parameters)
                         .SetQueryString(requestLine.QueryString)
                         .SetHash(requestLine.Hash)
-                        .SetSegments(requestLine.Segments)
-                        ;
+                        .SetSegments(requestLine.Segments);
                 }
                 else
                 {
@@ -277,13 +276,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         {
             if ((httpMethod == HttpMethod.Post || httpMethod == HttpMethod.Put))
             {
-                if (contentLength == 0)
-                {
-                    // POST and PUT require body part
-                    logger.LogError("POST and GET require Content-Length > 0");
-
-                    return false;
-                }
                 if (string.IsNullOrEmpty(contentType))
                 {
                     logger.LogError("Content-Type cannot be empty");

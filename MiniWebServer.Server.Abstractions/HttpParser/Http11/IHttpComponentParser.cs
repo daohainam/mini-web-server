@@ -13,6 +13,7 @@ namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
         HttpRequestLine? ParseRequestLine(string text);
         HttpRequestLine? ParseRequestLine(ReadOnlySequence<byte> lineBytes);
         HttpHeaderLine? ParseHeaderLine(string text);
+        HttpHeaderLine? ParseHeaderLine(ReadOnlySequence<byte> buffer);
         IEnumerable<HttpCookie>? ParseCookieHeader(string value);
     }
 }

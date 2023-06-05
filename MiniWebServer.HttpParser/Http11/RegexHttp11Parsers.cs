@@ -124,5 +124,10 @@ namespace MiniWebServer.HttpParser.Http11
         {
             throw new NotImplementedException();
         }
+
+        public virtual HttpHeaderLine? ParseHeaderLine(ReadOnlySequence<byte> buffer)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

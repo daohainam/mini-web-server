@@ -158,6 +158,16 @@ namespace MiniWebServer.HttpParser.Http11
             }
         }
 
+        //public override HttpHeaderLine? ParseHeaderLine(ReadOnlySequence<byte> buffer)
+        //{
+        //    SequencePosition? pos = buffer.PositionOf((byte)':'); // there are 2 SPs in a request line
+
+        //    if (pos.HasValue)
+        //    {
+        //        var methodBytes = buffer.Slice(0, pos.Value);
+        //    }
+        //}
+
         private static bool TryParseUrl(ReadOnlySequence<byte> readOnlySequence, out string? url, out string? hash, out string? queryString, out string[]? segments, out HttpParameters? parameters)
         {
             var s = "https://f" + Encoding.ASCII.GetString(readOnlySequence); // hack: add a faked scheme and host to make it an absolute uri
