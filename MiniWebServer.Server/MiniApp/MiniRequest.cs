@@ -36,6 +36,7 @@ namespace MiniWebServer.Server.MiniApp
         public IMiniBodyManager BodyManager { get; }
         public long ContentLength => httpRequest.ContentLength;
         public string ContentType => httpRequest.ContentType;
+        public string[] Segments => httpRequest.Segments;
         public async Task<IRequestForm> ReadFormAsync(CancellationToken cancellationToken = default)
         {
             var form = new RequestForm();

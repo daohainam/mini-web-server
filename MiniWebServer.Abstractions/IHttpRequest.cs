@@ -21,5 +21,6 @@ namespace MiniWebServer.Abstractions
         string QueryString { get; }
         long ContentLength { get; }
         string ContentType { get; }
+        string[] Segments { get; }
     }
 }

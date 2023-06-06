@@ -8,6 +8,7 @@ namespace MiniWebServer.MiniApp
 {
     public interface IMiniApp: ICallableService
     {
+        void Map(string route, RequestDelegate action, params Abstractions.Http.HttpMethod[] methods);
         void MapGet(string route, RequestDelegate action);
         void MapPost(string route, RequestDelegate action);
     }
