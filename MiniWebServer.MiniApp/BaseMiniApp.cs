@@ -28,25 +28,56 @@ namespace MiniWebServer.MiniApp
             else
                 routes.Add(route, r);
         }
+        public void MapAll(string route, RequestDelegate action)
+        {
+            Map(route, action, 
+                Abstractions.Http.HttpMethod.Get,
+                Abstractions.Http.HttpMethod.Post,
+                Abstractions.Http.HttpMethod.Put,
+                Abstractions.Http.HttpMethod.Head,
+                Abstractions.Http.HttpMethod.Options,
+                Abstractions.Http.HttpMethod.Delete,
+                Abstractions.Http.HttpMethod.Connect,
+                Abstractions.Http.HttpMethod.Trace
+                );
+        }
+
 
         public void MapGet(string route, RequestDelegate action)
         {
-            var r = new ActionDelegate(route, action, Abstractions.Http.HttpMethod.Get);
-
-            if (routes.ContainsKey(route))
-                routes[route] = r;
-            else
-                routes.Add(route, r);
+            Map(route, action, Abstractions.Http.HttpMethod.Get);
         }
-
         public void MapPost(string route, RequestDelegate action)
         {
-            var r = new ActionDelegate(route, action, Abstractions.Http.HttpMethod.Post);
-
-            if (routes.ContainsKey(route))
-                routes[route] = r;
-            else
-                routes.Add(route, r);
+            Map(route, action, Abstractions.Http.HttpMethod.Post);
+        }
+        public void MapHead(string route, RequestDelegate action)
+        {
+            Map(route, action, Abstractions.Http.HttpMethod.Head);
+        }
+        public void MapPut(string route, RequestDelegate action)
+        {
+            Map(route, action, Abstractions.Http.HttpMethod.Put);
+        }
+        public void MapOptions(string route, RequestDelegate action)
+        {
+            Map(route, action, Abstractions.Http.HttpMethod.Options);
+        }
+        public void MapDelete(string route, RequestDelegate action)
+        {
+            Map(route, action, Abstractions.Http.HttpMethod.Delete);
+        }
+        public void MapConnect(string route, RequestDelegate action)
+        {
+            Map(route, action, Abstractions.Http.HttpMethod.Connect);
+        }
+        public void MapTrace(string route, RequestDelegate action)
+        {
+            Map(route, action, Abstractions.Http.HttpMethod.Trace);
+        }
+        public void MapGetAndPost(string route, RequestDelegate action)
+        {
+            Map(route, action, Abstractions.Http.HttpMethod.Get, Abstractions.Http.HttpMethod.Post);
         }
 
         public virtual ICallable? Find(IMiniAppRequest request)
