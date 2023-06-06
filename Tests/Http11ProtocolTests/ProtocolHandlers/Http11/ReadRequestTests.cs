@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.Server.Abstractions;
+using MiniWebServer.Server.Cookie;
 using MiniWebServer.Server.Http;
 using System;
 using System.Buffers;
@@ -67,9 +68,10 @@ Cache-Control:no-cache
         private static async Task<ReadRequestTestResult> ReadRequestAsync(string requestContent)
         {
             var reader = PipeUtils.String2Reader(requestContent);
+            var loggerFactory = new LoggerFactory();
 
-            var http11Parser = new ByteSequenceHttpParser();
-            var handler = new Http11IProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), new LoggerFactory(), http11Parser);
+            var httpParser = new ByteSequenceHttpParser(loggerFactory);
+            var handler = new Http11IProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser(loggerFactory));
 
             var requestBuilder = new HttpWebRequestBuilder();
 

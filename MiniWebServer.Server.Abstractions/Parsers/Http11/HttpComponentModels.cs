@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
-namespace MiniWebServer.Server.Abstractions.HttpParser.Http11
+namespace MiniWebServer.Server.Abstractions.Parsers.Http11
 {
     public class HttpProtocolVersion
     {

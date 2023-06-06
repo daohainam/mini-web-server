@@ -1,8 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
+using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.Server.Abstractions;
-using MiniWebServer.Server.Abstractions.HttpParser.Http11;
+using MiniWebServer.Server.Abstractions.Parsers;
+using MiniWebServer.Server.Abstractions.Parsers.Http11;
+using MiniWebServer.Server.Cookie;
 using MiniWebServer.Server.ProtocolHandlers.Http11;
 using System;
 using System.Collections.Generic;
@@ -28,7 +31,12 @@ namespace MiniWebServer.Server
         {
             if (config.ProtocolVersion == HTTP11)
             {
-                return new Http11IProtocolHandler(config, loggerFactory, services.GetService<IHttpComponentParser>());
+                // in reality we often use the default parsers
+
+                return new Http11IProtocolHandler(config, loggerFactory, 
+                    services.GetService<IHttpComponentParser>() ?? new ByteSequenceHttpParser(loggerFactory), 
+                    services.GetService<ICookieValueParser>() ?? new DefaultCookieParser(loggerFactory)
+                    );
             }
 
             throw new ArgumentOutOfRangeException(nameof(config.ProtocolVersion), "Unknown protocol version");

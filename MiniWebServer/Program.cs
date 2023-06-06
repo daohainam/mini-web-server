@@ -10,7 +10,7 @@ using MiniWebServer.MiniApp.Web;
 using MiniWebServer.Quote;
 using MiniWebServer.Server;
 using MiniWebServer.Server.Abstractions;
-using MiniWebServer.Server.Abstractions.HttpParser.Http11;
+using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using System;
 using System.Text;
 
@@ -27,7 +27,7 @@ namespace MiniWebServer
                 .AddCommandLine(args)
                 .Build();
 
-            ConfigureServices(serverBuilder.Services);
+            ConfigureServerServices(serverBuilder.Services);
 
             // Get values from the config given their key and their target type.
             ServerOptions serverOptions = config.Get<ServerOptions>() ?? new ServerOptions();
@@ -123,11 +123,13 @@ namespace MiniWebServer
             return app;
         }
 
-        private static void ConfigureServices(IServiceCollection services)
+        private static void ConfigureServerServices(IServiceCollection services)
         {
             services.AddLogging(loggingBuilder => loggingBuilder.AddLog4Net("log4net.xml").SetMinimumLevel(LogLevel.Debug));
             services.AddDistributedMemoryCache();
-            services.AddTransient<IHttpComponentParser, ByteSequenceHttpParser>();
+
+            // todo: we should be able to safely remove the following registrations to use the defaults
+            services.AddTransient<IHttpComponentParser, ByteSequenceHttpParser>(); 
             services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
         }

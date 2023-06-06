@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
-using MiniWebServer.Server.Abstractions.HttpParser.Http11;
 using System.Net;
 using System.Text;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
@@ -12,6 +11,8 @@ using System.Xml.Linq;
 using System.Net.Http;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
+using MiniWebServer.Server.Abstractions.Parsers.Http11;
+using MiniWebServer.Server.Abstractions.Parsers;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
@@ -28,15 +29,17 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         protected readonly ProtocolHandlerConfiguration config;
         protected readonly ILoggerFactory loggerFactory;
         protected readonly IHttpComponentParser httpComponentParser;
+        private readonly ICookieValueParser cookieValueParser;
         protected readonly IHeaderValidator[] headerValidators;
 
         private readonly ILogger<Http11IProtocolHandler> logger;
 
-        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser? http11Parser)
+        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.httpComponentParser = http11Parser ?? throw new ArgumentNullException(nameof(http11Parser));
             this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this.httpComponentParser = httpComponentParser ?? throw new ArgumentNullException(nameof(httpComponentParser));
+            this.cookieValueParser = cookieValueParser ?? throw new ArgumentNullException(nameof(cookieValueParser));
 
             logger = loggerFactory.CreateLogger<Http11IProtocolHandler>();
 
@@ -149,7 +152,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 else
                 {
                     var headerLineText = sb.ToString();
-                    var headerLine = httpComponentParser.ParseHeaderLine(headerLineText);
+                    var headerLine = httpComponentParser.ParseHeaderLine(line);
 
                     logger.LogDebug("Found header: {headerLine}", headerLine);
 
@@ -184,7 +187,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         }
                         else if ("Cookie".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            var cookies = httpComponentParser.ParseCookieHeader(headerLine.Value);
+                            var cookies = cookieValueParser.ParseCookieHeader(headerLine.Value);
                             if (cookies == null)
                             {
                                 logger.LogError("Error parsing cookie value: {cookie}", headerLine.Value);

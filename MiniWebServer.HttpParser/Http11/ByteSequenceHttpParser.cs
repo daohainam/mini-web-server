@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.Abstractions.Http;
-using MiniWebServer.Server.Abstractions.HttpParser.Http11;
+using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 namespace MiniWebServer.HttpParser.Http11
 {
     // we will migrate code to this, working on RegEx is much slower and also hard to keep it safe (because we cannot control what clients send to us)
-    public class ByteSequenceHttpParser: RegexHttp11Parsers
+    public class ByteSequenceHttpParser: IHttpComponentParser
     {
         private readonly ILogger<ByteSequenceHttpParser> logger;
         private static readonly Dictionary<HttpMethod, byte[]> supportedMethodBytes = new() {
@@ -71,7 +71,7 @@ namespace MiniWebServer.HttpParser.Http11
         }
 
         // in any case, if this function returns null, server should return a 400 Bad Request
-        public override HttpRequestLine? ParseRequestLine(ReadOnlySequence<byte> buffer) 
+        public virtual HttpRequestLine? ParseRequestLine(ReadOnlySequence<byte> buffer) 
         {
             SequencePosition? pos = buffer.PositionOf((byte)' '); // there are 2 SPs in a request line
 
@@ -134,7 +134,7 @@ namespace MiniWebServer.HttpParser.Http11
                             hash ?? string.Empty,
                             queryString ?? string.Empty,
                             new HttpProtocolVersion("1", "1"),
-                            segments ?? new string[] { },
+                            segments ?? Array.Empty<string>(),
                             parameters ?? new HttpParameters()
                             );
 
@@ -158,15 +158,34 @@ namespace MiniWebServer.HttpParser.Http11
             }
         }
 
-        //public override HttpHeaderLine? ParseHeaderLine(ReadOnlySequence<byte> buffer)
-        //{
-        //    SequencePosition? pos = buffer.PositionOf((byte)':'); // there are 2 SPs in a request line
+        public virtual HttpHeaderLine? ParseHeaderLine(ReadOnlySequence<byte> buffer)
+        {
+            SequencePosition? pos = buffer.PositionOf((byte)':'); // there are 2 SPs in a request line
 
-        //    if (pos.HasValue)
-        //    {
-        //        var methodBytes = buffer.Slice(0, pos.Value);
-        //    }
-        //}
+            if (pos.HasValue)
+            {
+                var headerNameBuffer = buffer.Slice(0, pos.Value);
+                var headerValue = string.Empty;
+
+                buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
+                if (!buffer.IsEmpty)
+                {
+                    if (buffer.FirstSpan[0] == ' ') // since buffer is not empty, we always have at least 1 byte 
+                    {
+                        buffer = buffer.Slice(buffer.GetPosition(1)); // take the part after ' '
+                    }
+                }
+
+                if (!buffer.IsEmpty)
+                {
+                    headerValue = Encoding.ASCII.GetString(buffer).Replace("\r", ""); // todo: find a way to replace before GetString()
+                }
+
+                return new HttpHeaderLine(Encoding.ASCII.GetString(headerNameBuffer), headerValue);
+            }
+
+            return null;
+        }
 
         private static bool TryParseUrl(ReadOnlySequence<byte> readOnlySequence, out string? url, out string? hash, out string? queryString, out string[]? segments, out HttpParameters? parameters)
         {

@@ -1,4 +1,4 @@
-﻿using MiniWebServer.Server.Abstractions.HttpParser.Http11;
+﻿using MiniWebServer.Server.Abstractions.Parsers.Http11;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {

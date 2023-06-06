@@ -1,5 +1,5 @@
 using MiniWebServer.HttpParser.Http11;
-using MiniWebServer.Server.Abstractions.HttpParser.Http11;
+using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using System.Buffers;
 using System.Text;
 
@@ -31,17 +31,18 @@ namespace ParserTests
         [DataRow("Accept-Language: en", "Accept-Language", "en")]
         [DataRow("Accept-Encoding: gzip, deflate, br", "Accept-Encoding", "gzip, deflate, br")]
         [DataRow("Connection: keep-alive{}", "Connection", "keep-alive{}")]
+        [DataRow("Connection: keep-alive\r", "Connection", "keep-alive")]
         public void IsValidHeaderLine(string text, string name, string value)
         {
             IHttpComponentParser http11Parser = new ByteSequenceHttpParser();
 
-            var result = http11Parser.ParseHeaderLine(text);
+            var result = http11Parser.ParseHeaderLine(String2SequenceReader(text));
             Assert.IsNotNull(result);
             Assert.AreEqual(name, result.Name);
             Assert.AreEqual(value, result.Value);
         }
 
-        private ReadOnlySequence<byte> String2SequenceReader(string text)
+        private static ReadOnlySequence<byte> String2SequenceReader(string text)
         {
             return new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(text));
         }
