@@ -8,6 +8,8 @@ namespace MiniWebServer.MiniApp
 {
     public class BaseMiniApp : IMiniApp
     {
+        // todo: typical web apps will have may be hundred of routes, so this route table should be optimized for searching (can we use a B-Tree here?)
+
         internal readonly IDictionary<string, ActionDelegate> routes = new Dictionary<string, ActionDelegate>();
 
         public void MapGet(string route, RequestDelegate action)

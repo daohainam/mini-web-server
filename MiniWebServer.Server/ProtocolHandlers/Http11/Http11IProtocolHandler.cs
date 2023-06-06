@@ -65,38 +65,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             // read request line
             if (TryReadLine(ref buffer, out ReadOnlySequence<byte> line))
             {
-                // we do some quick checks here to reject 'easy-to-check' invalid requests
-                if (line.Length > HttpMaxRequestLineLength)
-                {
-                    logger.LogError("Request line too long");
-                    return false;
-                }
-
-                if (line.Length < 14) // no request line is shorter than 'GET / HTTP/1.1' 
-                {
-                    logger.LogError("Request line too short");
-                    return false;
-                }
-
-                string firstChars = Encoding.ASCII.GetString(line.Slice(0, 5));
-                int idx = firstChars.IndexOf(' ');
-                if (idx < 0)
-                {
-                    logger.LogError("Invalid method");
-                    return false;
-                }
-                else
-                {
-                    if (!allowedMethods.ContainsKey(firstChars[..idx]))
-                    {
-                        logger.LogError("Not supported method");
-                        return false;
-                    }
-                }
-
-                //var sb = new StringBuilder();
-                //sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
-                //var requestLineText = sb.ToString();
                 var requestLine = httpComponentParser.ParseRequestLine(line);
 
                 if (requestLine != null)

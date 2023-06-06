@@ -9,6 +9,7 @@ using MiniWebServer.Server.BodyReaders.Form;
 using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
+using MiniWebServer.Server.Session;
 using System.Buffers;
 using System.IO.Pipelines;
 using System.Net.Sockets;
@@ -216,9 +217,33 @@ namespace MiniWebServer.Server
                         {
                             await action.Post(context, cancellationToken);
                         }
+                        else if (httpRequest.Method == HttpMethod.Head)
+                        {
+                            await action.Head(context, cancellationToken);
+                        }
+                        else if (httpRequest.Method == HttpMethod.Put)
+                        {
+                            await action.Put(context, cancellationToken);
+                        }
+                        else if (httpRequest.Method == HttpMethod.Delete)
+                        {
+                            await action.Delete(context, cancellationToken);
+                        }
+                        else if (httpRequest.Method == HttpMethod.Connect)
+                        {
+                            await action.Connect(context, cancellationToken);
+                        }
+                        else if (httpRequest.Method == HttpMethod.Options)
+                        {
+                            await action.Options(context, cancellationToken);
+                        }
+                        else if (httpRequest.Method == HttpMethod.Trace)
+                        {
+                            await action.Trace(context, cancellationToken);
+                        }
                         else
                         {
-                            StandardResponseBuilderHelpers.NotFound(responseBuilder);
+                            StandardResponseBuilderHelpers.NotFound(responseBuilder); // ehh! this will never happen!
                         }
                     } catch (Exception ex)
                     {
@@ -239,7 +264,9 @@ namespace MiniWebServer.Server
 
         private static MiniAppContext BuildMiniContext(MiniAppConnectionContext connectionContext, IMiniApp app, MiniRequest request, MiniResponse response)
         {
-            return new MiniAppContext(connectionContext, app, request, response);
+            ISession session = DefaultSession.Instance; // we don't have to alloc/dealloc memory parts which we never change
+
+            return new MiniAppContext(connectionContext, app, request, response, session);
         }
 
         private static MiniRequest BuildMiniAppRequest(MiniAppConnectionContext connectionContext, HttpRequest httpRequest)

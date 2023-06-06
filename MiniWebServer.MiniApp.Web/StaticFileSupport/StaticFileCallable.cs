@@ -5,7 +5,7 @@ using MiniWebServer.Server.Abstractions;
 
 namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 {
-    public class StaticFileCallable : ICallable
+    public class StaticFileCallable : BaseCallable
     {
         private readonly FileInfo file;
         private readonly ILogger logger;
@@ -20,7 +20,7 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 
         private static bool IsText(string mimeType) => mimeType.StartsWith("text/");
 
-        public async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
+        public override async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
         {
             if (file.Exists)
             {
@@ -66,7 +66,7 @@ namespace MiniWebServer.MiniApp.Web.StaticFileSupport
             }
         }
 
-        public Task Post(IMiniAppContext context, CancellationToken cancellationToken)
+        public override Task Post(IMiniAppContext context, CancellationToken cancellationToken)
         {
             context.Response.SetStatus(HttpResponseCodes.Forbidden);
 

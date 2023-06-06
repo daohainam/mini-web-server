@@ -24,12 +24,12 @@ namespace MiniWebServer.HttpParser.Http11
                 Encoding.ASCII.GetBytes("GET")
             },
             {
-                HttpMethod.Head,
-                Encoding.ASCII.GetBytes("HEAD")
-            },
-            {
                 HttpMethod.Post,
                 Encoding.ASCII.GetBytes("POST")
+            },
+            {
+                HttpMethod.Head,
+                Encoding.ASCII.GetBytes("HEAD")
             },
             {
                 HttpMethod.Put,

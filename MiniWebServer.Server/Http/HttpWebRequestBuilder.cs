@@ -23,7 +23,7 @@ namespace MiniWebServer.Server.Http
         private Pipe? bodyPipeline;
         private long contentLength;
         private string contentType = string.Empty;
-        private string[] segments;
+        private string[] segments = Array.Empty<string>();
         private readonly HttpParameters parameters = new();
 
         public IHttpRequestBuilder AddHeader(string name, string value)

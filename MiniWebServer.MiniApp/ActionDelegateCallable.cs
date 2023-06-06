@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp
 {
-    internal class ActionDelegateCallable : ICallable
+    internal class ActionDelegateCallable : BaseCallable
     {
         private readonly ActionDelegate action;
 
@@ -15,12 +15,12 @@ namespace MiniWebServer.MiniApp
             this.action = action ?? throw new ArgumentNullException(nameof(action));
         }
 
-        public async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
+        public override async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
         {
             await action.RequestDelegate.Invoke(context, cancellationToken);
         }
 
-        public async Task Post(IMiniAppContext context, CancellationToken cancellationToken)
+        public override async Task Post(IMiniAppContext context, CancellationToken cancellationToken)
         {
             await action.RequestDelegate.Invoke(context, cancellationToken);
         }

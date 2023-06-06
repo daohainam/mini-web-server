@@ -7,22 +7,8 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp.Web.StaticFileSupport
 {
-    public class NotFoundCallable : ICallable
+    public class NotFoundCallable : BaseCallable
     {
-        public async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
-        {
-            await Task.Run(() => {
-                context.Response.SetStatus(HttpResponseCodes.NotFound);
-            }, cancellationToken);
-        }
-
-        public async Task Post(IMiniAppContext context, CancellationToken cancellationToken)
-        {
-            await Task.Run(() => {
-                context.Response.SetStatus(HttpResponseCodes.NotFound);
-            }, cancellationToken);
-        }
-
-        public static NotFoundCallable Instance => new();
+        public static NotFoundCallable Instance => new(); // BaseCallable always returns 404 Not Found
     }
 }

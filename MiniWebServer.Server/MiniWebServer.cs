@@ -21,7 +21,6 @@ namespace MiniWebServer.Server
         private TcpListener? server;
         private bool running;
         private ulong nextClientId = 0;
-        private bool disposed = false;
 
         private readonly ConcurrentDictionary<ulong, Task> clientTasks = new();
 
@@ -125,7 +124,7 @@ namespace MiniWebServer.Server
 
             logger.LogInformation("Server started on {binding}", config.HttpEndPoint);
 
-            while (!cancellationToken.IsCancellationRequested)
+            while (running && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
