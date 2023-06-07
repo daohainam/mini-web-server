@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp
 {
-    public interface IMiniApp: ICallableService, ICallable
+    public interface IMiddlewareFactory
     {
-        void Map(string route, ICallable action, params Abstractions.Http.HttpMethod[] methods);
+        IMiddleware Create(Type middlewareType);
     }
 }

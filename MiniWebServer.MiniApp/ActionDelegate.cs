@@ -9,7 +9,7 @@ namespace MiniWebServer.MiniApp
 {
     internal class ActionDelegate
     {
-        public ActionDelegate(string route, RequestDelegate requestDelegate, params Abstractions.Http.HttpMethod[] httpMethods)
+        public ActionDelegate(string route, ICallable requestDelegate, params Abstractions.Http.HttpMethod[] httpMethods)
         {
             Route = route ?? throw new ArgumentNullException(nameof(route));
             RequestDelegate = requestDelegate ?? throw new ArgumentNullException(nameof(requestDelegate));
@@ -17,7 +17,7 @@ namespace MiniWebServer.MiniApp
         }
 
         public string Route { get; }
-        public RequestDelegate RequestDelegate { get; }
+        public ICallable RequestDelegate { get; }
         public Abstractions.Http.HttpMethod[] HttpMethods { get; }
 
         public bool IsMatched(string route, Abstractions.Http.HttpMethod httpMethod)

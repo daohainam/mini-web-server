@@ -15,14 +15,9 @@ namespace MiniWebServer.MiniApp
             this.action = action ?? throw new ArgumentNullException(nameof(action));
         }
 
-        public override async Task Get(IMiniAppContext context, CancellationToken cancellationToken)
+        public override Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
         {
-            await action.RequestDelegate.Invoke(context, cancellationToken);
-        }
-
-        public override async Task Post(IMiniAppContext context, CancellationToken cancellationToken)
-        {
-            await action.RequestDelegate.Invoke(context, cancellationToken);
+            return action.RequestDelegate.InvokeAsync(context, cancellationToken);
         }
     }
 }

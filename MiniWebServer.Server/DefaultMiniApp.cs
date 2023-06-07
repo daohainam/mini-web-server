@@ -1,4 +1,5 @@
-﻿using MiniWebServer.Abstractions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MiniWebServer.Abstractions;
 using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
@@ -10,5 +11,8 @@ namespace MiniWebServer.Server
 {
     internal class DefaultMiniApp : BaseMiniApp
     {
+        public DefaultMiniApp(ServiceProvider services) : base(services, Array.Empty<IMiddleware>())
+        {
+        }
     }
 }

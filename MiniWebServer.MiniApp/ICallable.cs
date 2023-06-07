@@ -14,13 +14,9 @@ namespace MiniWebServer.MiniApp
     /// </summary>
     public interface ICallable
     {
-        Task Get(IMiniAppContext context, CancellationToken cancellationToken);
-        Task Head(IMiniAppContext context, CancellationToken cancellationToken);
-        Task Post(IMiniAppContext context, CancellationToken cancellationToken);
-        Task Put(IMiniAppContext context, CancellationToken cancellationToken);
-        Task Delete(IMiniAppContext context, CancellationToken cancellationToken);
-        Task Connect(IMiniAppContext context, CancellationToken cancellationToken);
-        Task Options(IMiniAppContext context, CancellationToken cancellationToken);
-        Task Trace(IMiniAppContext context, CancellationToken cancellationToken);
+        Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default);
     }
+
+    public delegate Task RequestDelegate(IMiniAppContext context, CancellationToken cancellationToken = default);
+
 }

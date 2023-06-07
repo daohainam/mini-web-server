@@ -180,16 +180,16 @@ namespace MiniWebServer.Server
 
         public IServer Build()
         {
+            var serviceProvider = Services.BuildServiceProvider();
+
             Validate();
-            AddDefaultValuesIfRequired();
+            AddDefaultValuesIfRequired(serviceProvider);
 
             Dictionary<string, Host.Host> hostContainers = new();
             foreach (var host in hosts.Values)
             {
                 hostContainers.Add(host.HostName, new Host.Host(host.HostName, host.App));
             }
-
-            var serviceProvider = Services.BuildServiceProvider();
 
             var server = new MiniWebServer(new MiniWebServerConfiguration()
                 {
@@ -210,11 +210,11 @@ namespace MiniWebServer.Server
             return server;
         }
 
-        private void AddDefaultValuesIfRequired()
+        private void AddDefaultValuesIfRequired(ServiceProvider serviceProvider)
         {
             if (!hosts.Any())
             {
-                hosts.Add(string.Empty, new HostConfiguration(string.Empty, new DefaultMiniApp()));
+                hosts.Add(string.Empty, new HostConfiguration(string.Empty, new DefaultMiniApp(serviceProvider)));
             }
 
             if (!mimeTypeMappings.Any()) // we always need a mime type mapping

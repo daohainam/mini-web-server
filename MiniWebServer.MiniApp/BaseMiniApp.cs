@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,9 +13,17 @@ namespace MiniWebServer.MiniApp
         // (update after checking https://github.com/microsoft/referencesource/blob/master/mscorlib/system/collections/generic/dictionary.cs#L297)
         // Dictionary is based on checksum and it is good enough to use here, we just need to partition by method (or may be by request segments also?)
 
-        private readonly IDictionary<string, ActionDelegate> routes = new Dictionary<string, ActionDelegate>();
+        private readonly IDictionary<string, ActionDelegate> endpoints = new Dictionary<string, ActionDelegate>();
+        private readonly ServiceProvider services;
+        private readonly IEnumerable<IMiddleware> middlewareChain;
 
-        public void Map(string route, RequestDelegate action, params Abstractions.Http.HttpMethod[] methods)
+        public BaseMiniApp(ServiceProvider services, IEnumerable<IMiddleware> middlewareChain)
+        {
+            this.services = services ?? throw new ArgumentNullException(nameof(services));
+            this.middlewareChain = middlewareChain ?? throw new ArgumentNullException(nameof(middlewareChain));
+        }
+
+        public void Map(string route, ICallable action, params Abstractions.Http.HttpMethod[] methods)
         {
             if (!methods.Any())
             {
@@ -23,74 +32,56 @@ namespace MiniWebServer.MiniApp
 
             var r = new ActionDelegate(route, action, methods);
 
-            if (routes.ContainsKey(route))
-                routes[route] = r;
+            if (endpoints.ContainsKey(route))
+                endpoints[route] = r;
             else
-                routes.Add(route, r);
-        }
-        public void MapAll(string route, RequestDelegate action)
-        {
-            Map(route, action, 
-                Abstractions.Http.HttpMethod.Get,
-                Abstractions.Http.HttpMethod.Post,
-                Abstractions.Http.HttpMethod.Put,
-                Abstractions.Http.HttpMethod.Head,
-                Abstractions.Http.HttpMethod.Options,
-                Abstractions.Http.HttpMethod.Delete,
-                Abstractions.Http.HttpMethod.Connect,
-                Abstractions.Http.HttpMethod.Trace
-                );
+                endpoints.Add(route, r);
         }
 
 
-        public void MapGet(string route, RequestDelegate action)
+        public virtual ICallable? Find(IMiniAppContext context)
         {
-            Map(route, action, Abstractions.Http.HttpMethod.Get);
-        }
-        public void MapPost(string route, RequestDelegate action)
-        {
-            Map(route, action, Abstractions.Http.HttpMethod.Post);
-        }
-        public void MapHead(string route, RequestDelegate action)
-        {
-            Map(route, action, Abstractions.Http.HttpMethod.Head);
-        }
-        public void MapPut(string route, RequestDelegate action)
-        {
-            Map(route, action, Abstractions.Http.HttpMethod.Put);
-        }
-        public void MapOptions(string route, RequestDelegate action)
-        {
-            Map(route, action, Abstractions.Http.HttpMethod.Options);
-        }
-        public void MapDelete(string route, RequestDelegate action)
-        {
-            Map(route, action, Abstractions.Http.HttpMethod.Delete);
-        }
-        public void MapConnect(string route, RequestDelegate action)
-        {
-            Map(route, action, Abstractions.Http.HttpMethod.Connect);
-        }
-        public void MapTrace(string route, RequestDelegate action)
-        {
-            Map(route, action, Abstractions.Http.HttpMethod.Trace);
-        }
-        public void MapGetAndPost(string route, RequestDelegate action)
-        {
-            Map(route, action, Abstractions.Http.HttpMethod.Get, Abstractions.Http.HttpMethod.Post);
-        }
-
-        public virtual ICallable? Find(IMiniAppRequest request)
-        {
-            foreach (var action in routes.Values)
+            foreach (var action in endpoints.Values)
             {
-                if (action.IsMatched(request.Url, request.Method))
+                if (action.IsMatched(context.Request.Url, context.Request.Method))
                 {
                     return new ActionDelegateCallable(action);
                 }
             }
 
-            return null;
+            ICallable callable = this;
+            foreach (var middleware in middlewareChain)
+            {
+                var callWrapper = new MiddlewareWrapper(middleware, callable);
+
+                callable = callWrapper;
+            }
+
+            return callable;
+        }
+
+        public Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
+        {
+            context.Response.SetStatus(Abstractions.HttpResponseCodes.NotFound);
+
+            return Task.CompletedTask;
+        }
+
+        private class MiddlewareWrapper: ICallable
+        {
+            public MiddlewareWrapper(IMiddleware middleware, ICallable next)
+            {
+                Middleware = middleware ?? throw new ArgumentNullException(nameof(middleware));
+                Next = next ?? throw new ArgumentNullException(nameof(next));
+            }
+
+            public IMiddleware Middleware { get; init; }
+            public ICallable Next { get; init; }
+
+            public Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
+            {
+                return Middleware.InvokeAsync(context, Next, cancellationToken);
+            }
         }
     }
 }

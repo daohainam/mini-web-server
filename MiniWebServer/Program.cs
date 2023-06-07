@@ -6,11 +6,12 @@ using MimeMapping;
 using MiniWebServer.Configuration;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.MiniApp;
-using MiniWebServer.MiniApp.Web;
+using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.Quote;
 using MiniWebServer.Server;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
+using MiniWebServer.StaticFiles;
 using System;
 using System.Text;
 
@@ -34,7 +35,7 @@ namespace MiniWebServer
             serverBuilder = serverBuilder
                 .UseOptions(serverOptions);
 
-            IMiniApp app = BuildApp(); // or server.CreateAppBuilder(); ?
+            IMiniApp app = BuildApp(serverBuilder.Services); // or server.CreateAppBuilder(); ?
             app = MapRoutes(app);
             serverBuilder.AddHost(string.Empty, app);
 
@@ -59,14 +60,11 @@ namespace MiniWebServer
             host.Run();
         }
 
-        private static IMiniApp BuildApp()
+        private static IMiniApp BuildApp(IServiceCollection services)
         {
-            var appBuilder = new MiniWebBuilder();
+            var appBuilder = new MiniAppBuilder(services);
 
-            appBuilder.Services.AddLogging(loggingBuilder => loggingBuilder.AddLog4Net("log4net-demoapp.xml").SetMinimumLevel(LogLevel.Debug));
-
-            appBuilder.UseRootDirectory("wwwroot")
-            .UseStaticFiles();
+            appBuilder.UseStaticFiles("wwwroot");
 
             return appBuilder.Build();
         }

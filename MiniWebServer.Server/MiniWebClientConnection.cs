@@ -199,52 +199,16 @@ namespace MiniWebServer.Server
             try
             {
                 var request = BuildMiniAppRequest(connectionContext, httpRequest);
+                var response = BuildMiniAppResponse(connectionContext, responseBuilder);
+                var context = BuildMiniContext(connectionContext, app, request, response);
 
-                var action = app.Find(request);
+                var action = app.Find(context);
 
                 if (action != null)
                 {
-                    var response = BuildMiniAppResponse(connectionContext, responseBuilder);
-                    var context = BuildMiniContext(connectionContext, app, request, response);
-
                     try
                     {
-                        if (httpRequest.Method == HttpMethod.Get)
-                        {
-                            await action.Get(context, cancellationToken);
-                        }
-                        else if (httpRequest.Method == HttpMethod.Post)
-                        {
-                            await action.Post(context, cancellationToken);
-                        }
-                        else if (httpRequest.Method == HttpMethod.Head)
-                        {
-                            await action.Head(context, cancellationToken);
-                        }
-                        else if (httpRequest.Method == HttpMethod.Put)
-                        {
-                            await action.Put(context, cancellationToken);
-                        }
-                        else if (httpRequest.Method == HttpMethod.Delete)
-                        {
-                            await action.Delete(context, cancellationToken);
-                        }
-                        else if (httpRequest.Method == HttpMethod.Connect)
-                        {
-                            await action.Connect(context, cancellationToken);
-                        }
-                        else if (httpRequest.Method == HttpMethod.Options)
-                        {
-                            await action.Options(context, cancellationToken);
-                        }
-                        else if (httpRequest.Method == HttpMethod.Trace)
-                        {
-                            await action.Trace(context, cancellationToken);
-                        }
-                        else
-                        {
-                            StandardResponseBuilderHelpers.NotFound(responseBuilder); // ehh! this will never happen!
-                        }
+                        await action.InvokeAsync(context, cancellationToken);
                     } catch (Exception ex)
                     {
                         logger.LogError(ex, "[{cid}] - Error executing action handler", ConnectionId);

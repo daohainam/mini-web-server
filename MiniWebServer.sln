@@ -23,13 +23,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Http11ProtocolTests", "Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Action", "MiniWebServer.Action\MiniWebServer.Action.csproj", "{09B700AB-E118-4173-B8FA-9FECF227344F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MiniApp.Web", "MiniWebServer.MiniApp.Web\MiniWebServer.MiniApp.Web.csproj", "{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MiniApp", "MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj", "{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Server.Abstractions", "MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj", "{B2A21BDA-7197-44B7-A57E-AF1B84659022}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.Helpers", "MiniWebServer.Helpers\MiniWebServer.Helpers.csproj", "{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Helpers", "MiniWebServer.Helpers\MiniWebServer.Helpers.csproj", "{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Middleware", "Middleware", "{CDB8B9EF-99E4-41E1-BE46-698647123255}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticFiles", "Middleware\StaticFiles\StaticFiles.csproj", "{574B1766-8B0E-4F7A-AF14-D9B235375346}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,10 +75,6 @@ Global
 		{09B700AB-E118-4173-B8FA-9FECF227344F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{09B700AB-E118-4173-B8FA-9FECF227344F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{09B700AB-E118-4173-B8FA-9FECF227344F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CF4146B9-E8C9-49EB-BDD4-7DA7767F3269}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2ECB28F1-3747-4605-BEAD-0C3C1792FDD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -89,6 +87,10 @@ Global
 		{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{574B1766-8B0E-4F7A-AF14-D9B235375346}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{574B1766-8B0E-4F7A-AF14-D9B235375346}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{574B1766-8B0E-4F7A-AF14-D9B235375346}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{574B1766-8B0E-4F7A-AF14-D9B235375346}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -96,6 +98,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{AAD4CD40-291C-45C4-AAC8-8B9E8F0BD07E} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
 		{BD64443D-6F0F-4290-AD5C-8754361EA4F7} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
+		{574B1766-8B0E-4F7A-AF14-D9B235375346} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D1843708-76D1-4698-A487-8D1531533306}
