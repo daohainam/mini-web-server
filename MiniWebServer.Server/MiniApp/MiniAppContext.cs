@@ -15,7 +15,7 @@ namespace MiniWebServer.Server.MiniApp
             App = app ?? throw new ArgumentNullException(nameof(app));
             Request = request ?? throw new ArgumentNullException(nameof(request));
             Response = response ?? throw new ArgumentNullException(nameof(response));
-            Session = session ?? throw new ArgumentNullException(nameof(session));
+            Session = session;
         }
 
         public MiniAppConnectionContext ConnectionContext { get; }
@@ -23,6 +23,6 @@ namespace MiniWebServer.Server.MiniApp
         public IMiniApp App { get; }
         public IMiniAppRequest Request { get; }
         public IMiniAppResponse Response { get; }
-        public ISession Session { get; }
+        public ISession Session { get; set; } // session can be changed by session middleware
     }
 }

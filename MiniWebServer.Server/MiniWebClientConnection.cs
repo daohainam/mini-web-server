@@ -98,7 +98,7 @@ namespace MiniWebServer.Server
                             CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                             Task readBodyTask = config.ProtocolHandler.ReadBodyAsync(requestPipeReader, request, cancellationToken);
 
-                            await ExecuteCallableAsync(connectionContext, request, responseBuilder, app, cancellationToken);
+                            await CallByMethod(connectionContext, app, request, responseBuilder, cancellationToken);
 
                             readBodyCancellationTokenSource.Cancel();
                             readBodyTask.Wait(0, cancellationToken); // stop reading, remember that unprocessed bytes still remain in the socket buffer
@@ -164,21 +164,6 @@ namespace MiniWebServer.Server
             }
 
             return null;
-        }
-
-        private async Task ExecuteCallableAsync(MiniAppConnectionContext connectionContext, HttpRequest request, HttpWebResponseBuilder responseBuilder, IMiniApp app, CancellationToken cancellationToken)
-        {
-            if (app == null)
-                throw new ArgumentNullException(nameof(app));
-
-            try
-            {
-                await CallByMethod(connectionContext, app, request, responseBuilder, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "[{cid}] - Error calling resource", ConnectionId);
-            }
         }
 
         private void CloseConnection()

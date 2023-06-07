@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.StaticFiles
 {
-    public static class StaticFilesHelpers
+    public static class StaticFilesMiddlewareExtensions
     {
         public static void UseStaticFiles(this IMiniAppBuilder appBuilder, string root)
         {
