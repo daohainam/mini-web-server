@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public sealed class HttpCookie
+    public record HttpCookie
     {
         public HttpCookie(string name, string value,
             string? domain = default,

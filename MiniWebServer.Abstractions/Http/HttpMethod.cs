@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpMethod
+    public record HttpMethod
     {
         // https://datatracker.ietf.org/doc/html/rfc9110#name-method-definitions
 
@@ -26,31 +26,6 @@ namespace MiniWebServer.Abstractions.Http
         public static readonly HttpMethod Connect = new("CONNECT");
         public static readonly HttpMethod Options = new("OPTIONS");
         public static readonly HttpMethod Trace = new("TRACE");
-
-        public bool Equals(HttpMethod? other)
-        {
-            return other is not null && ReferenceEquals(this, other);
-        }
-
-        public override bool Equals(object? other)
-        {
-            return Equals(other as HttpMethod);
-        }
-
-        public static bool operator ==(HttpMethod? m1, HttpMethod? m2)
-        {
-            return m1 is null || m2 is null ? ReferenceEquals(m1, m2) : m1.Equals(m2);
-        }
-
-        public static bool operator !=(HttpMethod? m1, HttpMethod? m2)
-        {
-            return !(m1 == m2);
-        }
-
-        public override int GetHashCode()
-        {
-            return method.GetHashCode();
-        }
 
         public override string ToString()
         {

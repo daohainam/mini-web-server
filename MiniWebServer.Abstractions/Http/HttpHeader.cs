@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpHeader: IEquatable<HttpHeader>
+    public record HttpHeader 
     {
         public HttpHeader(string name, string value)
         {
@@ -20,23 +20,6 @@ namespace MiniWebServer.Abstractions.Http
         }
         public string Name { get; }
         public IEnumerable<string> Value { get; }
-
-        public bool Equals(HttpHeader? other)
-        {
-            if (other == null) return false;
-
-            return Name.Equals(other.Name) && Value.SequenceEqual(other.Value);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return Equals(obj as HttpHeader);
-        }
-
-        public override int GetHashCode()
-        {
-            return Name.GetHashCode() ^ Value.GetHashCode();
-        }
 
         public bool ValueEquals(string value)
         {

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpParameter
+    public record HttpParameter
     {
         private readonly List<string> values;
 
