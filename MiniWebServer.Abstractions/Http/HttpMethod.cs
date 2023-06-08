@@ -51,5 +51,10 @@ namespace MiniWebServer.Abstractions.Http
         {
             return method.GetHashCode();
         }
+
+        public override string ToString()
+        {
+            return method;
+        }
     }
 }

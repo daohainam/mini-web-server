@@ -90,9 +90,9 @@ namespace MiniWebServer.HttpParser.Http11
                     return null;
                 }
 
-                var bytes = methodBytes.ToArray();
+                var span = methodBytes.FirstSpan;
                 foreach (var supportedHeader in supportedMethodBytes) { 
-                    if (supportedHeader.Value.SequenceEqual(bytes))
+                    if (span.SequenceCompareTo(supportedHeader.Value) == 0)
                     {
                         httpMethod = supportedHeader.Key;
                         break;
