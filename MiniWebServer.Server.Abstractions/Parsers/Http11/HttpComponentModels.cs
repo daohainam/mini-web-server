@@ -55,7 +55,7 @@ namespace MiniWebServer.Server.Abstractions.Parsers.Http11
 
         public override string ToString()
         {
-            return $"{Method} {Url} {ProtocolVersion}";
+            return $"{Method.Method} {Url} {ProtocolVersion}";
         }
     }
 
