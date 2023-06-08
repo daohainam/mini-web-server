@@ -1,47 +1,59 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using MiniWebServer.MiniApp;
 
-namespace Session
+namespace MiniWebServer.Session
 {
     public class SessionMiddleware : IMiddleware
     {
-        public const string DefaultSessionIdKey = ".mini.SID";
-        private readonly string sessionIdKey;
+        private readonly SessionOptions options;
+        private readonly ISessionIdGenerator sessionIdGenerator;
         private readonly ISessionStore sessionStore;
 
-        public SessionMiddleware(string sessionIdKey, ISessionStore sessionStore)
+        public SessionMiddleware(SessionOptions? options, ISessionIdGenerator? sessionIdGenerator, ISessionStore? sessionStore)
         {
-            this.sessionIdKey = string.IsNullOrEmpty(sessionIdKey) ? DefaultSessionIdKey : sessionIdKey;
+            ArgumentNullException.ThrowIfNull(options);
+
+            this.options = options;
+            this.sessionIdGenerator = sessionIdGenerator ?? throw new ArgumentNullException(nameof(sessionIdGenerator));
             this.sessionStore = sessionStore ?? throw new ArgumentNullException(nameof(sessionStore));
         }
 
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
         {
-            string? sessionId = null;
-            if (context.Request.Cookies.TryGetValue(sessionIdKey, out var cookie) && cookie != null)
+            if (context.Request.Cookies.TryGetValue(options.SessionIdKey, out var cookie) && cookie != null)
             {
-                sessionId = cookie.Value;
+                var sessionId = cookie.Value;
 
                 if (IsValidSessionId(sessionId))
                 {
-                    var session = await sessionStore.FindOrCreateAsync(sessionId, cancellationToken);
+                    var session = sessionStore.Create(sessionId);
 
                     // we store session data in a dictionary
                     if (session != null)
                     {
                         context.Session = session;
                     }
+
+                    context.Response.AddCookie(
+                        new Abstractions.Http.HttpCookie(options.SessionIdKey, sessionId)
+                        );
                 }
                 else
                 {
                     sessionId = null;
                 }
             }
+            else // session key not found, create one
+            {
+                context.Response.AddCookie(
+                    new Abstractions.Http.HttpCookie(options.SessionIdKey, sessionIdGenerator.GenerateNewId())
+                    );
+            }
 
-            // if sessionId == null, we create a new session
+            await next.InvokeAsync(context, cancellationToken);
         }
 
-        private bool IsValidSessionId(string sessionId)
+        private static bool IsValidSessionId(string sessionId)
         {
             return !string.IsNullOrEmpty(sessionId); // at least not empty
         }

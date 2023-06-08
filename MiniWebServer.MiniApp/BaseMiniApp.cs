@@ -41,15 +41,17 @@ namespace MiniWebServer.MiniApp
 
         public virtual ICallable? Find(IMiniAppContext context)
         {
+            ICallable callable = this;
+
             foreach (var action in endpoints.Values)
             {
                 if (action.IsMatched(context.Request.Url, context.Request.Method))
                 {
-                    return new ActionDelegateCallable(action);
+                    callable = new ActionDelegateCallable(action, callable);
+                    break; // we need only one endpoint
                 }
             }
 
-            ICallable callable = this;
             foreach (var middleware in middlewareChain)
             {
                 var callWrapper = new MiddlewareWrapper(middleware, callable);

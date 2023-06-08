@@ -13,6 +13,7 @@ using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Server.Abstractions.Parsers;
+using System.Reflection.PortableExecutable;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
@@ -287,7 +288,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
             foreach (var cookie in response.Cookies)
             {
-                Write(writer, $"Set-Cookie: {string.Join("; ", cookie.Value.Value)}\r\n");
+                Write(writer, $"Set-Cookie: {cookie.Key}={string.Join("; ", cookie.Value.Value)}\r\n");
             }
             Write(writer, "\r\n");
 

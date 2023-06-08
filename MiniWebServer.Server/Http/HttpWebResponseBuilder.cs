@@ -109,8 +109,15 @@ namespace MiniWebServer.Server.Http
         {
             foreach (var cookie in cookies)
             {
-                this.cookies.Add(cookie.Name, cookie);
+                this.cookies[cookie.Name] = cookie;
             }
+
+            return this;
+        }
+
+        public IHttpResponseBuilder AddCookie(HttpCookie cookie)
+        {
+            cookies[cookie.Name] = cookie;
 
             return this;
         }

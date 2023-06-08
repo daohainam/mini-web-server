@@ -20,7 +20,7 @@ namespace MiniWebServer.Abstractions.Http
 
         public HttpCookies(IEnumerable<HttpCookie> cookies)
         {
-            ArgumentNullException.ThrowIfNull(nameof(cookies));
+            ArgumentNullException.ThrowIfNull(cookies);
 
             foreach (var cookie in cookies)
             {

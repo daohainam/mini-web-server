@@ -1,5 +1,4 @@
-﻿using MiniWebServer.MiniApp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Session
 {
-    public interface ISessionStore
+    public class DistributedCacheSessionStoreOptions
     {
-        ISession Create(string sessionId);
+        public int LockWaitTimeoutMs { get; set; } = Timeout.Infinite;
     }
 }

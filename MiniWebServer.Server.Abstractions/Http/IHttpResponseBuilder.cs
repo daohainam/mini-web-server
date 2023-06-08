@@ -18,6 +18,7 @@ namespace MiniWebServer.Server.Abstractions.Http
         IHttpResponseBuilder AddHeader(HttpResponseHeader header, string value);
         IHttpResponseBuilder SetReasonPhrase(string message);
         IHttpResponseBuilder SetContent(MiniApp.MiniContent content);
+        IHttpResponseBuilder AddCookie(HttpCookie cookie);
         IHttpResponseBuilder AddCookie(IEnumerable<HttpCookie> cookies);
         IHttpResponseBuilder SetHeaderContentEncoding(string contentEncoding);
         IHttpResponseBuilder SetHeaderContentLength(long contentLength);

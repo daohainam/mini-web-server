@@ -9,7 +9,9 @@ namespace MiniWebServer.Server.Session
 {
     internal class DefaultSession : ISession
     {
-        private string sessionId = Guid.Empty.ToString();
+        private DefaultSession() { } // no one else can create 
+
+        private readonly string sessionId = Guid.Empty.ToString();
 
         public string Id => sessionId;
 
@@ -20,11 +22,37 @@ namespace MiniWebServer.Server.Session
             return null;
         }
 
-        public void Remove(string key)
+        public byte[] Set(string key, byte[] value)
         {
+            return value;
         }
 
-        public byte[] Set(string key, byte[] value)
+        public bool Clear()
+        {
+            return true;
+        }
+
+        bool ISession.Remove(string key)
+        {
+            return true;
+        }
+
+        Task<bool> ISession.LoadAsync()
+        {
+            return Task.FromResult(true);
+        }
+
+        Task<bool> ISession.SaveAsync()
+        {
+            return Task.FromResult(true);
+        }
+
+        public string? GetString(string key)
+        {
+            return null;
+        }
+
+        public string? SetString(string key, string value)
         {
             return value;
         }

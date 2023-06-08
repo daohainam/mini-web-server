@@ -184,7 +184,7 @@ namespace MiniWebServer.Server
             try
             {
                 var request = BuildMiniAppRequest(connectionContext, httpRequest);
-                var response = BuildMiniAppResponse(connectionContext, responseBuilder);
+                var response = BuildMiniAppResponse(connectionContext, httpRequest, responseBuilder);
                 var context = BuildMiniContext(connectionContext, app, request, response);
 
                 var action = app.Find(context);
@@ -225,14 +225,16 @@ namespace MiniWebServer.Server
             return request;
         }
 
-        private static MiniResponse BuildMiniAppResponse(MiniAppConnectionContext connectionContext, IHttpResponseBuilder responseBuilder)
+        private static MiniResponse BuildMiniAppResponse(MiniAppConnectionContext connectionContext, HttpRequest request, IHttpResponseBuilder responseBuilder)
         {
             var response = new MiniResponse(connectionContext, responseBuilder);
+
+            response.AddCookies(request.Cookies);
 
             response.SetStatus(HttpResponseCodes.OK);
             response.SetContent(EmptyContent.Instance);
             response.AddHeader("Content-Type", "text/html");
-            
+
 
             return response;
         }

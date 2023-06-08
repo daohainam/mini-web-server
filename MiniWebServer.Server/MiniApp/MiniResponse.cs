@@ -1,4 +1,5 @@
 ﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Server.Abstractions.Http;
 using System;
@@ -25,6 +26,11 @@ namespace MiniWebServer.Server.MiniApp
             responseBuilder.AddHeader(name, mimeType);
         }
 
+        public void AddCookie(HttpCookie cookie)
+        {
+            responseBuilder.AddCookie(cookie);
+        }
+
         public void SetStatus(HttpResponseCodes statusCode, string reasonPhrase)
         {
             responseBuilder.SetStatusCode(statusCode);
@@ -41,6 +47,11 @@ namespace MiniWebServer.Server.MiniApp
         {
             responseBuilder.SetContent(content);
             responseBuilder.SetHeaderContentLength(content.ContentLength);
+        }
+
+        public void AddCookies(HttpCookies cookies)
+        {
+            responseBuilder.AddCookie(cookies.Values);
         }
     }
 }

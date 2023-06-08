@@ -11,6 +11,7 @@ using MiniWebServer.Quote;
 using MiniWebServer.Server;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
+using MiniWebServer.Session;
 using MiniWebServer.StaticFiles;
 using System;
 using System.Text;
@@ -64,6 +65,7 @@ namespace MiniWebServer
         {
             var appBuilder = new MiniAppBuilder(services);
 
+            appBuilder.UseSession();
             appBuilder.UseStaticFiles("wwwroot");
 
             return appBuilder.Build();
@@ -71,10 +73,23 @@ namespace MiniWebServer
 
         private static IMiniApp MapRoutes(IMiniApp app)
         {
-            app.MapGet("/helpcheck", (context, cancellationToken) => {
-                context.Response.SetContent(new MiniApp.Content.StringContent($"Service status: OK {DateTime.Now}"));
+            app.MapGet("/helpcheck", async (context, cancellationToken) => {
+                try
+                {
+                    await context.Session.LoadAsync();
+                    var firstTime = context.Session.GetString("FirstTime");
 
-                return Task.CompletedTask;
+                    if (firstTime == null)
+                    {
+                        context.Session.SetString("FirstTime", DateTime.Now.ToString());
+                        await context.Session.SaveAsync();
+                    }
+
+                    context.Response.SetContent(new MiniApp.Content.StringContent($"Service status: OK {DateTime.Now}, First time: {firstTime}"));
+                } catch (Exception ex)
+                {
+                    context.Response.SetContent(new MiniApp.Content.StringContent($"Service status: ERROR {DateTime.Now} ({ex.Message})"));
+                }
             });
 
             app.MapGet("/file/textfile.txt", (context, cancellationToken) => {
