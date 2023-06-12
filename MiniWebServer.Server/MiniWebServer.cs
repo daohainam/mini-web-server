@@ -75,6 +75,7 @@ namespace MiniWebServer.Server
                     stream = sslStream;
                 }
 
+                using var serviceScope = serviceProvider.CreateScope();
                 var client = new MiniWebClientConnection(
                     new MiniWebConnectionConfiguration(
                         connectionId,
@@ -89,7 +90,7 @@ namespace MiniWebServer.Server
                     TimeSpan.FromMilliseconds(config.ConnectionTimeout),
                     config.ReadBufferSize
                     ),
-                    serviceProvider,
+                    serviceScope.ServiceProvider,
                     cancellationToken
                 );
 
