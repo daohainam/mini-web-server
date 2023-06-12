@@ -75,27 +75,31 @@ namespace MiniWebServer.StaticFiles
                             string fileExt = file.Extension;
                             string mimeType = mimeTypeMapping.GetMimeMapping(fileExt);
 
-                            if (IsText(mimeType))
-                            {
-                                using var reader = file.OpenText();
-                                var content = await reader.ReadToEndAsync(cancellationToken);
+                            context.Response.AddHeader("Content-Type", mimeType);
+                            context.Response.AddHeader("Content-Length", file.Length.ToString());
+                            context.Response.SetContent(new MiniApp.Content.FileContent(file));
 
-                                context.Response.AddHeader("Content-Type", mimeType);
-                                context.Response.AddHeader("Content-Length", content.Length.ToString());
-                                context.Response.SetContent(new MiniApp.Content.StringContent(content));
-                            }
-                            else
-                            {
-                                using var stream = file.OpenRead();
-                                var length = file.Length;
-                                var content = new byte[length];
+                            //if (IsText(mimeType))
+                            //{
+                            //    using var reader = file.OpenText();
+                            //    var content = await reader.ReadToEndAsync(cancellationToken);
 
-                                stream.Read(content, 0, content.Length);
+                            //    context.Response.AddHeader("Content-Type", mimeType);
+                            //    context.Response.AddHeader("Content-Length", content.Length.ToString());
+                            //    context.Response.SetContent(new MiniApp.Content.StringContent(content));
+                            //}
+                            //else
+                            //{
+                            //    using var stream = file.OpenRead();
+                            //    var length = file.Length;
+                            //    var content = new byte[length];
 
-                                context.Response.AddHeader("Content-Type", mimeType);
-                                context.Response.AddHeader("Content-Length", content.Length.ToString());
-                                context.Response.SetContent(new MiniApp.Content.ByteArrayContent(content));
-                            }
+                            //    stream.Read(content, 0, content.Length);
+
+                            //    context.Response.AddHeader("Content-Type", mimeType);
+                            //    context.Response.AddHeader("Content-Length", content.Length.ToString());
+                            //    context.Response.SetContent(new MiniApp.Content.ByteArrayContent(content));
+                            //}
 
                             context.Response.SetStatus(HttpResponseCodes.OK);
                         }
