@@ -14,10 +14,25 @@ namespace MiniWebServer.StaticFiles
     {
         public static void UseStaticFiles(this IMiniAppBuilder appBuilder, string root)
         {
-            root ??= "wwwroot";
+            StaticFilesOptions options = new()
+            {
+                Root = root ?? "wwwroot"
+            };
 
             appBuilder.Services.AddTransient(services => new StaticFilesMiddleware(
-                root,
+                options,
+                services.GetService<IMimeTypeMapping>(),
+                services.GetService<ILoggerFactory>()
+                ));
+
+            appBuilder.UseMiddleware<StaticFilesMiddleware>();
+        }
+
+        public static void UseStaticFiles(this IMiniAppBuilder appBuilder, StaticFilesOptions options)
+        {
+            appBuilder.Services.AddTransient(services => new StaticFilesMiddleware(
+                options.Root,
+                options.DefaultDocuments,
                 services.GetService<IMimeTypeMapping>(),
                 services.GetService<ILoggerFactory>()
                 ));

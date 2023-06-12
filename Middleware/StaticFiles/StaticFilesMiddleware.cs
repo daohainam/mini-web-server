@@ -13,16 +13,23 @@ namespace MiniWebServer.StaticFiles
         private readonly ILogger<StaticFilesMiddleware> logger;
         private readonly DirectoryInfo directoryInfo;
         private readonly IMimeTypeMapping mimeTypeMapping;
+        private readonly string[] defaultDocuments;
 
-        public StaticFilesMiddleware(string rootDirectory, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory)
+        public StaticFilesMiddleware(string rootDirectory, string[] defaultDocuments, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory)
         {
             ArgumentException.ThrowIfNullOrEmpty(rootDirectory);
             ArgumentNullException.ThrowIfNull(mimeTypeMapping);
 
             directoryInfo = new DirectoryInfo(rootDirectory);
+            this.defaultDocuments = defaultDocuments ?? Array.Empty<string>();
             this.mimeTypeMapping = mimeTypeMapping;
             logger = loggerFactory != null ? loggerFactory.CreateLogger<StaticFilesMiddleware>() : NullLogger<StaticFilesMiddleware>.Instance;
         }
+        public StaticFilesMiddleware(string rootDirectory, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory): this(rootDirectory, Array.Empty<string>(), mimeTypeMapping, loggerFactory)
+        { }
+
+        public StaticFilesMiddleware(StaticFilesOptions options, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory): this(options.Root, options.DefaultDocuments, mimeTypeMapping, loggerFactory)
+        { }
 
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
         {
@@ -39,52 +46,63 @@ namespace MiniWebServer.StaticFiles
                 }
                 url = url.Replace('/', Path.DirectorySeparatorChar);
 
-                var file = new FileInfo(Path.Combine(directoryInfo.FullName, url));
-                if (file.Exists)
+                FileInfo? file = null;
+                if (string.IsNullOrEmpty(url) && defaultDocuments.Any())
+                {
+                    foreach (var document in defaultDocuments)
+                    {
+                        FileInfo f = new(Path.Combine(directoryInfo.FullName, document));
+                        if (f.Exists)
+                        {
+                            file = f;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    file = new(Path.Combine(directoryInfo.FullName, url));
+                    if (!file.Exists)
+                        file = null;
+                }
+
+                if (file != null)
                 {
                     if (context.Request.Method == HttpMethod.Get)
                     {
-                        if (file.Exists)
+                        try
                         {
-                            try
+                            string fileExt = file.Extension;
+                            string mimeType = mimeTypeMapping.GetMimeMapping(fileExt);
+
+                            if (IsText(mimeType))
                             {
-                                string fileExt = file.Extension;
-                                string mimeType = mimeTypeMapping.GetMimeMapping(fileExt);
+                                using var reader = file.OpenText();
+                                var content = await reader.ReadToEndAsync(cancellationToken);
 
-                                if (IsText(mimeType))
-                                {
-                                    using var reader = file.OpenText();
-                                    var content = await reader.ReadToEndAsync(cancellationToken);
-
-                                    context.Response.AddHeader("Content-Type", mimeType);
-                                    context.Response.AddHeader("Content-Length", content.Length.ToString());
-                                    context.Response.SetContent(new MiniApp.Content.StringContent(content));
-                                }
-                                else
-                                {
-                                    using var stream = file.OpenRead();
-                                    var length = file.Length;
-                                    var content = new byte[length];
-
-                                    stream.Read(content, 0, content.Length);
-
-                                    context.Response.AddHeader("Content-Type", mimeType);
-                                    context.Response.AddHeader("Content-Length", content.Length.ToString());
-                                    context.Response.SetContent(new MiniApp.Content.ByteArrayContent(content));
-                                }
-
-                                context.Response.SetStatus(HttpResponseCodes.OK);
+                                context.Response.AddHeader("Content-Type", mimeType);
+                                context.Response.AddHeader("Content-Length", content.Length.ToString());
+                                context.Response.SetContent(new MiniApp.Content.StringContent(content));
                             }
-                            catch (Exception ex)
+                            else
                             {
-                                logger.LogError(ex, message: null);
-                                context.Response.SetStatus(HttpResponseCodes.InternalServerError);
+                                using var stream = file.OpenRead();
+                                var length = file.Length;
+                                var content = new byte[length];
+
+                                stream.Read(content, 0, content.Length);
+
+                                context.Response.AddHeader("Content-Type", mimeType);
+                                context.Response.AddHeader("Content-Length", content.Length.ToString());
+                                context.Response.SetContent(new MiniApp.Content.ByteArrayContent(content));
                             }
+
+                            context.Response.SetStatus(HttpResponseCodes.OK);
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            logger.LogError("Resource not found ({resource})", context.Request.Url);
-                            context.Response.SetStatus(HttpResponseCodes.NotFound);
+                            logger.LogError(ex, message: null);
+                            context.Response.SetStatus(HttpResponseCodes.InternalServerError);
                         }
                     }
                     else
@@ -94,11 +112,13 @@ namespace MiniWebServer.StaticFiles
                 }
                 else
                 {
+                    // instead of returning a 404 Not Found, we pass the request to next middleware
                     await next.InvokeAsync(context, cancellationToken);
                 }
             }
             else
             {
+                // instead of returning a 404 Not Found, we pass the request to next middleware
                 await next.InvokeAsync(context, cancellationToken);
             }
         }
