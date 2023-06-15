@@ -29,6 +29,13 @@ namespace MiniWebServer.Abstractions.Http
                 return TryGetValueAsString("Content-Type");
             }
         }
+        public string ContentEncoding
+        {
+            get
+            {
+                return TryGetValueAsString("Content-Encoding");
+            }
+        }
         private string TryGetValueAsString(string name, string defaultValue = "")
         {
             if (TryGetValue(name, out var value))

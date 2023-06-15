@@ -18,6 +18,7 @@ namespace MiniWebServer.Server
             Stream clientStream, 
             IProtocolHandler protocolHandler, 
             IDictionary<string, Host.Host> hostContainers,
+            IRequestIdManager requestIdManager,
             TimeSpan readRequestTimeout,
             TimeSpan sendResponseTimeout,
             TimeSpan executeTimeout, 
@@ -29,6 +30,7 @@ namespace MiniWebServer.Server
             ClientStream = clientStream ?? throw new ArgumentNullException(nameof(clientStream));
             ProtocolHandler = protocolHandler ?? throw new ArgumentNullException(nameof(protocolHandler));
             HostContainers = hostContainers ?? throw new ArgumentNullException(nameof(hostContainers));
+            RequestIdManager = requestIdManager ?? throw new ArgumentNullException(nameof(requestIdManager));
             ReadRequestTimeout = readRequestTimeout;
             SendResponseTimeout = sendResponseTimeout;
             ExecuteTimeout = executeTimeout;
@@ -40,6 +42,7 @@ namespace MiniWebServer.Server
         public Stream ClientStream { get; }
         public IProtocolHandler ProtocolHandler { get; }
         public IDictionary<string, Host.Host> HostContainers { get; }
+        public IRequestIdManager RequestIdManager { get; }
         public TimeSpan ReadRequestTimeout { get; }
         public TimeSpan SendResponseTimeout { get; }
         public TimeSpan ExecuteTimeout { get; }

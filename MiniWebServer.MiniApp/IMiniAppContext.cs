@@ -11,5 +11,6 @@ namespace MiniWebServer.MiniApp
         IMiniAppRequest Request { get; }
         IMiniAppResponse Response { get; }
         ISession Session { get; set; }
+        IServiceProvider Services { get; }
     }
 }

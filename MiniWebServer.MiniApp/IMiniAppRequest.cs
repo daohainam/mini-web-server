@@ -14,7 +14,7 @@ namespace MiniWebServer.MiniApp
         IMiniBodyManager BodyManager { get; }
         HttpCookies Cookies { get; }
         string Hash { get; }
-        HttpHeaders Headers { get; }
+        HttpRequestHeaders Headers { get; }
         Abstractions.Http.HttpMethod Method { get; }
         HttpParameters QueryParameters { get; }
         string QueryString { get; }

@@ -20,12 +20,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
     public class Http11IProtocolHandler : IProtocolHandler // should we use PipeLines to make the code simpler?
     {
         public const string HttpVersionString = "HTTP/1.1";
-        public const int HttpMaxRequestLineLength = 8 * 1024; // max 8KB each line
         public const int HttpMaxHeaderLineLength = 8 * 1024; // max 8KB each line
-        public SortedList<string, string> allowedMethods = new() {
-            { "GET", string.Empty },
-            { "POST", string.Empty }
-        };
 
         protected readonly ProtocolHandlerConfiguration config;
         protected readonly ILoggerFactory loggerFactory;
@@ -189,13 +184,28 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             // 2. we want to make it responsive, we can discard a connection right away without reading it's body, there is no reasons to waste our resouces to process an invalid request
 
             // read body part, we read only contentLength bytes
+            var contentLength = request.ContentLength;
+            if (contentLength == 0)
+            {
+                // nothing to read
+                await request.BodyPipeline.Writer.CompleteAsync();
+                return;
+            }
+            if (contentLength < 0)
+            {
+                throw new InvalidOperationException("Content-Length < 0");
+            }
+            logger.LogDebug("Start reading body, contentLength = {contentLength}", contentLength);
+
             ReadResult readResult = await reader.ReadAsync(cancellationToken);
             ReadOnlySequence<byte> buffer = readResult.Buffer;
-            var contentLength = request.ContentLength;
 
             long bytesRead = 0;
+
             while (bytesRead < contentLength)
             {
+                logger.LogDebug("Reading body, bytesRead = {bytesRead}", bytesRead);
+
                 long maxBytesToRead = contentLength - bytesRead;
                 if (buffer.Length >= maxBytesToRead)
                 {
@@ -222,6 +232,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 readResult = await reader.ReadAsync(cancellationToken);
                 buffer = readResult.Buffer;
             }
+
+            logger.LogDebug("Done reading body, bytesRead = {bytesRead}", bytesRead);
 
             await request.BodyPipeline.Writer.FlushAsync(cancellationToken);
             await request.BodyPipeline.Writer.CompleteAsync();
@@ -279,7 +291,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             writer.Write(bytes.AsSpan());
         }
 
-        public async Task<bool> WriteResponseAsync(IBufferWriter<byte> writer, IHttpResponse response, CancellationToken cancellationToken)
+        public async Task<bool> WriteResponseAsync(PipeWriter writer, IHttpResponse response, CancellationToken cancellationToken)
         {
             Write(writer, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
             foreach (var header in response.Headers)

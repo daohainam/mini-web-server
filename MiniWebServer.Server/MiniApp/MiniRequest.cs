@@ -31,7 +31,7 @@ namespace MiniWebServer.Server.MiniApp
         public HttpParameters QueryParameters => httpRequest.QueryParameters;
         public HttpCookies Cookies => httpRequest.Cookies;
         public string Hash => httpRequest.Hash;
-        public HttpHeaders Headers => httpRequest.Headers;
+        public HttpRequestHeaders Headers => httpRequest.Headers;
         public HttpMethod Method => httpRequest.Method;
         public IMiniBodyManager BodyManager { get; }
         public long ContentLength => httpRequest.ContentLength;

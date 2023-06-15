@@ -51,6 +51,13 @@ namespace MiniWebServer.Abstractions.Http
                 return TryGetValueAsString("Transfer-Encoding");
             }
         }
+        public string AcceptEncoding
+        {
+            get
+            {
+                return TryGetValueAsString("Accept-Encoding");
+            }
+        }
 
         private string TryGetValueAsString(string name, string defaultValue = "")
         {

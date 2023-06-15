@@ -66,55 +66,66 @@ namespace MiniWebServer.Server
                     var requestBuilder = new HttpWebRequestBuilder();
                     var responseBuilder = new HttpWebResponseBuilder();
 
-                    var readRequestResult = await config.ProtocolHandler.ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken);
-                    if (!readRequestResult)
+                    // if time out we can simply close the connection
+                    try
                     {
-                        isKeepAlive = false; // we always close wrongly working connections
+                        var readRequestResult = await config.ProtocolHandler.ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken);
+                        if (!readRequestResult)
+                        {
+                            isKeepAlive = false; // we always close wrongly working connections
 
-                        responseBuilder.SetStatusCode(HttpResponseCodes.BadRequest);
-                        var response = responseBuilder.Build();
+                            responseBuilder.SetStatusCode(HttpResponseCodes.BadRequest);
+                            var response = responseBuilder.Build();
 
-                        cancellationTokenSource.CancelAfter(config.ReadRequestTimeout);
-                        logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
-                        await SendResponseAsync(responsePipeWriter, response, cancellationToken);
+                            cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+                            logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
+                            await SendResponseAsync(responsePipeWriter, response, cancellationToken);
 
-                        break;
-                    }
-                    else
+                            break;
+                        }
+                        else
+                        {
+                            isKeepAlive = false; // we will close the connection if there is any error while building request
+                            var requestId = config.RequestIdManager.GetNext();
+                            requestBuilder.SetRequestId(requestId);
+                            var request = requestBuilder.Build();
+
+                            isKeepAlive = request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later
+
+                            var app = FindApp(request); // should we reuse apps???
+
+                            if (app != null)
+                            {
+                                cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
+                                logger.LogDebug("[{cid}] - Processing request...", ConnectionId);
+
+                                // now we continue reading body part
+                                CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                                Task readBodyTask = config.ProtocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
+                                Task callMethodTask = CallByMethod(connectionContext, app, request, responseBuilder, cancellationToken);
+
+                                readBodyCancellationTokenSource.Cancel();
+                                // readBodyTask.Wait(0, cancellationToken); // stop reading, remember that unprocessed bytes still remain in the socket buffer
+
+                                Task.WaitAll(new Task[] { readBodyTask, callMethodTask }, cancellationToken);
+                                logger.LogDebug("[{cid}] - Done processing request...", ConnectionId);
+                            }
+
+                            var connectionHeader = responseBuilder.Headers.Connection;
+                            if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
+                            {
+                                responseBuilder.AddHeader("Connection", isKeepAlive ? "keep-alive" : "close");
+                            }
+
+                            var response = responseBuilder.Build();
+
+                            cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+                            logger.LogDebug("[{cid}] - Sending back response...", ConnectionId);
+                            await SendResponseAsync(responsePipeWriter, response, cancellationToken);
+                        }
+                    } catch (OperationCanceledException)
                     {
-                        isKeepAlive = false; // we will close the connection if there is any error while building request
-                        var request = requestBuilder.Build();
-
-                        isKeepAlive = false; // request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later
-
-                        var app = FindApp(request); // should we reuse apps???
-
-                        if (app != null)
-                        {
-                            cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
-                            logger.LogDebug("[{cid}] - Processing request...", ConnectionId);
-
-                            // now we continue reading body part
-                            CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                            Task readBodyTask = config.ProtocolHandler.ReadBodyAsync(requestPipeReader, request, cancellationToken);
-
-                            await CallByMethod(connectionContext, app, request, responseBuilder, cancellationToken);
-
-                            readBodyCancellationTokenSource.Cancel();
-                            readBodyTask.Wait(0, cancellationToken); // stop reading, remember that unprocessed bytes still remain in the socket buffer
-                        }
-
-                        var connectionHeader = responseBuilder.Headers.Connection;
-                        if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
-                        {
-                            responseBuilder.AddHeader("Connection", isKeepAlive ? "keep-alive" : "close");
-                        }
-
-                        var response = responseBuilder.Build();
-
-                        cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
-                        logger.LogDebug("[{cid}] - Sending back response...", ConnectionId);
-                        await SendResponseAsync(responsePipeWriter, response, cancellationToken);
+                        isKeepAlive = false; 
                     }
                 }
             }
@@ -131,7 +142,7 @@ namespace MiniWebServer.Server
         {
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
-            var connectionContext = new MiniAppConnectionContext(new DefaultFormReaderFactory(), loggerFactory);
+            var connectionContext = new MiniAppConnectionContext(new DefaultFormReaderFactory(), serviceProvider.CreateScope().ServiceProvider, loggerFactory);
 
             return connectionContext;
         }
@@ -171,7 +182,10 @@ namespace MiniWebServer.Server
             try
             {
                 logger.LogDebug("[{cid}] - Closing connection...", ConnectionId);
-                config.TcpClient.GetStream().Flush();
+                if (config.TcpClient.Connected)
+                {
+                    config.TcpClient.GetStream().Flush();
+                }
                 config.TcpClient.Close();
             }
             catch (Exception ex) { 

@@ -21,6 +21,7 @@ namespace MiniWebServer.Server
         private TcpListener? server;
         private bool running;
         private ulong nextClientId = 0;
+        private readonly IRequestIdManager requestIdManager;
 
         private readonly ConcurrentDictionary<ulong, Task> clientTasks = new();
 
@@ -36,7 +37,6 @@ namespace MiniWebServer.Server
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
             this.serviceProvider = serviceProvider;
-
             this.protocolHandlerFactory = protocolHandlerFactory ?? throw new ArgumentNullException(nameof(protocolHandlerFactory));
             this.hostContainers = hostContainers ?? throw new ArgumentNullException(nameof(hostContainers));
 
@@ -46,6 +46,8 @@ namespace MiniWebServer.Server
             running = false;
             cancellationTokenSource = new();
             cancellationToken = cancellationTokenSource.Token;
+
+            requestIdManager = serviceProvider.GetService<IRequestIdManager>() ?? new RequestIdManager();
         }
 
         private async Task HandleNewClientConnectionAsync(ulong connectionId, TcpClient tcpClient)
@@ -85,6 +87,7 @@ namespace MiniWebServer.Server
                         new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, config.MaxRequestBodySize)
                     ), // A connection always starts with HTTP 1.1 
                     hostContainers,
+                    requestIdManager,
                     TimeSpan.FromMilliseconds(config.ReadRequestTimeout),
                     TimeSpan.FromMilliseconds(config.SendResponseTimeout),
                     TimeSpan.FromMilliseconds(config.ConnectionTimeout),

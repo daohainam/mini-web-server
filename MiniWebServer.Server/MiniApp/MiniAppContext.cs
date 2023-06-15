@@ -24,5 +24,6 @@ namespace MiniWebServer.Server.MiniApp
         public IMiniAppRequest Request { get; }
         public IMiniAppResponse Response { get; }
         public ISession Session { get; set; } // session can be changed by session middleware
+        public IServiceProvider Services => ConnectionContext.Services;
     }
 }

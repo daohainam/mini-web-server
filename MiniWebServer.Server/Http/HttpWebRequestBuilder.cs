@@ -24,6 +24,7 @@ namespace MiniWebServer.Server.Http
         private long contentLength;
         private string contentType = string.Empty;
         private string[] segments = Array.Empty<string>();
+        private ulong requestId;
         private readonly HttpParameters parameters = new();
 
         public IHttpRequestBuilder AddHeader(string name, string value)
@@ -45,7 +46,7 @@ namespace MiniWebServer.Server.Http
 
         public HttpRequest Build()
         {
-            var request = new HttpRequest(httpMethod, url, headers, queryString, hash, parameters, segments, new HttpCookies(cookies), bodyPipeline ?? new Pipe(), contentLength, contentType);
+            var request = new HttpRequest(requestId, httpMethod, url, headers, queryString, hash, parameters, segments, new HttpCookies(cookies), bodyPipeline ?? new Pipe(), contentLength, contentType);
 
             return request;
         }
@@ -135,6 +136,13 @@ namespace MiniWebServer.Server.Http
         public IHttpRequestBuilder SetSegments(string[] segments)
         {
             this.segments = segments;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetRequestId(ulong requestId)
+        {
+            this.requestId = requestId;
 
             return this;
         }
