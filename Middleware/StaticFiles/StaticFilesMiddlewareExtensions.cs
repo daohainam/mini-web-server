@@ -12,11 +12,12 @@ namespace MiniWebServer.StaticFiles
 {
     public static class StaticFilesMiddlewareExtensions
     {
-        public static void UseStaticFiles(this IMiniAppBuilder appBuilder, string root)
+        public static void UseStaticFiles(this IMiniAppBuilder appBuilder, string root, long defaultMaxAge = 0)
         {
             StaticFilesOptions options = new()
             {
-                Root = root ?? "wwwroot"
+                Root = root ?? "wwwroot",
+                CacheOptions = new StaticFilesCacheOptions(defaultMaxAge)
             };
 
             appBuilder.Services.AddTransient(services => new StaticFilesMiddleware(
@@ -31,8 +32,7 @@ namespace MiniWebServer.StaticFiles
         public static void UseStaticFiles(this IMiniAppBuilder appBuilder, StaticFilesOptions options)
         {
             appBuilder.Services.AddTransient(services => new StaticFilesMiddleware(
-                options.Root,
-                options.DefaultDocuments,
+                options,
                 services.GetService<IMimeTypeMapping>(),
                 services.GetService<ILoggerFactory>()
                 ));

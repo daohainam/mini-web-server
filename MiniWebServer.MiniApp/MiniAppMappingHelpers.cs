@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -78,6 +80,8 @@ namespace MiniWebServer.MiniApp
 
             public Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
             {
+                context.Response.StatusCode = HttpResponseCodes.OK;
+                context.Response.ReasonPhrase = HttpResponseReasonPhrases.GetReasonPhrase(HttpResponseCodes.OK);
                 return action(context, cancellationToken);
             }
         }

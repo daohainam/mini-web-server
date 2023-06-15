@@ -10,7 +10,18 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpRequest : IHttpRequest
     {
-        public HttpRequest(ulong requestId, HttpMethod method, string url, HttpRequestHeaders headers, string queryString, string hash, HttpParameters queryParameters, string[] segments, HttpCookies cookies, Pipe bodyPipeline, long contentLength, string contentType)
+        public HttpRequest(ulong requestId, 
+            HttpMethod method, 
+            string url, 
+            HttpRequestHeaders headers, 
+            string queryString, 
+            string hash, 
+            HttpParameters queryParameters, 
+            string[] segments, 
+            HttpCookies cookies, 
+            Pipe bodyPipeline, 
+            long contentLength, 
+            string contentType)
         {
             if (queryParameters is null)
             {
@@ -29,6 +40,8 @@ namespace MiniWebServer.Abstractions.Http
             BodyPipeline = bodyPipeline;
             ContentLength = contentLength;
             ContentType = contentType;
+
+            BodyManager = new RequestBodyManager(BodyPipeline.Reader);
         }
 
         public Pipe BodyPipeline { get; }
@@ -50,5 +63,6 @@ namespace MiniWebServer.Abstractions.Http
             } 
         }
 
+        public IRequestBodyManager BodyManager { get; }
     }
 }

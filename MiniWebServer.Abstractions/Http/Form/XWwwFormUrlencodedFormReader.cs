@@ -1,5 +1,6 @@
-﻿using MiniWebServer.Helpers;
-using MiniWebServer.MiniApp;
+﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Helpers;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Server.BodyReaders.Form
+namespace MiniWebServer.Abstractions.Http.Form
 {
     public class XWwwFormUrlencodedFormReader : IFormReader
     {

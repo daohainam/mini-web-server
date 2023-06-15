@@ -13,24 +13,21 @@ namespace MiniWebServer.StaticFiles
         private readonly ILogger<StaticFilesMiddleware> logger;
         private readonly DirectoryInfo directoryInfo;
         private readonly IMimeTypeMapping mimeTypeMapping;
+        private readonly StaticFilesOptions options;
         private readonly string[] defaultDocuments;
 
-        public StaticFilesMiddleware(string rootDirectory, string[] defaultDocuments, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory)
+        public StaticFilesMiddleware(StaticFilesOptions options, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory)
         {
-            ArgumentException.ThrowIfNullOrEmpty(rootDirectory);
+            ArgumentNullException.ThrowIfNull(options);
             ArgumentNullException.ThrowIfNull(mimeTypeMapping);
 
-            directoryInfo = new DirectoryInfo(rootDirectory);
+            directoryInfo = new DirectoryInfo(options.Root);
             this.defaultDocuments = defaultDocuments ?? Array.Empty<string>();
             this.mimeTypeMapping = mimeTypeMapping;
+            this.options = options;
+
             logger = loggerFactory != null ? loggerFactory.CreateLogger<StaticFilesMiddleware>() : NullLogger<StaticFilesMiddleware>.Instance;
         }
-        public StaticFilesMiddleware(string rootDirectory, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory): this(rootDirectory, Array.Empty<string>(), mimeTypeMapping, loggerFactory)
-        { }
-
-        public StaticFilesMiddleware(StaticFilesOptions options, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory): this(options.Root, options.DefaultDocuments, mimeTypeMapping, loggerFactory)
-        { }
-
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(context);
@@ -75,9 +72,8 @@ namespace MiniWebServer.StaticFiles
                             string fileExt = file.Extension;
                             string mimeType = mimeTypeMapping.GetMimeMapping(fileExt);
 
-                            context.Response.AddHeader("Content-Type", mimeType);
-                            context.Response.AddHeader("Content-Length", file.Length.ToString());
-                            context.Response.SetContent(new MiniApp.Content.FileContent(file));
+                            context.Response.Headers.ContentType = mimeType;
+                            context.Response.Content = new MiniApp.Content.FileContent(file);
 
                             //if (IsText(mimeType))
                             //{
@@ -101,17 +97,31 @@ namespace MiniWebServer.StaticFiles
                             //    context.Response.SetContent(new MiniApp.Content.ByteArrayContent(content));
                             //}
 
-                            context.Response.SetStatus(HttpResponseCodes.OK);
+                            if (options.CacheOptions.MaxAge > 0)
+                            {
+                                long maxAge = options.CacheOptions.MaxAge;
+
+                                if (maxAge > 0)
+                                {
+                                    context.Response.Headers.Add("Cache-Control", $"max-age={maxAge}");
+                                }
+                                else
+                                {
+                                    context.Response.Headers.Add("Cache-Control", "no-cache"); // no-cache doesn't mean 'don't cache'
+                                }
+                            }
+
+                            context.Response.StatusCode = HttpResponseCodes.OK;
                         }
                         catch (Exception ex)
                         {
                             logger.LogError(ex, message: null);
-                            context.Response.SetStatus(HttpResponseCodes.InternalServerError);
+                            context.Response.StatusCode = HttpResponseCodes.InternalServerError;
                         }
                     }
                     else
                     {
-                        context.Response.SetStatus(HttpResponseCodes.MethodNotAllowed);
+                        context.Response.StatusCode = HttpResponseCodes.MethodNotAllowed;
                     }
                 }
                 else

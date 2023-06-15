@@ -46,7 +46,20 @@ namespace MiniWebServer.Server.Http
 
         public HttpRequest Build()
         {
-            var request = new HttpRequest(requestId, httpMethod, url, headers, queryString, hash, parameters, segments, new HttpCookies(cookies), bodyPipeline ?? new Pipe(), contentLength, contentType);
+            var request = new HttpRequest(
+                requestId, 
+                httpMethod, 
+                url, 
+                headers, 
+                queryString, 
+                hash, 
+                parameters, 
+                segments, 
+                new HttpCookies(cookies), 
+                bodyPipeline ?? new Pipe(), 
+                contentLength, 
+                contentType
+                );
 
             return request;
         }

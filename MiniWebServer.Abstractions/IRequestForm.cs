@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.MiniApp
+namespace MiniWebServer.Abstractions
 {
     public interface IRequestForm : IEnumerable<KeyValuePair<string, StringValues>>
     {

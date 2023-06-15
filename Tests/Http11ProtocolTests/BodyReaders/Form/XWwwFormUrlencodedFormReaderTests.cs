@@ -1,5 +1,6 @@
 ﻿using Http11ProtocolTests;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MiniWebServer.Abstractions.Http.Form;
 using MiniWebServer.Server.BodyReaders.Form;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace MiniWebServer.Server.BodyReaders.Form.Tests
             var form = await formReader.ReadAsync(pipeReader);
 
             Assert.IsNotNull(form);
-            Assert.AreEqual(formCount, form.Count);
+            Assert.AreEqual(formCount, form.Count());
         }
 }
 }

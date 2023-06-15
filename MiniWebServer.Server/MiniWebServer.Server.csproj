@@ -10,7 +10,7 @@
     <PackageReference Include="HttpMultipartParser" Version="8.1.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
   </ItemGroup>
 
@@ -22,6 +22,10 @@
     <ProjectReference Include="..\MiniWebServer.HttpParser\MiniWebServer.HttpParser.csproj" />
     <ProjectReference Include="..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
     <ProjectReference Include="..\MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="BodyReaders\" />
   </ItemGroup>
 
 </Project>

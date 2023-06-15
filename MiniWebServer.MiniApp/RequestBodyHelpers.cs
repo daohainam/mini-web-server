@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -13,7 +14,7 @@ namespace MiniWebServer.MiniApp
 {
     public static class RequestBodyHelpers
     {
-        public static async Task<string> ReadAsStringAsync(this IMiniAppRequest request, CancellationToken cancellationToken = default)
+        public static async Task<string> ReadAsStringAsync(this IHttpRequest request, CancellationToken cancellationToken = default)
         {
             var contentLength = request.ContentLength;
             if (contentLength > 0)
@@ -56,7 +57,7 @@ namespace MiniWebServer.MiniApp
             }
         }
 
-        public static async Task<T?> ReadAsJsonAsync<T>(this IMiniAppRequest request, CancellationToken cancellationToken = default)
+        public static async Task<T?> ReadAsJsonAsync<T>(this IHttpRequest request, CancellationToken cancellationToken = default)
         {
             var jsonString = await ReadAsStringAsync(request, cancellationToken);
 

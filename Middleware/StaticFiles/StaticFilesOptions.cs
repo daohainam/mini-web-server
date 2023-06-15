@@ -8,7 +8,8 @@ namespace MiniWebServer.StaticFiles
 {
     public class StaticFilesOptions
     {
-        public string Root { get; set; } = "wwwroot";
-        public string[] DefaultDocuments { get; set; } = new string[] { "index.htm", "index.html" };
+        public string Root { get; init; } = "wwwroot";
+        public string[] DefaultDocuments { get; init; } = new string[] { "index.htm", "index.html" };
+        public StaticFilesCacheOptions CacheOptions { get; init; } = new StaticFilesCacheOptions(0);
     }
 }

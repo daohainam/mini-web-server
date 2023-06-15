@@ -64,7 +64,7 @@ namespace MiniWebServer.MiniApp
 
         public Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
         {
-            context.Response.SetStatus(Abstractions.HttpResponseCodes.NotFound);
+            context.Response.StatusCode = Abstractions.HttpResponseCodes.NotFound;
 
             return Task.CompletedTask;
         }

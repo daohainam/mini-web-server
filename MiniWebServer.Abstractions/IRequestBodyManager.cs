@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.MiniApp
+namespace MiniWebServer.Abstractions
 {
-    public interface IMiniBodyManager
+    public interface IRequestBodyManager
     {
         PipeReader? GetReader();
     }

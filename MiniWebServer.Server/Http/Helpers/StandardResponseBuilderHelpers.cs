@@ -1,5 +1,4 @@
-﻿using MiniWebServer.Abstractions.Http;
-using MiniWebServer.Server.Abstractions.Http;
+﻿using MiniWebServer.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,11 +9,11 @@ namespace MiniWebServer.Server.Http.Helpers
 {
     public class StandardResponseBuilderHelpers
     {
-        public static void NotFound(IHttpResponseBuilder builder)
+        public static void NotFound(IHttpResponse response)
         {
-            builder.SetStatusCode(global::MiniWebServer.Abstractions.HttpResponseCodes.NotFound);
-            builder.AddHeader("Content-Length", "0");
-            builder.SetReasonPhrase("Not Found");
+            response.StatusCode = HttpResponseCodes.NotFound;
+            response.Headers.ContentLength = 0;
+            response.ReasonPhrase = "Not Found";
         }
     }
 }

@@ -3,9 +3,6 @@ using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
-using MiniWebServer.MiniApp.Content;
-using MiniWebServer.Server.Abstractions.Http;
-using MiniWebServer.Server.BodyReaders.Form;
 using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
@@ -64,8 +61,6 @@ namespace MiniWebServer.Server
                     logger.LogDebug("[{cid}] - Reading request...", ConnectionId);
 
                     var requestBuilder = new HttpWebRequestBuilder();
-                    var responseBuilder = new HttpWebResponseBuilder();
-
                     // if time out we can simply close the connection
                     try
                     {
@@ -74,8 +69,7 @@ namespace MiniWebServer.Server
                         {
                             isKeepAlive = false; // we always close wrongly working connections
 
-                            responseBuilder.SetStatusCode(HttpResponseCodes.BadRequest);
-                            var response = responseBuilder.Build();
+                            var response = new HttpResponse(HttpResponseCodes.BadRequest);
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
@@ -94,6 +88,8 @@ namespace MiniWebServer.Server
 
                             var app = FindApp(request); // should we reuse apps???
 
+                            var response = new HttpResponse();
+                            
                             if (app != null)
                             {
                                 cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
@@ -102,7 +98,7 @@ namespace MiniWebServer.Server
                                 // now we continue reading body part
                                 CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                                 Task readBodyTask = config.ProtocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
-                                Task callMethodTask = CallByMethod(connectionContext, app, request, responseBuilder, cancellationToken);
+                                Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
 
                                 readBodyCancellationTokenSource.Cancel();
                                 // readBodyTask.Wait(0, cancellationToken); // stop reading, remember that unprocessed bytes still remain in the socket buffer
@@ -111,13 +107,11 @@ namespace MiniWebServer.Server
                                 logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
                             }
 
-                            var connectionHeader = responseBuilder.Headers.Connection;
+                            var connectionHeader = response.Headers.Connection;
                             if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
                             {
-                                responseBuilder.AddHeader("Connection", isKeepAlive ? "keep-alive" : "close");
+                                response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
                             }
-
-                            var response = responseBuilder.Build();
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
@@ -142,13 +136,14 @@ namespace MiniWebServer.Server
         {
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
-            var connectionContext = new MiniAppConnectionContext(new DefaultFormReaderFactory(), serviceProvider.CreateScope().ServiceProvider, loggerFactory);
+            var connectionContext = new MiniAppConnectionContext(serviceProvider.CreateScope().ServiceProvider);
 
             return connectionContext;
         }
 
         private async Task SendResponseAsync(PipeWriter writer, HttpResponse response, CancellationToken cancellationToken)
         {
+            response.Headers.ContentLength = response.Content.ContentLength;
             await config.ProtocolHandler.WriteResponseAsync(writer, response, cancellationToken);
 
             await writer.FlushAsync(cancellationToken);
@@ -193,12 +188,10 @@ namespace MiniWebServer.Server
             }   
         }
 
-        private async Task CallByMethod(MiniAppConnectionContext connectionContext, IMiniApp app, HttpRequest httpRequest, IHttpResponseBuilder responseBuilder, CancellationToken cancellationToken)
+        private async Task CallByMethod(MiniAppConnectionContext connectionContext, IMiniApp app, HttpRequest request, IHttpResponse response, CancellationToken cancellationToken)
         {
             try
             {
-                var request = BuildMiniAppRequest(connectionContext, httpRequest);
-                var response = BuildMiniAppResponse(connectionContext, httpRequest, responseBuilder);
                 var context = BuildMiniContext(connectionContext, app, request, response);
 
                 var action = app.Find(context);
@@ -211,12 +204,12 @@ namespace MiniWebServer.Server
                     } catch (Exception ex)
                     {
                         logger.LogError(ex, "[{cid}] - Error executing action handler", ConnectionId);
-                        response.SetStatus(HttpResponseCodes.InternalServerError);
+                        response.StatusCode = HttpResponseCodes.InternalServerError;
                     }
                 }
                 else
                 {
-                    StandardResponseBuilderHelpers.NotFound(responseBuilder);
+                    StandardResponseBuilderHelpers.NotFound(response);
                 }
             }
             catch (Exception ex)
@@ -225,33 +218,11 @@ namespace MiniWebServer.Server
             }
         }
 
-        private static MiniAppContext BuildMiniContext(MiniAppConnectionContext connectionContext, IMiniApp app, MiniRequest request, MiniResponse response)
+        private static MiniAppContext BuildMiniContext(MiniAppConnectionContext connectionContext, IMiniApp app, IHttpRequest request, IHttpResponse response)
         {
             ISession session = DefaultSession.Instance; // we don't have to alloc/dealloc memory parts which we never change
 
             return new MiniAppContext(connectionContext, app, request, response, session);
         }
-
-        private static MiniRequest BuildMiniAppRequest(MiniAppConnectionContext connectionContext, HttpRequest httpRequest)
-        {
-            var request = new MiniRequest(connectionContext, httpRequest);
-
-            return request;
-        }
-
-        private static MiniResponse BuildMiniAppResponse(MiniAppConnectionContext connectionContext, HttpRequest request, IHttpResponseBuilder responseBuilder)
-        {
-            var response = new MiniResponse(connectionContext, responseBuilder);
-
-            response.AddCookies(request.Cookies);
-
-            response.SetStatus(HttpResponseCodes.OK);
-            response.SetContent(EmptyContent.Instance);
-            response.AddHeader("Content-Type", "text/html");
-
-
-            return response;
-        }
-
     }
 }

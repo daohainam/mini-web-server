@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,8 +9,8 @@ namespace MiniWebServer.MiniApp
 {
     public interface IMiniAppContext
     {
-        IMiniAppRequest Request { get; }
-        IMiniAppResponse Response { get; }
+        IHttpRequest Request { get; }
+        IHttpResponse Response { get; }
         ISession Session { get; set; }
         IServiceProvider Services { get; }
     }

@@ -11,7 +11,7 @@ namespace MiniWebServer.MiniApp
         public virtual Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
         {
             // by default we send 404 Not Found
-            context.Response.SetStatus(Abstractions.HttpResponseCodes.NotFound);
+            context.Response.StatusCode = Abstractions.HttpResponseCodes.NotFound;
 
             return Task.CompletedTask;
         }

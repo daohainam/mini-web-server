@@ -34,7 +34,8 @@ namespace MiniWebServer.Session
                         context.Session = session;
                     }
 
-                    context.Response.AddCookie(
+                    context.Response.Cookies.Add(
+                        options.SessionIdKey,
                         new Abstractions.Http.HttpCookie(options.SessionIdKey, sessionId)
                         );
                 }
@@ -45,7 +46,8 @@ namespace MiniWebServer.Session
             }
             else // session key not found, create one
             {
-                context.Response.AddCookie(
+                context.Response.Cookies.Add(
+                    options.SessionIdKey,
                     new Abstractions.Http.HttpCookie(options.SessionIdKey, sessionIdGenerator.GenerateNewId())
                     );
             }

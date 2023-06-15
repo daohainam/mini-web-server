@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace MiniWebServer.Abstractions.Http
 {
@@ -12,7 +13,7 @@ namespace MiniWebServer.Abstractions.Http
     {
         // we have a list of header, but we use a dictionary because we will do a lot of search on this.
         // using a List might save some memories, but slower
-        private readonly IList<HttpHeader> headers = new List<HttpHeader>(); 
+        private readonly List<HttpHeader> headers = new List<HttpHeader>();
 
         public HttpHeaders Add(string name, string value) // we return a HttpHeaders so we can make a chain of call, for example: headers.Add("Connection", "Close").Add("ETag", "ABCD") ...
         {
@@ -31,6 +32,83 @@ namespace MiniWebServer.Abstractions.Http
         public HttpHeaders Add(HttpHeader value)
         {
             headers.Add(value);
+
+            return this;
+        }
+
+        public HttpHeaders AddOrUpdate(string name, string value)
+        {
+            var idx = headers.FindIndex(x => x.Name == name);
+            if (idx != -1)
+            {
+                headers[idx] = new HttpHeader(name, value);
+            }
+            else
+            {
+                headers.Add(new HttpHeader(name, value));
+            }
+
+            return this;
+        }
+
+        public HttpHeaders AddOrUpdate(string name, IEnumerable<string> value)
+        {
+            var idx = headers.FindIndex(x => x.Name == name);
+            if (idx != -1)
+            {
+                headers[idx] = new HttpHeader(name, value);
+            }
+            else
+            {
+                headers.Add(new HttpHeader(name, value));
+            }
+
+            return this;
+        }
+
+        public HttpHeaders AddOrUpdate(HttpHeader header)
+        {
+            var idx = headers.FindIndex(x => x.Name == header.Name);
+            if (idx != -1)
+            {
+                headers[idx] = header;
+            }
+            else
+            {
+                headers.Add(header);
+            }
+
+            return this;
+        }
+        public HttpHeaders AddOrSkip(string name, string value)
+        {
+            var idx = headers.FindIndex(x => x.Name == name);
+            if (idx == -1)
+            {
+                headers.Add(new HttpHeader(name, value));
+            }
+
+            return this;
+        }
+
+        public HttpHeaders AddOrSkip(string name, IEnumerable<string> value)
+        {
+            var idx = headers.FindIndex(x => x.Name == name);
+            if (idx == -1)
+            {
+                headers.Add(new HttpHeader(name, value));
+            }
+
+            return this;
+        }
+
+        public HttpHeaders AddOrSkip(HttpHeader header)
+        {
+            var idx = headers.FindIndex(x => x.Name == header.Name);
+            if (idx == -1)
+            {
+                headers.Add(header);
+            }
 
             return this;
         }

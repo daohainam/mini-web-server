@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Primitives;
-using MiniWebServer.MiniApp;
+using MiniWebServer.Abstractions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Server.BodyReaders.Form
+namespace MiniWebServer.Abstractions.Http
 {
     public class RequestForm : IRequestForm
     {
@@ -27,8 +27,9 @@ namespace MiniWebServer.Server.BodyReaders.Form
         {
             get
             {
-                if (form.TryGetValue(key, out StringValues values)) {  
-                    return values; 
+                if (form.TryGetValue(key, out StringValues values))
+                {
+                    return values;
                 }
                 else
                 {

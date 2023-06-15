@@ -1,4 +1,5 @@
-﻿using MiniWebServer.MiniApp;
+﻿using MiniWebServer.Abstractions;
+using MiniWebServer.MiniApp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ namespace MiniWebServer.Server.MiniApp
 {
     public class MiniAppContext : IMiniAppContext
     {
-        public MiniAppContext(MiniAppConnectionContext connectionContext, IMiniApp app, IMiniAppRequest request, IMiniAppResponse response, ISession session)
+        public MiniAppContext(MiniAppConnectionContext connectionContext, IMiniApp app, IHttpRequest request, IHttpResponse response, ISession session)
         {
             ConnectionContext = connectionContext ?? throw new ArgumentNullException(nameof(connectionContext));
             App = app ?? throw new ArgumentNullException(nameof(app));
@@ -21,8 +22,8 @@ namespace MiniWebServer.Server.MiniApp
         public MiniAppConnectionContext ConnectionContext { get; }
 
         public IMiniApp App { get; }
-        public IMiniAppRequest Request { get; }
-        public IMiniAppResponse Response { get; }
+        public IHttpRequest Request { get; }
+        public IHttpResponse Response { get; }
         public ISession Session { get; set; } // session can be changed by session middleware
         public IServiceProvider Services => ConnectionContext.Services;
     }

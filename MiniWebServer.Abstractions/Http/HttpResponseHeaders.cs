@@ -8,18 +8,27 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpResponseHeaders: HttpHeaders
     {
-        public string ContentLength
+        public long ContentLength
         {
             get
             {
-                return TryGetValueAsString("Content-Length");
+                return long.Parse(TryGetValueAsString("Content-Length"));
+            }
+            set
+            {
+                AddOrUpdate("Content-Length", value.ToString());
             }
         }
+
         public string Connection
         {
             get
             {
                 return TryGetValueAsString("Connection");
+            }
+            set
+            {
+                AddOrUpdate("Connection", value);
             }
         }
         public string ContentType
@@ -28,12 +37,20 @@ namespace MiniWebServer.Abstractions.Http
             {
                 return TryGetValueAsString("Content-Type");
             }
+            set
+            {
+                AddOrUpdate("Content-Type", value);
+            }
         }
         public string ContentEncoding
         {
             get
             {
                 return TryGetValueAsString("Content-Encoding");
+            }
+            set
+            {
+                AddOrUpdate("Content-Encoding", value);
             }
         }
         private string TryGetValueAsString(string name, string defaultValue = "")

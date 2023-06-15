@@ -1,16 +1,17 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions;
+using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.MiniApp
+namespace MiniWebServer.Abstractions.Http
 {
-    public class MiniBodyManager : IMiniBodyManager
+    public class RequestBodyManager : IRequestBodyManager
     {
         private readonly PipeReader? reader;
-        public MiniBodyManager(PipeReader? reader)
+        public RequestBodyManager(PipeReader? reader)
         {
             this.reader = reader;
         }

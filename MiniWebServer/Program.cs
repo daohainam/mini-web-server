@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MimeMapping;
+using MiniWebServer.Abstractions;
 using MiniWebServer.Configuration;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.MiniApp;
@@ -66,7 +67,7 @@ namespace MiniWebServer
             var appBuilder = new MiniAppBuilder(services);
 
             appBuilder.UseSession();
-            appBuilder.UseStaticFiles("wwwroot");
+            appBuilder.UseStaticFiles("wwwroot", defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days
 
             return appBuilder.Build();
         }
@@ -85,15 +86,15 @@ namespace MiniWebServer
                         await context.Session.SaveAsync();
                     }
 
-                    context.Response.SetContent(new MiniApp.Content.StringContent($"Service status: OK {DateTime.Now}, First time: {firstTime}"));
+                    context.Response.Content = new MiniApp.Content.StringContent($"Service status: OK {DateTime.Now}, First time: {firstTime}");
                 } catch (Exception ex)
                 {
-                    context.Response.SetContent(new MiniApp.Content.StringContent($"Service status: ERROR {DateTime.Now} ({ex.Message})"));
+                    context.Response.Content = new MiniApp.Content.StringContent($"Service status: ERROR {DateTime.Now} ({ex.Message})");
                 }
             });
 
             app.MapGet("/file/textfile.txt", (context, cancellationToken) => {
-                context.Response.SetContent(new MiniApp.Content.FileContent(Path.Combine("wwwroot", "textfile.txt")));
+                context.Response.Content = new MiniApp.Content.FileContent(Path.Combine("wwwroot", "textfile.txt"));
 
                 return Task.CompletedTask;
             });
@@ -101,19 +102,19 @@ namespace MiniWebServer
             app.MapGet("/quote/random", async (context, cancellationToken) => {
                 string quote = await QuoteServiceFactory.GetQuoteService().GetRandomAsync();
 
-                context.Response.SetContent(new MiniApp.Content.StringContent(quote));
+                context.Response.Content = new MiniApp.Content.StringContent(quote);
             });
 
             app.MapGet("/string-api/toupper", (context, cancellationToken) => {
                 string p = context.Request.QueryParameters["text"].Value ?? string.Empty;
 
-                context.Response.SetContent(new MiniApp.Content.StringContent(p + " ===> " + p.ToUpper()));
+                context.Response.Content = new MiniApp.Content.StringContent(p + " ===> " + p.ToUpper());
 
                 return Task.CompletedTask;
             });
 
             app.MapPost("/post/form1", async (context, cancellationToken) => {
-                var form = await context.Request.ReadFormAsync(cancellationToken);
+                var form = await context.Request.ReadFormAsync(context.Services.GetService<ILoggerFactory>(), cancellationToken);
 
                 StringBuilder sb = new();
                 foreach (var item in form)
@@ -125,12 +126,12 @@ namespace MiniWebServer
                     sb.Append("</div>");
                 }
 
-                context.Response.SetContent(new MiniApp.Content.StringContent(sb.ToString()));
+                context.Response.Content = new MiniApp.Content.StringContent(sb.ToString());
             });
 
             app.MapPost("/post/form2", async (context, cancellationToken) => {
                 var text = await context.Request.ReadAsStringAsync(cancellationToken);
-                context.Response.SetContent(new MiniApp.Content.StringContent("Received as text: " + text));
+                context.Response.Content = new MiniApp.Content.StringContent("Received as text: " + text);
             });
 
             return app;

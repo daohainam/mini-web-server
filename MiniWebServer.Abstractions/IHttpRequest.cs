@@ -22,5 +22,6 @@ namespace MiniWebServer.Abstractions
         long ContentLength { get; }
         string ContentType { get; }
         string[] Segments { get; }
+        public IRequestBodyManager BodyManager { get; }
     }
 }
