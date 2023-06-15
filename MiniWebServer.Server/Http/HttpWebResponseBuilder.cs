@@ -85,7 +85,7 @@ namespace MiniWebServer.Server.Http
         {
             foreach (var k in headers)
             {
-                headers.Add(k.Key, k.Value);
+                headers.Add(k.Value);
             }
 
             return this;

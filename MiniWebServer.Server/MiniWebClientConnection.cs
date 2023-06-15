@@ -97,7 +97,7 @@ namespace MiniWebServer.Server
                             if (app != null)
                             {
                                 cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
-                                logger.LogDebug("[{cid}] - Processing request...", ConnectionId);
+                                logger.LogDebug("[{cid}][{rid}] - Processing request...", ConnectionId, requestId);
 
                                 // now we continue reading body part
                                 CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -108,7 +108,7 @@ namespace MiniWebServer.Server
                                 // readBodyTask.Wait(0, cancellationToken); // stop reading, remember that unprocessed bytes still remain in the socket buffer
 
                                 Task.WaitAll(new Task[] { readBodyTask, callMethodTask }, cancellationToken);
-                                logger.LogDebug("[{cid}] - Done processing request...", ConnectionId);
+                                logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
                             }
 
                             var connectionHeader = responseBuilder.Headers.Connection;
@@ -120,7 +120,7 @@ namespace MiniWebServer.Server
                             var response = responseBuilder.Build();
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
-                            logger.LogDebug("[{cid}] - Sending back response...", ConnectionId);
+                            logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
                             await SendResponseAsync(responsePipeWriter, response, cancellationToken);
                         }
                     } catch (OperationCanceledException)
