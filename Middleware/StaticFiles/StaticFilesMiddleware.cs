@@ -14,7 +14,6 @@ namespace MiniWebServer.StaticFiles
         private readonly DirectoryInfo directoryInfo;
         private readonly IMimeTypeMapping mimeTypeMapping;
         private readonly StaticFilesOptions options;
-        private readonly string[] defaultDocuments;
 
         public StaticFilesMiddleware(StaticFilesOptions options, IMimeTypeMapping? mimeTypeMapping, ILoggerFactory? loggerFactory)
         {
@@ -22,7 +21,6 @@ namespace MiniWebServer.StaticFiles
             ArgumentNullException.ThrowIfNull(mimeTypeMapping);
 
             directoryInfo = new DirectoryInfo(options.Root);
-            this.defaultDocuments = defaultDocuments ?? Array.Empty<string>();
             this.mimeTypeMapping = mimeTypeMapping;
             this.options = options;
 
@@ -44,9 +42,9 @@ namespace MiniWebServer.StaticFiles
                 url = url.Replace('/', Path.DirectorySeparatorChar);
 
                 FileInfo? file = null;
-                if (string.IsNullOrEmpty(url) && defaultDocuments.Any())
+                if (string.IsNullOrEmpty(url) && options.DefaultDocuments.Any())
                 {
-                    foreach (var document in defaultDocuments)
+                    foreach (var document in options.DefaultDocuments)
                     {
                         FileInfo f = new(Path.Combine(directoryInfo.FullName, document));
                         if (f.Exists)
@@ -65,7 +63,7 @@ namespace MiniWebServer.StaticFiles
 
                 if (file != null)
                 {
-                    if (context.Request.Method == HttpMethod.Get)
+                    if (context.Request.Method == HttpMethod.Get || context.Request.Method == HttpMethod.Head)
                     {
                         try
                         {
@@ -73,7 +71,14 @@ namespace MiniWebServer.StaticFiles
                             string mimeType = mimeTypeMapping.GetMimeMapping(fileExt);
 
                             context.Response.Headers.ContentType = mimeType;
-                            context.Response.Content = new MiniApp.Content.FileContent(file);
+                            if (context.Request.Method == HttpMethod.Head)
+                            {
+                                context.Response.Content = new MiniApp.Content.EmptyBodyFileContent(file);
+                            }
+                            else
+                            {
+                                context.Response.Content = new MiniApp.Content.FileContent(file);
+                            }
 
                             //if (IsText(mimeType))
                             //{
@@ -111,7 +116,7 @@ namespace MiniWebServer.StaticFiles
                                 }
                             }
 
-                            context.Response.StatusCode = HttpResponseCodes.OK;
+                            context.Response.StatusCode  = HttpResponseCodes.OK;
                         }
                         catch (Exception ex)
                         {

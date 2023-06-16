@@ -13,7 +13,6 @@ namespace MiniWebServer.Server.Http.Helpers
         {
             response.StatusCode = HttpResponseCodes.NotFound;
             response.Headers.ContentLength = 0;
-            response.ReasonPhrase = "Not Found";
         }
     }
 }

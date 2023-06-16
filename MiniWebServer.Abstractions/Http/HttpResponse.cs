@@ -9,6 +9,8 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpResponse : IHttpResponse
     {
+        private HttpResponseCodes statusCode;
+
         public HttpResponse()
         {
             StatusCode = HttpResponseCodes.NotFound;
@@ -26,7 +28,15 @@ namespace MiniWebServer.Abstractions.Http
             Content = content ?? EmptyContent.Instance;
         }
 
-        public HttpResponseCodes StatusCode { get; set; }
+        public HttpResponseCodes StatusCode { 
+            get {
+                return statusCode;
+            } 
+            set { 
+                statusCode = value;
+                ReasonPhrase = HttpResponseReasonPhrases.GetReasonPhrase(value);
+            } 
+        }
         public string ReasonPhrase { get; set; }
         public HttpResponseHeaders Headers { get; }
         public IHttpContent Content { get; set; }
