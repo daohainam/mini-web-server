@@ -113,15 +113,6 @@ namespace MiniWebServer.Server
                                 response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
                             }
 
-                            if (!string.IsNullOrEmpty(request.Headers.AcceptEncoding)) 
-                            {
-                                var encodings = request.Headers.AcceptEncoding.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                                if (encodings.Contains("gzip"))
-                                {
-                                    response.Headers.ContentEncoding = "gzip";
-                                }
-                            }
-
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
                             await SendResponseAsync(responsePipeWriter, response, cancellationToken);

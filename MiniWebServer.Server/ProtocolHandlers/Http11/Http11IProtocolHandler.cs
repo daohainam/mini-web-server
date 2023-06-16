@@ -296,20 +296,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         {
             Write(writer, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
 
-            var contentEncodingHeader = response.Headers.ContentEncoding;
-            IContentWriter? contentWriter = null;
-            if (!string.IsNullOrEmpty(contentEncodingHeader))
-            {
-                contentWriter = EncodableContentWriterFactory.CreateWriter(contentEncodingHeader, writer);
-                if (contentWriter == null)
-                {
-                    // if no corresponding encoder found, we should remove Content-Encoding header
-                    response.Headers.Remove("Content-Encoding");
-
-                    contentWriter = new ByteBufferContentWriter(writer);
-                }
-            }
-
             foreach (var header in response.Headers)
             {
                 Write(writer, $"{header.Key}: {string.Join(',', header.Value)}\r\n");
@@ -320,7 +306,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
             Write(writer, "\r\n");
 
-            contentWriter ??= new ByteBufferContentWriter(writer);
+            var contentWriter = new ByteBufferContentWriter(writer);
             await response.Content.WriteToAsync(contentWriter, cancellationToken); // todo: what if we have an error while sending response content?
 
             return true;
