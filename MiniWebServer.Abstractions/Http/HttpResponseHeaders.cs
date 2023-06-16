@@ -12,7 +12,11 @@ namespace MiniWebServer.Abstractions.Http
         {
             get
             {
-                return long.Parse(TryGetValueAsString("Content-Length"));
+                var v = TryGetValueAsString("Content-Length");
+                if (v == null)
+                    return 0;
+
+                return long.Parse(v);
             }
             set
             {
@@ -20,7 +24,7 @@ namespace MiniWebServer.Abstractions.Http
             }
         }
 
-        public string Connection
+        public string? Connection
         {
             get
             {
@@ -28,10 +32,12 @@ namespace MiniWebServer.Abstractions.Http
             }
             set
             {
-                AddOrUpdate("Connection", value);
+                ArgumentNullException.ThrowIfNull(nameof(value));
+                if (value != null)
+                    AddOrUpdate("Connection", value);
             }
         }
-        public string ContentType
+        public string? ContentType
         {
             get
             {
@@ -39,10 +45,12 @@ namespace MiniWebServer.Abstractions.Http
             }
             set
             {
-                AddOrUpdate("Content-Type", value);
+                ArgumentNullException.ThrowIfNull(nameof(value));
+                if (value != null)
+                    AddOrUpdate("Content-Type", value);
             }
         }
-        public string ContentEncoding
+        public string? ContentEncoding
         {
             get
             {
@@ -50,10 +58,13 @@ namespace MiniWebServer.Abstractions.Http
             }
             set
             {
-                AddOrUpdate("Content-Encoding", value);
+                ArgumentNullException.ThrowIfNull(nameof(value));
+                if (value != null)
+                    AddOrUpdate("Content-Encoding", value);
             }
         }
-        private string TryGetValueAsString(string name, string defaultValue = "")
+
+        private string? TryGetValueAsString(string name, string? defaultValue = null)
         {
             if (TryGetValue(name, out var value))
             {

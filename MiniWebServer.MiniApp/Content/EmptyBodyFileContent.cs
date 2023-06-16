@@ -1,4 +1,5 @@
-﻿using MiniWebServer.Abstractions.Http;
+﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.Http;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace MiniWebServer.MiniApp.Content
         {
         }
 
-        public override Task<long> WriteToAsync(IBufferWriter<byte> writer, CancellationToken cancellationToken)
+        public override Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
         {
             // we send nothing, this response content is used mainly to serve HEAD requests
 

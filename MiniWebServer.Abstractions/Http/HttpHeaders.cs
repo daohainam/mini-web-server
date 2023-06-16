@@ -9,11 +9,15 @@ using System.Xml.Linq;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpHeaders : IEnumerable<KeyValuePair<string, HttpHeader>>
+    public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>>, IEnumerable<HttpHeader>
     {
         // we have a list of header, but we use a dictionary because we will do a lot of search on this.
         // using a List might save some memories, but slower
-        private readonly List<HttpHeader> headers = new List<HttpHeader>();
+        private readonly List<HttpHeader> headers = new();
+
+        public int Count => headers.Count;
+
+        public bool IsReadOnly => false;
 
         public HttpHeaders Add(string name, string value) // we return a HttpHeaders so we can make a chain of call, for example: headers.Add("Connection", "Close").Add("ETag", "ABCD") ...
         {
@@ -80,6 +84,7 @@ namespace MiniWebServer.Abstractions.Http
 
             return this;
         }
+
         public HttpHeaders AddOrSkip(string name, string value)
         {
             var idx = headers.FindIndex(x => x.Name == name);
@@ -113,6 +118,14 @@ namespace MiniWebServer.Abstractions.Http
             return this;
         }
 
+        public HttpHeaders Remove(string headerName)
+        {
+            var idx = headers.FindIndex(header => header.Name == headerName);
+            headers.RemoveAt(idx);
+
+            return this;
+        }
+
         public bool TryGetValue(string name, out HttpHeader? header)
         {
             var h = headers.Where(h => h.Name == name).FirstOrDefault();
@@ -127,19 +140,20 @@ namespace MiniWebServer.Abstractions.Http
             }
         }
 
-        public IEnumerator<KeyValuePair<string, HttpHeader>> GetEnumerator()
+        public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator()
         {
-            return headers.Select(h => new KeyValuePair<string, HttpHeader>(h.Name, h)).GetEnumerator();
+            var list = headers.Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Name, h.Value));
+            return list.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return GetEnumerator();
+            return headers.GetEnumerator();
         }
 
-        public bool HasName(string name)
+        IEnumerator<HttpHeader> IEnumerable<HttpHeader>.GetEnumerator()
         {
-            return headers.Where(h => h.Name == name).Any();
+            return headers.GetEnumerator();
         }
     }
 }

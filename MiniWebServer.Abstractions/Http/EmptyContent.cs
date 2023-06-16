@@ -21,7 +21,7 @@ namespace MiniWebServer.Abstractions.Http
 
         public HttpHeaders Headers => headers;
 
-        public async Task<long> WriteToAsync(IBufferWriter<byte> writer, CancellationToken cancellationToken)
+        public async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
         {
             return await Task.FromResult(0);
         }

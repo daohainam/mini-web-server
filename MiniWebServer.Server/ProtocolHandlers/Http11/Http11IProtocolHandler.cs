@@ -14,6 +14,7 @@ using MiniWebServer.Server.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Server.Abstractions.Parsers;
 using System.Reflection.PortableExecutable;
+using MiniWebServer.Server.ProtocolHandlers.Http11.ContentWriter;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
@@ -294,9 +295,24 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         public async Task<bool> WriteResponseAsync(PipeWriter writer, IHttpResponse response, CancellationToken cancellationToken)
         {
             Write(writer, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
+
+            var contentEncodingHeader = response.Headers.ContentEncoding;
+            IContentWriter? contentWriter = null;
+            if (!string.IsNullOrEmpty(contentEncodingHeader))
+            {
+                contentWriter = EncodableContentWriterFactory.CreateWriter(contentEncodingHeader, writer);
+                if (contentWriter == null)
+                {
+                    // if no corresponding encoder found, we should remove Content-Encoding header
+                    response.Headers.Remove("Content-Encoding");
+
+                    contentWriter = new ByteBufferContentWriter(writer);
+                }
+            }
+
             foreach (var header in response.Headers)
             {
-                Write(writer, $"{header.Key}: {string.Join(',', header.Value.Value)}\r\n");
+                Write(writer, $"{header.Key}: {string.Join(',', header.Value)}\r\n");
             }
             foreach (var cookie in response.Cookies)
             {
@@ -304,7 +320,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
             Write(writer, "\r\n");
 
-            await response.Content.WriteToAsync(writer, cancellationToken); // todo: what if we have an error while sending response content?
+            contentWriter ??= new ByteBufferContentWriter(writer);
+            await response.Content.WriteToAsync(contentWriter, cancellationToken); // todo: what if we have an error while sending response content?
 
             return true;
         }

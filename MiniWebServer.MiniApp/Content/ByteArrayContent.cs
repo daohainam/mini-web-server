@@ -1,4 +1,5 @@
-﻿using MiniWebServer.Abstractions.Http;
+﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.Http;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace MiniWebServer.MiniApp.Content
 
         public override HttpHeaders Headers => headers;
 
-        public override async Task<long> WriteToAsync(IBufferWriter<byte> writer, CancellationToken cancellationToken)
+        public override async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
         {
             writer.Write(content);
 
