@@ -1,22 +1,11 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Logging.Console;
 using MimeMapping;
-using MiniWebServer.Abstractions;
 using MiniWebServer.Configuration;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Server.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Server
 {
@@ -27,9 +16,7 @@ namespace MiniWebServer.Server
         private string certificateFile = string.Empty;
         private string certificatePassword = string.Empty;
         private readonly Dictionary<string, HostConfiguration> hosts = new();
-        private readonly List<IRoutingServiceFactory> routingServiceFactories = new();
         private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
-        private IDistributedCache? cache;
         private int connectionTimeout;
         private int readBufferSize;
         private long maxRequestBodySize;
@@ -157,23 +144,9 @@ namespace MiniWebServer.Server
             return this;
         }
 
-        public IServerBuilder AddRoutingServiceFactory(IRoutingServiceFactory routingServiceFactory)
-        {
-            routingServiceFactories.Add(routingServiceFactory);
-
-            return this;
-        }
-
         public IServerBuilder AddMimeTypeMapping(IMimeTypeMapping mimeTypeMapping)
         {
             mimeTypeMappings.Add(mimeTypeMapping);
-
-            return this;
-        }
-
-        public IServerBuilder UseCache(IDistributedCache cache)
-        {
-            this.cache = cache;
 
             return this;
         }

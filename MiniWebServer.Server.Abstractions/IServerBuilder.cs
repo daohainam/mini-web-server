@@ -17,8 +17,13 @@ namespace MiniWebServer.Server.Abstractions
         IServerBuilder UseHttpPort(int httpPort);
         IServerBuilder BindToAddress(string ipAddress);
         IServerBuilder AddHost(string hostName, IMiniApp host);
-        IServerBuilder UseCache(IDistributedCache cache);
         IServerBuilder UseOptions(ServerOptions serverOptions);
+        IServerBuilder SetMaxRequestBodySize(long maxRequestBodySize);
+        IServerBuilder SetReadBufferSize(int readBufferSize);
+        IServerBuilder SetReadRequestTimeout(int readRequestTimeout);
+        IServerBuilder SetSendResponseTimeout(int sendResponseTimeout);
+        IServerBuilder SetConnectionTimeout(int connectionTimeout);
+        IServerBuilder AddCertificate(string certificateFile, string certificatePassword);
 
         /// <summary>
         /// Build a new IServer instance, it will throw an exception if an invalid options found. 
@@ -26,11 +31,5 @@ namespace MiniWebServer.Server.Abstractions
         /// </summary>
         /// <returns></returns>
         IServer Build();
-        IServerBuilder SetMaxRequestBodySize(long maxRequestBodySize);
-        IServerBuilder SetReadBufferSize(int readBufferSize);
-        IServerBuilder SetReadRequestTimeout(int readRequestTimeout);
-        IServerBuilder SetSendResponseTimeout(int sendResponseTimeout);
-        IServerBuilder SetConnectionTimeout(int connectionTimeout);
-        IServerBuilder AddCertificate(string certificateFile, string certificatePassword);
     }
 }
