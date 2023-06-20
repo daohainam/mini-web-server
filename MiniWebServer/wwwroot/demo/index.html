@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Mini Web Server</title>
+    <link href="/demo/css/site.css" rel="stylesheet" />
+</head>
+<body>
+    <h1>Hello World from MiniWebServer!</h1>
+    <p class="author">Written by <a href="https://www.daohainam.com">Dao Hai Nam</a></p>
+    <div id="clock"></div>
+    <script src="/demo/js/clock.js"></script>
+    <img src="/demo/images/dotnet-logo.jpg" width="100" height="100" />
+
+    <div class="panel">
+        <button onclick="helpcheck(); return false;">Help check!</button>
+        <div class="message-panel" id="help-check"></div>
+        <span>'First time' is stored in Session</span>
+    </div>
+
+    <div class="panel">
+        <button onclick="getrandomquote(); return false;">Click here to get a quote!</button>
+        <div class="message-panel" id="random-quote"></div>
+    </div>
+
+    <div class="panel">
+        <form id="form1" action="/post/form1" method="post">
+            <label for="fname">First name:</label><br>
+            <input type="text" id="fname" name="fname"><br>
+            <label for="lname">Last name:</label><br>
+            <input type="text" id="lname" name="lname">
+            <input type="checkbox" id="use-form-urlencoded"><label for="use-form-urlencoded">Use application/x-www-form-urlencoded</label>
+        </form>
+
+        <button id="form1-submit" onclick="submitform1(); return false;">Submit form!</button>
+        <div class="message-panel" id="form1-message"></div>
+    </div>
+
+    <div class="panel">
+        <form id="form2" action="/post/form2" method="post">
+            <label for="fname">Enter a string:</label><br>
+            <input type="text" id="f2string" name="f2string"><br>
+        </form>
+
+        <button id="form2-submit" onclick="submitform2(); return false;">Post and read body using ReadAsStringAsync!</button>
+        <div class="message-panel" id="form2-message"></div>
+    </div>
+
+    <div class="panel">
+        <button onclick="dos(); return false;">DOS the server!</button>
+        <div class="message-panel" id="dos-message"></div>
+    </div>
+
+    <script type="text/javascript">
+        window.onload = function () {
+            clock('clock');
+        };
+
+        async function fetchFromUrl(url) {
+            const response = await fetch(url);
+            return await response.text();
+        }
+
+        function helpcheck() {
+            fetchFromUrl("/helpcheck").then((value) => {
+                document.getElementById("help-check").innerHTML = value;
+            });
+        }
+
+        function getrandomquote() {
+            fetchFromUrl("/quote/random").then((value) => {
+                document.getElementById("random-quote").innerHTML = value;
+            });
+        }
+
+        function dos() {
+            const arr = new Array();
+            document.getElementById("dos-message").innerHTML = '';
+
+            for (let i = 1; i <= 1000; i++) {
+                const promise = fetchFromUrl(`/string-api/toupper?text=${generateRandomString(64)}-${i}`).then((value) => {
+                    document.getElementById("dos-message").innerHTML += value + '<br />\r\n';
+                });
+
+                arr.push(promise);
+            }
+
+            Promise.all(arr);
+        }
+
+        const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        function generateRandomString(length) {
+            let result = '';
+            const charactersLength = characters.length;
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+
+            return result;
+        }
+
+        function submitform1() {
+            const XHR = new XMLHttpRequest();
+
+            XHR.addEventListener("load", (event) => {
+                document.getElementById("form1-message").innerHTML = event.currentTarget.response;
+            });
+
+            XHR.addEventListener("error", (event) => {
+                document.getElementById("form1-message").innerHTML = "Oops! Something went wrong.";
+            });
+
+            XHR.open("POST", "/post/form1");
+
+            let useUrlEncoded = document.getElementById("use-form-urlencoded");
+            if (useUrlEncoded.checked == true) {
+                XHR.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                XHR.send("First-Name=" + document.getElementById("fname").value + "&Last-Name=" + document.getElementById("lname").value);
+            }
+            else {
+                const FD = new FormData();
+                FD.append("First-Name", document.getElementById("fname").value);
+                FD.append("Last-Name", document.getElementById("lname").value);
+                XHR.send(FD);
+            }
+
+            return false;
+        }
+
+
+        function submitform2() {
+            const XHR = new XMLHttpRequest();
+
+            XHR.addEventListener("load", (event) => {
+                document.getElementById("form2-message").innerHTML = event.currentTarget.response;
+            });
+
+            XHR.addEventListener("error", (event) => {
+                document.getElementById("form2-message").innerHTML = "Oops! Something went wrong.";
+            });
+
+            XHR.open("POST", "/post/form2");
+
+            XHR.setRequestHeader("Content-type", "application/json");
+            XHR.send(document.getElementById("f2string").value);
+
+            return false;
+        }
+    </script>
+</body>
+</html>

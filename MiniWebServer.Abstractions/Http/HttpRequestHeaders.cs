@@ -51,11 +51,19 @@ namespace MiniWebServer.Abstractions.Http
                 return TryGetValueAsString("Transfer-Encoding");
             }
         }
-        public string AcceptEncoding
+
+        public string[] AcceptEncoding
         {
             get
             {
-                return TryGetValueAsString("Accept-Encoding");
+                var value = TryGetValueAsString("Accept-Encoding");
+                if (string.IsNullOrEmpty(value))
+                {
+                    return Array.Empty<string>();
+                }
+                // todo: need to support something like: br;q=1.0, gzip;q=0.8, *;q=0.1
+                var values = value.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                return values;
             }
         }
 

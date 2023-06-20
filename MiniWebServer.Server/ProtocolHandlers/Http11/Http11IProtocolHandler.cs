@@ -292,6 +292,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             writer.Write(bytes.AsSpan());
         }
 
+        private static void Write(Stream stream, string s)
+        {
+            var bytes = Encoding.ASCII.GetBytes(s);
+            stream.Write(bytes.AsSpan());
+        }
+
         public async Task<bool> WriteResponseAsync(PipeWriter writer, IHttpResponse response, CancellationToken cancellationToken)
         {
             Write(writer, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
@@ -312,9 +318,31 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             return true;
         }
 
+        public async Task<bool> WriteResponseAsync(Stream stream, IHttpResponse response, CancellationToken cancellationToken)
+        {
+            Write(stream, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
+
+            foreach (var header in response.Headers)
+            {
+                Write(stream, $"{header.Key}: {string.Join(',', header.Value)}\r\n");
+            }
+            foreach (var cookie in response.Cookies)
+            {
+                Write(stream, $"Set-Cookie: {cookie.Key}={string.Join("; ", cookie.Value.Value)}\r\n");
+            }
+            Write(stream, "\r\n");
+
+            var contentWriter = new StreamContentWriter(stream);
+            await response.Content.WriteToAsync(contentWriter, cancellationToken); // todo: what if we have an error while sending response content?
+
+            return true;
+        }
+
 
         public void Reset()
         {
         }
+
+
     }
 }

@@ -192,6 +192,17 @@ namespace MiniWebServer.HttpParser.Http11
             var s = "https://f" + Encoding.ASCII.GetString(readOnlySequence); // hack: add a faked scheme and host to make it an absolute uri
             var uri = new Uri(s);
 
+            if (uri.AbsolutePath.Contains(".."))
+            {
+                url = null;
+                hash = null;
+                queryString = null;
+                segments = null;
+                parameters = null;
+
+                return false;
+            }
+
             url =  uri.AbsolutePath;
             hash = uri.Fragment;
             queryString = Uri.UnescapeDataString(uri.Query);

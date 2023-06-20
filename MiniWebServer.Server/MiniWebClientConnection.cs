@@ -73,7 +73,7 @@ namespace MiniWebServer.Server
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
-                            await SendResponseAsync(responsePipeWriter, response, cancellationToken);
+                            await SendResponseAsync(config.ClientStream, response, cancellationToken);
 
                             break;
                         }
@@ -115,7 +115,7 @@ namespace MiniWebServer.Server
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
-                            await SendResponseAsync(responsePipeWriter, response, cancellationToken);
+                            await SendResponseAsync(config.ClientStream, response, cancellationToken);
                         }
                     } catch (OperationCanceledException)
                     {
@@ -147,6 +147,13 @@ namespace MiniWebServer.Server
             await config.ProtocolHandler.WriteResponseAsync(writer, response, cancellationToken);
 
             await writer.FlushAsync(cancellationToken);
+        }
+        private async Task SendResponseAsync(Stream stream, HttpResponse response, CancellationToken cancellationToken)
+        {
+            response.Headers.ContentLength = response.Content.ContentLength;
+            await config.ProtocolHandler.WriteResponseAsync(stream, response, cancellationToken);
+
+            await stream.FlushAsync(cancellationToken);
         }
 
         private IMiniApp? FindApp(HttpRequest request)

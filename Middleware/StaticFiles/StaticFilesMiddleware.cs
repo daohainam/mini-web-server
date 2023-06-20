@@ -58,7 +58,22 @@ namespace MiniWebServer.StaticFiles
                 {
                     file = new(Path.Combine(directoryInfo.FullName, url));
                     if (!file.Exists)
+                    {
+                        var dir = new DirectoryInfo(file.FullName);
                         file = null;
+                        if (options.DefaultDocuments.Any() && dir.Exists)
+                        {
+                            foreach (var document in options.DefaultDocuments)
+                            {
+                                FileInfo f = new(Path.Combine(dir.FullName, document));
+                                if (f.Exists)
+                                {
+                                    file = f;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (file != null)

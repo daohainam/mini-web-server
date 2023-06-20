@@ -13,6 +13,8 @@ namespace MiniWebServer.Abstractions.Http
             { HttpResponseCodes.OK, "OK"},
             { HttpResponseCodes.NotFound, "Not Found"},
             { HttpResponseCodes.BadRequest, "Bad Request"},
+            { HttpResponseCodes.Forbidden, "Forbidden"},
+            { HttpResponseCodes.MethodNotAllowed, "Method Not Allowed"},
             { HttpResponseCodes.NotImplemented, "Not Implemented"},
             { HttpResponseCodes.InternalServerError, "Internal Server Error"}
         };

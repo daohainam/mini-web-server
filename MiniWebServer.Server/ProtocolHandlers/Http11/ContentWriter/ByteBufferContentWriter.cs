@@ -8,17 +8,21 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11.ContentWriter
 {
-    internal class ByteBufferContentWriter : IContentWriter
+    internal class StreamContentWriter : IContentWriter
     {
-        private readonly IBufferWriter<byte> buffer;
+        private readonly Stream stream;
 
-        public ByteBufferContentWriter(IBufferWriter<byte> buffer) {
-            this.buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
+        public StreamContentWriter(Stream stream) {
+            this.stream = stream ?? throw new ArgumentNullException(nameof(stream));
+        }
+
+        public void Complete()
+        {
         }
 
         public void Write(ReadOnlySpan<byte> value)
         {
-            buffer.Write(value);
+            stream.Write(value);
         }
     }
 }

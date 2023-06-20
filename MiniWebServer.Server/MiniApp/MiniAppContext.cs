@@ -19,7 +19,7 @@ namespace MiniWebServer.Server.MiniApp
             Session = session;
         }
 
-        public MiniAppConnectionContext ConnectionContext { get; }
+        private MiniAppConnectionContext ConnectionContext { get; }
 
         public IMiniApp App { get; }
         public IHttpRequest Request { get; }
