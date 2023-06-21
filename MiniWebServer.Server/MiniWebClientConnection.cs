@@ -143,7 +143,10 @@ namespace MiniWebServer.Server
 
         private async Task SendResponseAsync(PipeWriter writer, HttpResponse response, CancellationToken cancellationToken)
         {
-            response.Headers.ContentLength = response.Content.ContentLength;
+            if (response.Content.ContentLength >= 0)
+            {
+                response.Headers.ContentLength = response.Content.ContentLength;
+            }
             await config.ProtocolHandler.WriteResponseAsync(writer, response, cancellationToken);
 
             await writer.FlushAsync(cancellationToken);
