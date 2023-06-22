@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -25,18 +26,15 @@ namespace MiniWebServer.MiniApp.Content
                 throw new FileNotFoundException(file.FullName);
             }
 
-            headers = new();
+            headers = new() {
+                { "Content-Length", file.Length.ToString() }
+            };
         }
 
         public override HttpHeaders Headers => headers;
 
-        public override long ContentLength => file.Length;
-
         public override async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
         {
-            if (ContentLength == 0)
-                return 0;
-
             long length = file.Length;
             var buffer = ArrayPool<byte>.Shared.Rent(8192); // rent a 8K-buffer
 

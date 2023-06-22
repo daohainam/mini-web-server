@@ -302,6 +302,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         {
             Write(writer, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
 
+            foreach (var header in response.Content.Headers)
+                response.Headers.AddOrUpdate(header.Key, header.Value);
+
             foreach (var header in response.Headers)
             {
                 Write(writer, $"{header.Key}: {string.Join(',', header.Value)}\r\n");
@@ -322,6 +325,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         {
             Write(stream, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
 
+            foreach (var header in response.Content.Headers)
+                response.Headers.AddOrUpdate(header.Key, header.Value);
+
             foreach (var header in response.Headers)
             {
                 Write(stream, $"{header.Key}: {string.Join(',', header.Value)}\r\n");
@@ -334,6 +340,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
             var contentWriter = new StreamContentWriter(stream);
             await response.Content.WriteToAsync(contentWriter, cancellationToken); // todo: what if we have an error while sending response content?
+            await stream.FlushAsync(cancellationToken);
 
             return true;
         }

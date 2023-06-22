@@ -73,7 +73,7 @@ namespace MiniWebServer.Server
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
-                            await SendResponseAsync(config.ClientStream, response, cancellationToken);
+                            await SendResponseAsync(responsePipeWriter, response, cancellationToken);
 
                             break;
                         }
@@ -101,8 +101,8 @@ namespace MiniWebServer.Server
                                 Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
 
                                 readBodyCancellationTokenSource.Cancel();
-                                // readBodyTask.Wait(0, cancellationToken); // stop reading, remember that unprocessed bytes still remain in the socket buffer
 
+                                // todo: here we need to find a properly way to stop reading body after calling to middlewares and endpoints finished
                                 Task.WaitAll(new Task[] { readBodyTask, callMethodTask }, cancellationToken);
                                 logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
                             }
@@ -115,7 +115,7 @@ namespace MiniWebServer.Server
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
-                            await SendResponseAsync(config.ClientStream, response, cancellationToken);
+                            await SendResponseAsync(responsePipeWriter, response, cancellationToken);
                         }
                     } catch (OperationCanceledException)
                     {
@@ -143,17 +143,12 @@ namespace MiniWebServer.Server
 
         private async Task SendResponseAsync(PipeWriter writer, HttpResponse response, CancellationToken cancellationToken)
         {
-            if (response.Content.ContentLength >= 0)
-            {
-                response.Headers.ContentLength = response.Content.ContentLength;
-            }
             await config.ProtocolHandler.WriteResponseAsync(writer, response, cancellationToken);
 
             await writer.FlushAsync(cancellationToken);
         }
         private async Task SendResponseAsync(Stream stream, HttpResponse response, CancellationToken cancellationToken)
         {
-            response.Headers.ContentLength = response.Content.ContentLength;
             await config.ProtocolHandler.WriteResponseAsync(stream, response, cancellationToken);
 
             await stream.FlushAsync(cancellationToken);

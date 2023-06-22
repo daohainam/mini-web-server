@@ -17,10 +17,10 @@ namespace MiniWebServer.MiniApp.Content
         public ByteArrayContent(byte[] content)
         {
             this.content = content ?? throw new ArgumentNullException(nameof(content));
-            headers = new();
+            headers = new() {
+                { "Content-Length", content.Length.ToString() }
+            };
         }
-
-        public override long ContentLength => content.LongLength;
 
         public override HttpHeaders Headers => headers;
 

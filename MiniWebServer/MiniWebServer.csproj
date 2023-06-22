@@ -19,7 +19,6 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Middleware\ResponseCompression\ResponseCompression.csproj" />
     <ProjectReference Include="..\Middleware\Session\Session.csproj" />
     <ProjectReference Include="..\Middleware\StaticFiles\StaticFiles.csproj" />
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
@@ -56,5 +55,10 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\home\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="wwwroot\sample-text.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

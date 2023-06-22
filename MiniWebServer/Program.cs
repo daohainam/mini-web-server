@@ -13,7 +13,6 @@ using MiniWebServer.Server;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Session;
-using MiniWebServer.ResponseCompression;
 using MiniWebServer.StaticFiles;
 using System;
 using System.Text;
@@ -68,7 +67,6 @@ namespace MiniWebServer
             var appBuilder = new MiniAppBuilder(services);
 
             appBuilder.UseSession();
-            appBuilder.UseResponseCompression();
             appBuilder.UseStaticFiles("wwwroot", defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days
 
             return appBuilder.Build();

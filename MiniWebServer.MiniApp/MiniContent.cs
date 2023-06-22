@@ -15,6 +15,5 @@ namespace MiniWebServer.MiniApp
     {
         public abstract Abstractions.Http.HttpHeaders Headers { get; }
         public abstract Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken);
-        public abstract long ContentLength { get; }
     }
 }

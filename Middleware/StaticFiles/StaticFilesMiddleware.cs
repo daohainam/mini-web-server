@@ -5,6 +5,7 @@ using HttpMethod = global::MiniWebServer.Abstractions.Http.HttpMethod;
 using System.IO;
 using MiniWebServer.Server.Abstractions;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Text;
 
 namespace MiniWebServer.StaticFiles
 {
@@ -92,7 +93,23 @@ namespace MiniWebServer.StaticFiles
                             }
                             else
                             {
-                                context.Response.Content = new MiniApp.Content.FileContent(file);
+                                if (options.UseCompression && context.Request.Headers.AcceptEncoding != null && context.Request.Headers.AcceptEncoding.Any())
+                                {
+                                    if (options.MinimumFileSizeToCompress <= file.Length && options.MaximumFileSizeToCompress >= file.Length
+                                        && (options.FileCompressionMimeTypes.Contains(mimeType))
+                                        )
+                                    {
+                                        context.Response.Content = new MiniApp.Content.CompressedFileContent(file, context);
+                                    }
+                                    else
+                                    {
+                                        context.Response.Content = new MiniApp.Content.FileContent(file);
+                                    }
+                                }
+                                else
+                                {
+                                    context.Response.Content = new MiniApp.Content.FileContent(file);
+                                }
                             }
 
                             //if (IsText(mimeType))
