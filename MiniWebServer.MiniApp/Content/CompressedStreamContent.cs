@@ -14,31 +14,29 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp.Content
 {
-    public class CompressedFileContent : MiniContent
+    public class CompressedStreamContent : MiniContent
     {
         private const int BufferSize = 1024 * 8;
 
         private static readonly byte[] CRLF_Bytes = Encoding.ASCII.GetBytes("\r\n");
         private static readonly byte[] EndOfChunked_CRLF_Bytes = Encoding.ASCII.GetBytes("0\r\n\r\n");
 
-        private readonly FileInfo file;
+        private readonly Stream stream;
         private readonly int compressionQuality;
+        private readonly bool autoCloseStream;
         private readonly HttpHeaders headers;
-        private readonly ILogger<CompressedFileContent> logger;
+        private readonly ILogger<CompressedStreamContent> logger;
 
-        public CompressedFileContent(string fileName, IMiniAppContext context, int compressionQuality) : this(new FileInfo(fileName), context, compressionQuality)
-        {
-        }
-        public CompressedFileContent(FileInfo file, IMiniAppContext context, int compressionQuality)
+        public CompressedStreamContent(Stream stream, IMiniAppContext? context = null, int compressionQuality = 5, bool autoCloseStream = true)
         {
             if (compressionQuality < 0 || compressionQuality > 11) {
                 throw new ArgumentOutOfRangeException(nameof(compressionQuality), "compressionQuality must be from 0 (no compression) to 11 (max compression)");
             }
 
-            this.file = file ?? throw new ArgumentNullException(nameof(file));
-            if (!file.Exists)
+            this.stream = stream ?? throw new ArgumentNullException(nameof(stream));
+            if (!stream.CanRead)
             {
-                throw new FileNotFoundException(file.FullName);
+                throw new IOException("stream is not readable");
             }
 
             if (context != null)
@@ -46,15 +44,13 @@ namespace MiniWebServer.MiniApp.Content
                 var loggerFactory = context.Services.GetService<ILoggerFactory>();
                 if (loggerFactory != null)
                 {
-                    logger = loggerFactory.CreateLogger<CompressedFileContent>();
+                    logger = loggerFactory.CreateLogger<CompressedStreamContent>();
                 }
             }
-            if (logger == null)
-            {
-                logger = NullLogger<CompressedFileContent>.Instance;
-            }
+            logger ??= NullLogger<CompressedStreamContent>.Instance;
 
             this.compressionQuality = compressionQuality;
+            this.autoCloseStream = autoCloseStream;
 
             headers = new()
             {
@@ -68,34 +64,26 @@ namespace MiniWebServer.MiniApp.Content
 
         public override async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
         {
-            long length = file.Length;
             var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
             try
             {
-                using var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
-
                 // we will use chunked transfer-encoding for all files, but I'm thinking about using a cache for small files (check CompressionCaching.ICompressionCache)
 
-                //long originalSize = 0;
+                long originalSize = 0;
                 long compressedSize = 0;
 
                 var encoder = new BrotliEncoder(quality: compressionQuality, window: 24);
 
-                var bytesRead = await fs.ReadAsync(buffer, cancellationToken);
+                var bytesRead = await stream.ReadAsync(buffer, cancellationToken);
 
-                while (length > 0)
+                while (bytesRead > 0)
                 {
-                    //originalSize += bytesRead;
-
-                    length -= bytesRead;
+                    originalSize += bytesRead;
 
                     Write(ref encoder, buffer[..bytesRead], writer, ref compressedSize, false);
 
-                    if (length > 0)
-                    {
-                        bytesRead = await fs.ReadAsync(buffer, cancellationToken);
-                    }
+                    bytesRead = await stream.ReadAsync(buffer, cancellationToken);
                 }
 
                 Write(ref encoder, Array.Empty<byte>(), writer, ref compressedSize, true);
@@ -106,9 +94,7 @@ namespace MiniWebServer.MiniApp.Content
 
                 compressedSize += EndOfChunked_CRLF_Bytes.Length;
 
-                fs.Close();
-
-                logger.LogDebug("Compressed {t} bytes to {c} bytes", file.Length, compressedSize);
+                logger.LogDebug("Compressed {t} bytes to {c} bytes", originalSize, compressedSize);
 
                 return compressedSize;
             }
@@ -119,6 +105,10 @@ namespace MiniWebServer.MiniApp.Content
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+                if (autoCloseStream)
+                {
+                    stream.Close();
+                }
             }
         }
 

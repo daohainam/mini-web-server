@@ -3,6 +3,7 @@ using MiniWebServer.Abstractions.Http;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -12,10 +13,20 @@ namespace MiniWebServer.MiniApp.Content
 {
     public class StreamContent : MiniContent
     {
+        private const int BufferSize = 1024 * 8;
+        
+        private static readonly byte[] CRLF_Bytes = Encoding.ASCII.GetBytes("\r\n");
+        private static readonly byte[] EndOfChunked_CRLF_Bytes = Encoding.ASCII.GetBytes("0\r\n\r\n");
+
         private readonly Stream stream;
+        private readonly bool autoCloseStream;
         private readonly HttpHeaders headers;
 
-        public StreamContent(Stream stream)
+        public StreamContent(Stream stream): this(stream, true)
+        {
+        }
+
+        public StreamContent(Stream stream, bool autoCloseStream)
         {
             this.stream = stream ?? throw new ArgumentNullException(nameof(stream));
 
@@ -24,45 +35,50 @@ namespace MiniWebServer.MiniApp.Content
                 throw new ArgumentException("stream is not readable");
             }
 
-            headers = new() {
-                { "Content-Length", stream.Length.ToString() }
-            };
+            this.autoCloseStream = autoCloseStream;
+
+            headers = new();
         }
 
         public override HttpHeaders Headers => headers;
 
         public override async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
         {
-            long length = stream.Length;
-            var buffer = ArrayPool<byte>.Shared.Rent(8192); // rent a 8K-buffer
+            var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+            long totalBytesSent = 0L;
 
             try
             {
                 var bytesRead = await stream.ReadAsync(buffer, cancellationToken);
 
-                while (length > 0)
+                while (bytesRead > 0)
                 {
-                    if (bytesRead != buffer.Length)
-                        writer.Write(buffer.AsSpan(0, bytesRead));
-                    else
-                        writer.Write(buffer.AsSpan());
+                    totalBytesSent += bytesRead;
 
-                    length -= bytesRead;
-                    if (length > 0)
-                    {
-                        bytesRead = await stream.ReadAsync(buffer, cancellationToken);
-                    }
+                    writer.Write(Encoding.ASCII.GetBytes(bytesRead.ToString("X")));
+                    writer.Write(CRLF_Bytes);
+                    writer.Write(buffer.AsSpan()[..bytesRead]); // don't use buffer[..bytesRead], it will create a copy of data
+                    writer.Write(CRLF_Bytes);
+
+                    bytesRead = await stream.ReadAsync(buffer, cancellationToken);
                 }
 
-                stream.Close();
-                return stream.Length;
-            } catch (Exception)
+                writer.Write(EndOfChunked_CRLF_Bytes);
+
+                return totalBytesSent;
+            }
+            catch (Exception)
             {
                 return 0;
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+
+                if (autoCloseStream)
+                {
+                    stream.Close();
+                }
             }
         }
     }

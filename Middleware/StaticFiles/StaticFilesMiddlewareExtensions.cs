@@ -14,11 +14,7 @@ namespace MiniWebServer.StaticFiles
     {
         public static void UseStaticFiles(this IMiniAppBuilder appBuilder, string root, long defaultMaxAge = 0)
         {
-            StaticFilesOptions options = new()
-            {
-                Root = root ?? "wwwroot",
-                CacheOptions = new StaticFilesCacheOptions(defaultMaxAge)
-            };
+            StaticFilesOptions options = new(root, cacheOptions: new StaticFilesCacheOptions(defaultMaxAge));
 
             appBuilder.Services.AddTransient(services => new StaticFilesMiddleware(
                 options,
