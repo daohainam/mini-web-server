@@ -1,4 +1,5 @@
 ﻿using MiniWebServer.Abstractions;
+using MiniWebServer.MiniApp.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,5 +14,6 @@ namespace MiniWebServer.MiniApp
         IHttpResponse Response { get; }
         ISession Session { get; set; }
         IServiceProvider Services { get; }
+        IPrincipal? User { get; set; }
     }
 }

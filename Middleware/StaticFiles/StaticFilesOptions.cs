@@ -33,7 +33,7 @@ namespace MiniWebServer.StaticFiles
         public StaticFilesCacheOptions CacheOptions { get; }
         public bool UseCompression { get; }
         public long MinimumFileSizeToCompress { get; }
-        public int CompressionQuality { get; } = 5;
+        public int CompressionQuality { get; } = 4;
         public string[] FileCompressionMimeTypes { get; }
     }
 }

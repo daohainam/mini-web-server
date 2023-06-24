@@ -227,7 +227,8 @@ namespace MiniWebServer.Server
         {
             ISession session = DefaultSession.Instance; // we don't have to alloc/dealloc memory parts which we never change
 
-            return new MiniAppContext(connectionContext, app, request, response, session);
+            // user will be set by Authentication middleware, we don't do anything here
+            return new MiniAppContext(connectionContext, app, request, response, session, null);
         }
     }
 }
