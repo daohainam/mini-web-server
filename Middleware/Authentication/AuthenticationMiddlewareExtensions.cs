@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.Authentication;
+using MiniWebServer.MiniApp.Authentication;
 using MiniWebServer.MiniApp.Builders;
 using System;
 using System.Collections.Generic;
@@ -13,12 +14,24 @@ namespace MiniWebServer.Session
 {
     public static class AuthenticationMiddlewareExtensions
     {
-        public static void UseAuthentication(this IMiniAppBuilder appBuilder, AuthenticationOptions? options = default)
+        public static IMiniAppBuilder UseAuthentication(this IMiniAppBuilder appBuilder, AuthenticationOptions? options = default)
         {
             options ??= new AuthenticationOptions();
 
+            appBuilder.Services.AddTransient(services => new AuthenticationMiddleware(
+                options
+                ));
 
             appBuilder.UseMiddleware<AuthenticationMiddleware>();
+
+            return appBuilder;
+        }
+
+        public static void UseCookieAuthentication(this IMiniAppBuilder appBuilder, CookieAuthenticationOptions? options = null)
+        {
+            appBuilder.Services.AddTransient<IAuthenticationService>(services => new CookieAuthenticationService(options ?? new CookieAuthenticationOptions(), 
+                services.GetService<ILoggerFactory>()
+                ));
         }
     }
 }

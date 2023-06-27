@@ -23,6 +23,8 @@ namespace MiniWebServer.Authentication
             {
                 context.User = result.Principal;
             }
+
+            await next.InvokeAsync(context, cancellationToken);
         }
     }
 }

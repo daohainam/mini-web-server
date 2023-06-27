@@ -7,6 +7,7 @@ using MiniWebServer.Abstractions;
 using MiniWebServer.Configuration;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp.Authentication;
 using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.Quote;
 using MiniWebServer.Server;
@@ -66,7 +67,10 @@ namespace MiniWebServer
         {
             var appBuilder = new MiniAppBuilder(services);
 
+            appBuilder.UseAuthentication().UseCookieAuthentication();
             appBuilder.UseSession();
+
+            // endpoints should be called last 
             appBuilder.UseStaticFiles("wwwroot", defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days
 
             return appBuilder.Build();

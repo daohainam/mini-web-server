@@ -13,8 +13,9 @@ namespace MiniWebServer.Authorization
             this.options = options ?? new();
         }
 
-        public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
+        public Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
         {
+            return Task.CompletedTask;
         }
     }
 }
