@@ -17,25 +17,40 @@ namespace MiniWebServer.Abstractions.Http
 
         public int Count => headers.Count;
 
-        public bool IsReadOnly => false;
+        public static bool IsReadOnly => false;
+
+        public delegate void HeaderAddedHandler(HttpHeader header);
+        public delegate void HeaderChangedHandler(HttpHeader header);
+        public delegate void HeaderRemovedHandler(HttpHeader header);
+
+        public event HeaderAddedHandler? HeaderAdded;
+        public event HeaderChangedHandler? HeaderChanged;
+        public event HeaderRemovedHandler? HeaderRemoved;
 
         public HttpHeaders Add(string name, string value) // we return a HttpHeaders so we can make a chain of call, for example: headers.Add("Connection", "Close").Add("ETag", "ABCD") ...
         {
-            headers.Add(new HttpHeader(name, value));
+            var header = new HttpHeader(name, value);
+
+            headers.Add(header);
+            OnHeaderAdded(header);
 
             return this;
         }
 
         public HttpHeaders Add(string name, IEnumerable<string> value)
         {
-            headers.Add(new HttpHeader(name, value));
+            var header = new HttpHeader(name, value);
+
+            headers.Add(header);
+            OnHeaderAdded(header);
 
             return this;
         }
 
-        public HttpHeaders Add(HttpHeader value)
+        public HttpHeaders Add(HttpHeader header)
         {
-            headers.Add(value);
+            headers.Add(header);
+            OnHeaderAdded(header);
 
             return this;
         }
@@ -45,11 +60,17 @@ namespace MiniWebServer.Abstractions.Http
             var idx = headers.FindIndex(x => x.Name == name);
             if (idx != -1)
             {
-                headers[idx] = new HttpHeader(name, value);
+                var header = new HttpHeader(name, value);
+
+                headers[idx] = header;
+                OnHeaderChanged(header);
             }
             else
             {
-                headers.Add(new HttpHeader(name, value));
+                var header = new HttpHeader(name, value);
+
+                headers.Add(header);
+                OnHeaderAdded(header);
             }
 
             return this;
@@ -60,11 +81,17 @@ namespace MiniWebServer.Abstractions.Http
             var idx = headers.FindIndex(x => x.Name == name);
             if (idx != -1)
             {
-                headers[idx] = new HttpHeader(name, value);
+                var header = new HttpHeader(name, value);
+
+                headers[idx] = header;
+                OnHeaderChanged(header);
             }
             else
             {
-                headers.Add(new HttpHeader(name, value));
+                var header = new HttpHeader(name, value);
+
+                headers.Add(header);
+                OnHeaderAdded(header);
             }
 
             return this;
@@ -76,10 +103,12 @@ namespace MiniWebServer.Abstractions.Http
             if (idx != -1)
             {
                 headers[idx] = header;
+                OnHeaderChanged(header);
             }
             else
             {
                 headers.Add(header);
+                OnHeaderAdded(header);
             }
 
             return this;
@@ -90,7 +119,10 @@ namespace MiniWebServer.Abstractions.Http
             var idx = headers.FindIndex(x => x.Name == name);
             if (idx == -1)
             {
-                headers.Add(new HttpHeader(name, value));
+                var header = new HttpHeader(name, value);
+
+                headers.Add(header);
+                OnHeaderAdded(header);
             }
 
             return this;
@@ -101,7 +133,10 @@ namespace MiniWebServer.Abstractions.Http
             var idx = headers.FindIndex(x => x.Name == name);
             if (idx == -1)
             {
-                headers.Add(new HttpHeader(name, value));
+                var header = new HttpHeader(name, value);
+
+                headers.Add(header);
+                OnHeaderAdded(header);
             }
 
             return this;
@@ -113,6 +148,7 @@ namespace MiniWebServer.Abstractions.Http
             if (idx == -1)
             {
                 headers.Add(header);
+                OnHeaderAdded(header);
             }
 
             return this;
@@ -121,7 +157,10 @@ namespace MiniWebServer.Abstractions.Http
         public HttpHeaders Remove(string headerName)
         {
             var idx = headers.FindIndex(header => header.Name == headerName);
+            var header = headers[idx];
             headers.RemoveAt(idx);
+
+            OnHeaderRemoved(header);
 
             return this;
         }
@@ -154,6 +193,21 @@ namespace MiniWebServer.Abstractions.Http
         IEnumerator<HttpHeader> IEnumerable<HttpHeader>.GetEnumerator()
         {
             return headers.GetEnumerator();
+        }
+
+        protected void OnHeaderAdded(HttpHeader header)
+        {
+            HeaderAdded?.Invoke(header);
+        }
+
+        protected void OnHeaderChanged(HttpHeader header)
+        {
+            HeaderChanged?.Invoke(header);
+        }
+
+        protected void OnHeaderRemoved(HttpHeader header)
+        {
+            HeaderRemoved?.Invoke(header);
         }
     }
 }
