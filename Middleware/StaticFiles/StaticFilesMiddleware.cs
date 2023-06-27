@@ -34,7 +34,7 @@ namespace MiniWebServer.StaticFiles
 
             string url = context.Request.Url;
 
-            if (directoryInfo.Exists)
+            if (!url.Contains("..") && directoryInfo.Exists)
             {
                 if (url.StartsWith("/"))
                 {
