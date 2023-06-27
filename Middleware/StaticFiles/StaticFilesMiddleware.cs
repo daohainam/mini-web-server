@@ -93,7 +93,7 @@ namespace MiniWebServer.StaticFiles
                             }
                             else
                             {
-                                if (options.UseCompression && context.Request.Headers.AcceptEncoding != null && context.Request.Headers.AcceptEncoding.Any())
+                                if (options.UseCompression && context.Request.Headers.AcceptEncoding != null && context.Request.Headers.AcceptEncoding.Contains("br"))
                                 {
                                     if (options.MinimumFileSizeToCompress <= file.Length
                                         && (options.FileCompressionMimeTypes.Contains(mimeType))
