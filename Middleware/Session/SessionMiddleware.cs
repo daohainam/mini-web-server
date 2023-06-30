@@ -48,7 +48,12 @@ namespace MiniWebServer.Session
             {
                 context.Response.Cookies.Add(
                     options.SessionIdKey,
-                    new Abstractions.Http.HttpCookie(options.SessionIdKey, sessionIdGenerator.GenerateNewId())
+                    new Abstractions.Http.HttpCookie(
+                        options.SessionIdKey, 
+                        sessionIdGenerator.GenerateNewId(),
+                        httpOnly: true,
+                        path: "/"
+                        )
                     );
             }
 
