@@ -26,12 +26,5 @@ namespace MiniWebServer.Session
 
             return appBuilder;
         }
-
-        public static void UseCookieAuthentication(this IMiniAppBuilder appBuilder, CookieAuthenticationOptions? options = null)
-        {
-            appBuilder.Services.AddTransient<IAuthenticationService>(services => new CookieAuthenticationService(options ?? new CookieAuthenticationOptions(), 
-                services.GetService<ILoggerFactory>()
-                ));
-        }
     }
 }

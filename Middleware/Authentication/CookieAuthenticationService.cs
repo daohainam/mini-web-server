@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
@@ -13,10 +14,10 @@ namespace MiniWebServer.Authentication
 {
     public class CookieAuthenticationService : IAuthenticationService
     {
-        private CookieAuthenticationOptions options;
+        private readonly CookieAuthenticationOptions options;
         private readonly ILogger<CookieAuthenticationService> logger;
 
-        public CookieAuthenticationService(CookieAuthenticationOptions? options, ILoggerFactory? loggerFactory) { 
+        public CookieAuthenticationService(CookieAuthenticationOptions? options,  ILoggerFactory? loggerFactory) { 
             this.options = options ?? new CookieAuthenticationOptions();
 
             if (loggerFactory != null)
@@ -32,13 +33,28 @@ namespace MiniWebServer.Authentication
 
             if (context.Request.Cookies != null)
             {
-                if (context.Request.Cookies.TryGetValue(options.CookieName, out HttpCookie? cookie))
+                var princpalStore = context.Services.GetService<IPrincipalStore>();
+
+                if (princpalStore == null)
                 {
-                    if (cookie != null)
+                    logger.LogWarning("No IPrincipleStore registered");
+                }
+                else
+                {
+                    if (context.Request.Cookies.TryGetValue(options.CookieName, out HttpCookie? cookie))
                     {
-                        if (await IsValidAuthenticationCookie(cookie.Value))
+                        if (cookie != null)
                         {
-                            return new AuthenticationResult(false, null);
+                            if (!(await IsValidAuthenticationCookieAsync(cookie.Value)))
+                            {
+                                return new AuthenticationResult(false, null);
+                            }
+
+                            var principle = princpalStore.GetPrincipal(cookie.Value);
+                            if (principle != null)
+                            {
+                                return new AuthenticationResult(true, principle);
+                            }
                         }
                     }
                 }
@@ -47,7 +63,7 @@ namespace MiniWebServer.Authentication
             return new AuthenticationResult(false, null);
         }
 
-        private Task<bool> IsValidAuthenticationCookie(string value)
+        private Task<bool> IsValidAuthenticationCookieAsync(string value)
         {
             // todo: validate authentication cookie
             return Task.FromResult(false);

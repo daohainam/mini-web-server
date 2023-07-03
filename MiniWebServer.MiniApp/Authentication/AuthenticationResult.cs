@@ -11,11 +11,13 @@ namespace MiniWebServer.MiniApp.Authentication
     {
         public AuthenticationResult(bool succeeded, IPrincipal? principal)
         {
-            Succeeded = succeeded;
+            IsSucceeded = succeeded;
             Principal = principal;
         }
 
-        public bool Succeeded { get; }
+        public bool IsSucceeded { get; }
         public IPrincipal? Principal { get; }
+
+        public static readonly AuthenticationResult Failed = new(false, null);
     }
 }

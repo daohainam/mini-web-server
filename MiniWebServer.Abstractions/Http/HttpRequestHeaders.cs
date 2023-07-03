@@ -16,6 +16,13 @@ namespace MiniWebServer.Abstractions.Http
                 return TryGetValueAsString("Accept-Language");
             }
         }
+        public string Authorization
+        {
+            get
+            {
+                return TryGetValueAsString("Authorization");
+            }
+        }
         public string CacheControl
         {
             get
