@@ -9,7 +9,6 @@ namespace MiniWebServer.Authentication
 {
     public class AuthenticationOptions
     {
-        public CookieAuthenticationOptions? CookieAuthenticationOptions { get; init; }
         public JwtAuthenticationOptions? JwtAuthenticationOptions { get; init; }
     }
 }

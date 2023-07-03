@@ -18,43 +18,29 @@ namespace MiniWebServer.Authentication
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             var loggerFactory = context.Services.GetService<ILoggerFactory>();
-            var logger = loggerFactory != null ? loggerFactory.CreateLogger<AuthenticationMiddleware>() : NullLogger<AuthenticationMiddleware>.Instance;
+            //var logger = loggerFactory != null ? loggerFactory.CreateLogger<AuthenticationMiddleware>() : NullLogger<AuthenticationMiddleware>.Instance;
 
-            if (options.JwtAuthenticationOptions != null)
+            var jwtAuthenticationService = context.Services.GetService<JwtAuthenticationService>();
+            if (jwtAuthenticationService != null)
             {
-                var authenticationService = context.Services.GetService<JwtAuthenticationService>();
-                if (authenticationService == null)
-                {
-                    logger.LogWarning("JwtAuthenticationService not registered");
-                }
-                else
-                {
-                    var result = await authenticationService.AuthenticateAsync(context);
+                var result = await jwtAuthenticationService.AuthenticateAsync(context);
 
-                    if (result != null) // authenticated successfully
-                    {
-                        context.User = result.Principal;
-                    }
+                if (result != null) // authenticated successfully
+                {
+                    context.User = result.Principal;
                 }
             }
 
             if (context.User == null)
             {
-                if (options.CookieAuthenticationOptions != null)
+                var cookieAuthenticationService = context.Services.GetService<CookieAuthenticationService>();
+                if (cookieAuthenticationService != null)
                 {
-                    var authenticationService = context.Services.GetService<CookieAuthenticationService>();
-                    if (authenticationService == null)
-                    {
-                        logger.LogWarning("CookieAuthenticationService not registered");
-                    }
-                    else
-                    {
-                        var result = await authenticationService.AuthenticateAsync(context);
+                    var result = await cookieAuthenticationService.AuthenticateAsync(context);
 
-                        if (result != null) // authenticated successfully
-                        {
-                            context.User = result.Principal;
-                        }
+                    if (result != null) // authenticated successfully
+                    {
+                        context.User = result.Principal;
                     }
                 }
             }

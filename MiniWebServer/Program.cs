@@ -68,11 +68,9 @@ namespace MiniWebServer
         {
             var appBuilder = new MiniAppBuilder(services);
 
-            appBuilder.UseAuthentication(new Authentication.AuthenticationOptions() { 
-                CookieAuthenticationOptions = new Authentication.CookieAuthenticationOptions()
-                {
-                }
-            });
+            appBuilder.UseAuthentication(new Authentication.AuthenticationOptions() { })
+                .UseCookieAuthentication()
+                .UseJwtAuthentication();
             appBuilder.UseSession();
 
             // endpoints should be called last 
