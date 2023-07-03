@@ -16,6 +16,7 @@ using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Session;
 using MiniWebServer.StaticFiles;
 using System;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace MiniWebServer
@@ -67,7 +68,11 @@ namespace MiniWebServer
         {
             var appBuilder = new MiniAppBuilder(services);
 
-            appBuilder.UseAuthentication().UseCookieAuthentication();
+            appBuilder.UseAuthentication(new Authentication.AuthenticationOptions() { 
+                CookieAuthenticationOptions = new Authentication.CookieAuthenticationOptions()
+                {
+                }
+            });
             appBuilder.UseSession();
 
             // endpoints should be called last 

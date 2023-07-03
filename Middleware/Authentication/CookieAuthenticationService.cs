@@ -17,7 +17,8 @@ namespace MiniWebServer.Authentication
         private readonly CookieAuthenticationOptions options;
         private readonly ILogger<CookieAuthenticationService> logger;
 
-        public CookieAuthenticationService(CookieAuthenticationOptions? options,  ILoggerFactory? loggerFactory) { 
+        public CookieAuthenticationService(CookieAuthenticationOptions? options, ILoggerFactory? loggerFactory)
+        {
             this.options = options ?? new CookieAuthenticationOptions();
 
             if (loggerFactory != null)
@@ -29,41 +30,48 @@ namespace MiniWebServer.Authentication
         {
             ArgumentNullException.ThrowIfNull(context, nameof(context));
 
-            logger.LogDebug("Authenticating request using cookie...");
-
-            if (context.Request.Cookies != null)
+            try
             {
-                var princpalStore = context.Services.GetService<IPrincipalStore>();
+                logger.LogDebug("Authenticating request using cookie...");
 
-                if (princpalStore == null)
+                if (context.Request.Cookies != null)
                 {
-                    logger.LogWarning("No IPrincipleStore registered");
-                }
-                else
-                {
-                    if (context.Request.Cookies.TryGetValue(options.CookieName, out HttpCookie? cookie))
+                    var princpalStore = context.Services.GetService<IPrincipalStore>();
+
+                    if (princpalStore == null)
                     {
-                        if (cookie != null)
+                        logger.LogWarning("No IPrincipleStore registered");
+                    }
+                    else
+                    {
+                        if (context.Request.Cookies.TryGetValue(options.CookieName, out HttpCookie? cookie))
                         {
-                            if (!(await IsValidAuthenticationCookieAsync(cookie.Value)))
+                            if (cookie != null)
                             {
-                                return new AuthenticationResult(false, null);
-                            }
+                                if (!(await IsValidAuthenticationCookieAsync(cookie.Value)))
+                                {
+                                    return new AuthenticationResult(false, null);
+                                }
 
-                            var principle = princpalStore.GetPrincipal(cookie.Value);
-                            if (principle != null)
-                            {
-                                return new AuthenticationResult(true, principle);
+                                var principle = princpalStore.GetPrincipal(cookie.Value);
+                                if (principle != null)
+                                {
+                                    return new AuthenticationResult(true, principle);
+                                }
                             }
                         }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error authenticating");
+            }
 
             return new AuthenticationResult(false, null);
         }
 
-        private Task<bool> IsValidAuthenticationCookieAsync(string value)
+        private Task<bool> IsValidAuthenticationCookieAsync(string cookieValue)
         {
             // todo: validate authentication cookie
             return Task.FromResult(false);

@@ -9,13 +9,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
+using System.Net.Http.Headers;
+using Microsoft.IdentityModel.Tokens;
+using System.Data.SqlTypes;
 
 namespace MiniWebServer.Authentication
 {
     public class JwtAuthenticationService : IAuthenticationService
     {
         private readonly ILogger<JwtAuthenticationService> logger;
-        private readonly JwtAuthenticationOptions? options;
+        private readonly JwtAuthenticationOptions options;
 
         public JwtAuthenticationService(JwtAuthenticationOptions? options, ILoggerFactory? loggerFactory)
         {
@@ -27,25 +30,47 @@ namespace MiniWebServer.Authentication
                 logger = NullLogger<JwtAuthenticationService>.Instance;
         }
 
-        public Task<AuthenticationResult> AuthenticateAsync(IMiniAppContext context)
+        public async Task<AuthenticationResult> AuthenticateAsync(IMiniAppContext context)
         {
-            var authHeader = context.Request.Headers.Authorization;
-
-            if (!string.IsNullOrEmpty(authHeader))
+            try
             {
-                if (authHeader.StartsWith("Bearer "))
-                {
-                    var handler = new JwtSecurityTokenHandler();
-                    var token = handler.ReadToken(authHeader[7..]) as JwtSecurityToken;
+                var authHeader = context.Request.Headers.Authorization;
 
-                    if (token != null)
+                if (!string.IsNullOrEmpty(authHeader))
+                {
+                    if (authHeader.StartsWith("Bearer "))
                     {
-                        // todo: validate token and set Request.User
+                        logger.LogInformation("Validating JWT token...");
+
+                        var handler = new JwtSecurityTokenHandler();
+                        var token = handler.ReadToken(authHeader[7..]) as JwtSecurityToken;
+
+                        if (await ValidateAsync(token, handler, options.TokenValidationParameters))
+                        {
+                            // todo: validate token and set Request.User
+                            logger.LogInformation("Token validated");
+                        }
+                        else
+                        {
+                            logger.LogInformation("Token not valid"); // note: this not an app error so we don't use LogError
+                        }
                     }
                 }
+            } catch (Exception ex)
+            {
+                logger.LogError(ex, "Error authenticating");
             }
 
-            return Task.FromResult(AuthenticationResult.Failed);
+            return AuthenticationResult.Failed;
+        }
+
+        private async Task<bool> ValidateAsync(JwtSecurityToken? token, JwtSecurityTokenHandler handler, TokenValidationParameters? tokenValidationParameters)
+        {
+            if (tokenValidationParameters == null)
+                return false;
+
+            var result = await handler.ValidateTokenAsync(token, tokenValidationParameters);
+            return result.IsValid;
         }
     }
 }
