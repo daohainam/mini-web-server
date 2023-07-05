@@ -54,128 +54,136 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             var httpMethod = HttpMethod.Get;
             string contentType = string.Empty;
 
-            ReadResult readResult = await reader.ReadAsync(cancellationToken);
-            ReadOnlySequence<byte> buffer = readResult.Buffer;
-
-            requestBuilder.SetBodyPipeline(new Pipe());
-
-            // read request line
-            if (TryReadLine(ref buffer, out ReadOnlySequence<byte> line))
+            try
             {
-                var requestLine = httpComponentParser.ParseRequestLine(line);
 
-                if (requestLine != null)
+                ReadResult readResult = await reader.ReadAsync(cancellationToken);
+                ReadOnlySequence<byte> buffer = readResult.Buffer;
+
+                requestBuilder.SetBodyPipeline(new Pipe());
+
+                // read request line
+                if (TryReadLine(ref buffer, out ReadOnlySequence<byte> line))
                 {
-                    logger.LogDebug("Parsed request line: {requestLine}", requestLine);
+                    var requestLine = httpComponentParser.ParseRequestLine(line);
 
-                    // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
-                    // if Url length exceeds Url buffer length, you should return 414 URI Too Long
-
-                    // todo: parse the Url with percent-encoding (https://www.rfc-editor.org/rfc/rfc3986)
-
-                    httpMethod = requestLine.Method;
-                    requestBuilder
-                        .SetMethod(requestLine.Method)
-                        .SetUrl(requestLine.Url)
-                        .SetParameters(requestLine.Parameters)
-                        .SetQueryString(requestLine.QueryString)
-                        .SetHash(requestLine.Hash)
-                        .SetSegments(requestLine.Segments);
-                }
-                else
-                {
-                    logger.LogError("Invalid request line");
-
-                    return false;
-                }
-
-                reader.AdvanceTo(buffer.Start); // after a successful TryReadLine, buffer.Start advanced to the byte after '\n'
-            }
-
-            // now we read headers
-            while (TryReadLine(ref buffer, out line))
-            {
-                if (line.Length > HttpMaxHeaderLineLength)
-                {
-                    logger.LogError("Header line too long");
-                    return false;
-                }
-
-                var sb = new StringBuilder();
-                sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
-
-                if (sb.Length == 0) // found an empty line
-                {
-                    if (!ValidateRequestHeader(httpMethod, contentLength, contentType))
+                    if (requestLine != null)
                     {
-                        return false; // reject request for whatever reason
-                    }
+                        logger.LogDebug("Parsed request line: {requestLine}", requestLine);
 
-                    reader.AdvanceTo(buffer.Start);
-                    break;
-                }
-                else
-                {
-                    var headerLineText = sb.ToString();
-                    var headerLine = httpComponentParser.ParseHeaderLine(line);
+                        // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
+                        // if Url length exceeds Url buffer length, you should return 414 URI Too Long
 
-                    logger.LogDebug("Found header: {headerLine}", headerLine);
+                        // todo: parse the Url with percent-encoding (https://www.rfc-editor.org/rfc/rfc3986)
 
-                    if (headerLine != null)
-                    {
-                        if (!IsValidHeader(headerLine.Name, headerLine.Value))
-                        {
-                            logger.LogError("Header line rejected: {line}", headerLineText);
-
-                            return false;
-                        }
-
-                        requestBuilder.AddHeader(headerLine.Name, headerLine.Value);
-
-                        // here we have some checks for important headers
-                        if ("Content-Length".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            if (long.TryParse(headerLine.Value, out long length) && length >= 0)
-                            {
-                                contentLength = length;
-                                requestBuilder.SetContentLength(length);
-                            }
-                            else
-                            {
-                                return false;
-                            }
-                        }
-                        else if ("Content-Type".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            contentType = headerLine.Value;
-                            requestBuilder.SetContentType(contentType);
-                        }
-                        else if ("Cookie".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            var cookies = cookieValueParser.ParseCookieHeader(headerLine.Value);
-                            if (cookies == null)
-                            {
-                                logger.LogError("Error parsing cookie value: {cookie}", headerLine.Value);
-                                return false;
-                            }
-                            else
-                            {
-                                requestBuilder.AddCookie(cookies);
-                            }
-                        }
+                        httpMethod = requestLine.Method;
+                        requestBuilder
+                            .SetMethod(requestLine.Method)
+                            .SetUrl(requestLine.Url)
+                            .SetParameters(requestLine.Parameters)
+                            .SetQueryString(requestLine.QueryString)
+                            .SetHash(requestLine.Hash)
+                            .SetSegments(requestLine.Segments);
                     }
                     else
                     {
-                        logger.LogError("Invalid header line: {line}", headerLineText);
+                        logger.LogError("Invalid request line");
 
                         return false;
                     }
 
-                    reader.AdvanceTo(buffer.Start);
+                    reader.AdvanceTo(buffer.Start); // after a successful TryReadLine, buffer.Start advanced to the byte after '\n'
                 }
-            }
 
-            return true;
+                // now we read headers
+                while (TryReadLine(ref buffer, out line))
+                {
+                    if (line.Length > HttpMaxHeaderLineLength)
+                    {
+                        logger.LogError("Header line too long");
+                        return false;
+                    }
+
+                    var sb = new StringBuilder();
+                    sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
+
+                    if (sb.Length == 0) // found an empty line
+                    {
+                        if (!ValidateRequestHeader(httpMethod, contentLength, contentType))
+                        {
+                            return false; // reject request for whatever reason
+                        }
+
+                        reader.AdvanceTo(buffer.Start);
+                        break;
+                    }
+                    else
+                    {
+                        var headerLineText = sb.ToString();
+                        var headerLine = httpComponentParser.ParseHeaderLine(line);
+
+                        logger.LogDebug("Found header: {headerLine}", headerLine);
+
+                        if (headerLine != null)
+                        {
+                            if (!IsValidHeader(headerLine.Name, headerLine.Value))
+                            {
+                                logger.LogError("Header line rejected: {line}", headerLineText);
+
+                                return false;
+                            }
+
+                            requestBuilder.AddHeader(headerLine.Name, headerLine.Value);
+
+                            // here we have some checks for important headers
+                            if ("Content-Length".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                if (long.TryParse(headerLine.Value, out long length) && length >= 0)
+                                {
+                                    contentLength = length;
+                                    requestBuilder.SetContentLength(length);
+                                }
+                                else
+                                {
+                                    return false;
+                                }
+                            }
+                            else if ("Content-Type".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                contentType = headerLine.Value;
+                                requestBuilder.SetContentType(contentType);
+                            }
+                            else if ("Cookie".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                var cookies = cookieValueParser.ParseCookieHeader(headerLine.Value);
+                                if (cookies == null)
+                                {
+                                    logger.LogError("Error parsing cookie value: {cookie}", headerLine.Value);
+                                    return false;
+                                }
+                                else
+                                {
+                                    requestBuilder.AddCookie(cookies);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            logger.LogError("Invalid header line: {line}", headerLineText);
+
+                            return false;
+                        }
+
+                        reader.AdvanceTo(buffer.Start);
+                    }
+                }
+
+                return true;
+            } catch (Exception ex)
+            {
+                logger.LogError(ex, "Error reading request");
+                return false;
+            }
         }
 
         public async Task ReadBodyAsync(PipeReader reader, IHttpRequest request, CancellationToken cancellationToken)

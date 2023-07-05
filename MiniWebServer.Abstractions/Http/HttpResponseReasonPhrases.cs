@@ -11,6 +11,7 @@ namespace MiniWebServer.Abstractions.Http
         private static readonly Dictionary<HttpResponseCodes, string> phrases = new()
         {
             { HttpResponseCodes.OK, "OK"},
+            { HttpResponseCodes.PartialContent, "Partial Content"},
             { HttpResponseCodes.NotFound, "Not Found"},
             { HttpResponseCodes.BadRequest, "Bad Request"},
             { HttpResponseCodes.Forbidden, "Forbidden"},

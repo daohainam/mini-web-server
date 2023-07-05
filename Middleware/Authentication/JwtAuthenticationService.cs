@@ -12,6 +12,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using Microsoft.IdentityModel.Tokens;
 using System.Data.SqlTypes;
+using MiniWebServer.MiniApp.Security;
 
 namespace MiniWebServer.Authentication
 {
@@ -47,8 +48,9 @@ namespace MiniWebServer.Authentication
 
                         if (await ValidateAsync(token, handler, options.TokenValidationParameters))
                         {
-                            // todo: validate token and set Request.User
                             logger.LogInformation("Token validated");
+
+                            //context.User = principle;
                         }
                         else
                         {
@@ -64,13 +66,28 @@ namespace MiniWebServer.Authentication
             return AuthenticationResult.Failed;
         }
 
-        private async Task<bool> ValidateAsync(JwtSecurityToken? token, JwtSecurityTokenHandler handler, TokenValidationParameters? tokenValidationParameters)
+        private async Task<bool> ValidateAsync(JwtSecurityToken? token, JwtSecurityTokenHandler handler, TokenValidationParameters? tokenValidationParameters/*, out GenericPrinciple? principle*/)
         {
+            //principle = null;
+
             if (tokenValidationParameters == null)
                 return false;
 
             var result = await handler.ValidateTokenAsync(token, tokenValidationParameters);
+
+            if (!result.IsValid)
+            {
+                logger.LogInformation("Token rejected: {m}", result);
+            }
+
+            //principle = CreatePrincipal(token, result);
+
             return result.IsValid;
+        }
+
+        private GenericPrinciple? CreatePrincipal(JwtSecurityToken? token, TokenValidationResult result)
+        {
+            throw new NotImplementedException();
         }
     }
 }

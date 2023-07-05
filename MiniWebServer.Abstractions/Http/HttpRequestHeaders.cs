@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions.Http.Header;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,39 @@ namespace MiniWebServer.Abstractions.Http
     // here is the this of standard request headers defined in 
     public class HttpRequestHeaders: HttpHeaders
     {
+        public HttpRequestHeaders() {
+            HeaderAdded += HttpRequestHeaders_AddedOrModified;
+            HeaderChanged += HttpRequestHeaders_AddedOrModified;
+            HeaderRemoved += HttpRequestHeaders_HeaderRemoved;
+        }
+
+        private void HttpRequestHeaders_HeaderRemoved(HttpHeader header)
+        {
+            if (header.Name == "Range")
+            {
+                Range = null;
+            }
+        }
+
+        private void HttpRequestHeaders_AddedOrModified(HttpHeader header)
+        {
+            if (header == null)
+                return;
+
+            if (header.Name == "Range")
+            {
+                var value = header.Value.FirstOrDefault();
+                if (value != null && RangeHeader.TryParse(value, out var range))
+                {
+                    this.Range = range;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Invalid Range header");
+                }
+            }
+        }
+
         public string AcceptLanguage
         {
             get
@@ -73,6 +107,8 @@ namespace MiniWebServer.Abstractions.Http
                 return values;
             }
         }
+
+        public RangeHeader? Range { get; private set; }
 
         private string TryGetValueAsString(string name, string defaultValue = "")
         {

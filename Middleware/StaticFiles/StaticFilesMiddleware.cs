@@ -86,29 +86,53 @@ namespace MiniWebServer.StaticFiles
                             string fileExt = file.Extension;
                             string mimeType = mimeTypeMapping.GetMimeMapping(fileExt);
 
+                            var contentRange = context.Request.Headers.Range != null ? new MiniApp.Content.FileContentRange(
+                                context.Request.Headers.Range.Parts[0].Start, context.Request.Headers.Range.Parts[0].End
+                                ) : null;
+
                             context.Response.Headers.ContentType = mimeType;
                             if (context.Request.Method == HttpMethod.Head)
                             {
                                 context.Response.Content = new MiniApp.Content.EmptyBodyFileContent(file);
+                                contentRange = null;
                             }
                             else
                             {
-                                if (options.UseCompression && context.Request.Headers.AcceptEncoding != null && context.Request.Headers.AcceptEncoding.Contains("br"))
+                                long contentLength = file.Length;
+                                if (contentRange != null)
+                                {
+                                    if (contentRange.LastBytePosInclusive == null)
+                                    {
+                                        contentRange.LastBytePosInclusive = file.Length - 1;
+                                    }
+                                    else if (contentRange.LastBytePosInclusive.Value > (file.Length + contentRange.FirstBytePosInclusive + 1))
+                                    {
+                                        contentRange.LastBytePosInclusive = file.Length + contentRange.FirstBytePosInclusive + 1;
+                                    }
+                                }
+
+                                // I'm not sure if we can use compression together with Range requests, so I don't use for now
+                                if (contentRange == null && options.UseCompression && context.Request.Headers.AcceptEncoding != null && context.Request.Headers.AcceptEncoding.Contains("br"))
                                 {
                                     if (options.MinimumFileSizeToCompress <= file.Length
                                         && (options.FileCompressionMimeTypes.Contains(mimeType))
                                         )
                                     {
-                                        context.Response.Content = new MiniApp.Content.CompressedFileContent(file, context, options.CompressionQuality);
+                                        context.Response.Content = new MiniApp.Content.CompressedFileContent(file, context, options.CompressionQuality, contentRange);
                                     }
                                     else
                                     {
-                                        context.Response.Content = new MiniApp.Content.FileContent(file);
+                                        context.Response.Content = new MiniApp.Content.FileContent(file, contentRange);
                                     }
                                 }
                                 else
                                 {
-                                    context.Response.Content = new MiniApp.Content.FileContent(file);
+                                    context.Response.Content = new MiniApp.Content.FileContent(file, contentRange);
+                                }
+
+                                if (contentRange != null)
+                                {
+                                    context.Response.Headers.Add("Content-Range", $"bytes {contentRange.FirstBytePosInclusive}-{contentRange.LastBytePosInclusive}/{file.Length}");
                                 }
                             }
 
@@ -148,7 +172,7 @@ namespace MiniWebServer.StaticFiles
                                 }
                             }
 
-                            context.Response.StatusCode  = HttpResponseCodes.OK;
+                            context.Response.StatusCode = contentRange != null ? HttpResponseCodes.PartialContent : HttpResponseCodes.OK;
                         }
                         catch (Exception ex)
                         {

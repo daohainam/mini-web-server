@@ -5,6 +5,7 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.Abstractions.Http
 {
@@ -12,7 +13,7 @@ namespace MiniWebServer.Server.Abstractions.Http
     {
         HttpRequest Build();
 
-        IHttpRequestBuilder SetMethod(MiniWebServer.Abstractions.Http.HttpMethod method);
+        IHttpRequestBuilder SetMethod(HttpMethod method);
         IHttpRequestBuilder SetUrl(string url);
         IHttpRequestBuilder AddHeader(string name, string value);
         IHttpRequestBuilder AddHeaders(IEnumerable<KeyValuePair<string, string>> headers);

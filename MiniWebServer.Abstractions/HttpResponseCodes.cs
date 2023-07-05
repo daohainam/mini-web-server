@@ -9,6 +9,7 @@ namespace MiniWebServer.Abstractions
     public enum HttpResponseCodes
     {
         OK = 200,
+        PartialContent = 206,
         BadRequest = 400,
         Forbidden = 403,
         NotFound = 404,

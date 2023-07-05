@@ -23,13 +23,14 @@ namespace MiniWebServer.MiniApp.Content
 
         private readonly FileInfo file;
         private readonly int compressionQuality;
+        private readonly FileContentRange? fileContentRange;
         private readonly HttpHeaders headers;
         private readonly ILogger<CompressedFileContent> logger;
 
-        public CompressedFileContent(string fileName, IMiniAppContext context, int compressionQuality) : this(new FileInfo(fileName), context, compressionQuality)
+        public CompressedFileContent(string fileName, IMiniAppContext context, int compressionQuality, FileContentRange? fileContentRange = null) : this(new FileInfo(fileName), context, compressionQuality, fileContentRange)
         {
         }
-        public CompressedFileContent(FileInfo file, IMiniAppContext context, int compressionQuality)
+        public CompressedFileContent(FileInfo file, IMiniAppContext context, int compressionQuality, FileContentRange? fileContentRange = null)
         {
             if (compressionQuality < 0 || compressionQuality > 11) {
                 throw new ArgumentOutOfRangeException(nameof(compressionQuality), "compressionQuality must be from 0 (no compression) to 11 (max compression)");
@@ -55,6 +56,7 @@ namespace MiniWebServer.MiniApp.Content
             }
 
             this.compressionQuality = compressionQuality;
+            this.fileContentRange = fileContentRange;
 
             headers = new()
             {
@@ -74,6 +76,20 @@ namespace MiniWebServer.MiniApp.Content
             try
             {
                 using var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                if (fileContentRange != null)
+                {
+                    if (fileContentRange.FirstBytePosInclusive > 0)
+                    {
+                        fs.Seek(fileContentRange.FirstBytePosInclusive, SeekOrigin.Begin);
+
+                        length = file.Length - fileContentRange.FirstBytePosInclusive;
+                    }
+
+                    if (fileContentRange.LastBytePosInclusive.HasValue)
+                    {
+                        length = fileContentRange.LastBytePosInclusive.Value - fileContentRange.FirstBytePosInclusive + 1; // the the byte positions are inclusive, for example: 0-0 means 1 byte (at [0])
+                    }
+                }
 
                 // we will use chunked transfer-encoding for all files, but I'm thinking about using a cache for small files (check CompressionCaching.ICompressionCache)
 
