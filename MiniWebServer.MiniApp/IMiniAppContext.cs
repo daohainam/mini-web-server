@@ -14,6 +14,6 @@ namespace MiniWebServer.MiniApp
         IHttpResponse Response { get; }
         ISession Session { get; set; }
         IServiceProvider Services { get; }
-        IPrincipal? User { get; set; }
+        ClaimsPrincipal? User { get; set; }
     }
 }

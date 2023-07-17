@@ -9,7 +9,7 @@ namespace MiniWebServer.Authentication
 {
     public interface IPrincipalStore
     {
-        IPrincipal? GetPrincipal(string key);
-        bool SetPrincipal(string key, IPrincipal principal);
+        ClaimsPrincipal? GetPrincipal(string key);
+        bool SetPrincipal(string key, ClaimsPrincipal principal);
     }
 }

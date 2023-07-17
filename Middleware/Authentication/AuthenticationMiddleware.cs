@@ -17,7 +17,7 @@ namespace MiniWebServer.Authentication
 
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
         {
-            var loggerFactory = context.Services.GetService<ILoggerFactory>();
+            //var loggerFactory = context.Services.GetService<ILoggerFactory>();
             //var logger = loggerFactory != null ? loggerFactory.CreateLogger<AuthenticationMiddleware>() : NullLogger<AuthenticationMiddleware>.Instance;
 
             var jwtAuthenticationService = context.Services.GetService<JwtAuthenticationService>();
@@ -25,7 +25,7 @@ namespace MiniWebServer.Authentication
             {
                 var result = await jwtAuthenticationService.AuthenticateAsync(context);
 
-                if (result != null) // authenticated successfully
+                if (result.IsSucceeded) // authenticated successfully
                 {
                     context.User = result.Principal;
                 }
@@ -38,7 +38,7 @@ namespace MiniWebServer.Authentication
                 {
                     var result = await cookieAuthenticationService.AuthenticateAsync(context);
 
-                    if (result != null) // authenticated successfully
+                    if (result.IsSucceeded) // authenticated successfully
                     {
                         context.User = result.Principal;
                     }

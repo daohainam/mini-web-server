@@ -10,18 +10,18 @@ namespace MiniWebServer.Authentication
 {
     public class MemoryPrincipalStore : IPrincipalStore
     {
-        private static readonly ConcurrentDictionary<string, IPrincipal> principals = new();
+        private static readonly ConcurrentDictionary<string, ClaimsPrincipal> principals = new();
 
-        public IPrincipal? GetPrincipal(string key)
+        public ClaimsPrincipal? GetPrincipal(string key)
         {
-            if (principals.TryGetValue(key, out IPrincipal? principal)) { 
+            if (principals.TryGetValue(key, out ClaimsPrincipal? principal)) { 
                 return principal; 
             }
 
             return null;
         }
 
-        public bool SetPrincipal(string key, IPrincipal principal)
+        public bool SetPrincipal(string key, ClaimsPrincipal principal)
         {
             return principals.TryAdd(key, principal);
         }
