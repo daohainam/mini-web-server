@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using MimeMapping;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Configuration;
@@ -38,8 +39,9 @@ namespace MiniWebServer
             ServerOptions serverOptions = config.Get<ServerOptions>() ?? new ServerOptions();
             serverBuilder = serverBuilder
                 .UseOptions(serverOptions);
+            var demoAppConfig = new ConfigurationBuilder().AddJsonFile("demoapp.json").Build().Get<DemoAppConfig>();
 
-            IMiniApp app = BuildApp(serverBuilder.Services); // or server.CreateAppBuilder(); ?
+            IMiniApp app = BuildApp(serverBuilder.Services, demoAppConfig); // or server.CreateAppBuilder(); ?
             app = MapRoutes(app);
             serverBuilder.AddHost(string.Empty, app);
 
@@ -64,13 +66,31 @@ namespace MiniWebServer
             host.Run();
         }
 
-        private static IMiniApp BuildApp(IServiceCollection services)
+        private static IMiniApp BuildApp(IServiceCollection services, DemoAppConfig? demoAppConfig)
         {
             var appBuilder = new MiniAppBuilder(services);
 
             appBuilder.UseAuthentication(new Authentication.AuthenticationOptions() { })
-                .UseCookieAuthentication()
-                .UseJwtAuthentication();
+                .UseCookieAuthentication();
+
+            if (demoAppConfig != null && demoAppConfig.Jwt != null
+                && !string.IsNullOrEmpty(demoAppConfig.Jwt.Issuer)
+                && !string.IsNullOrEmpty(demoAppConfig.Jwt.Audience)
+                && !string.IsNullOrEmpty(demoAppConfig.Jwt.SecretKey)
+                )
+            {
+                appBuilder.UseJwtAuthentication(new Authentication.JwtAuthenticationOptions(new TokenValidationParameters()
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        AlgorithmValidator = (string algorithm, SecurityKey securityKey, SecurityToken securityToken, TokenValidationParameters validationParameters) => { return "HS256".Equals(algorithm); },
+                        ValidIssuer = demoAppConfig.Jwt.Issuer,
+                        ValidAudience = demoAppConfig.Jwt.Audience,
+                        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(demoAppConfig.Jwt.SecretKey)),
+                        ClockSkew = TimeSpan.Zero
+                    }));
+            }
             appBuilder.UseSession();
 
             // endpoints should be called last 

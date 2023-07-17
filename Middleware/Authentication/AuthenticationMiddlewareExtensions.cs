@@ -40,7 +40,9 @@ namespace MiniWebServer.Session
         {
             appBuilder.Services.AddTransient<IPrincipalStore>(services => new MemoryPrincipalStore());
 
-            appBuilder.Services.AddTransient(services => new JwtAuthenticationService(options ?? new JwtAuthenticationOptions(),
+            appBuilder.Services.AddTransient(services => new JwtAuthenticationService(options ?? new JwtAuthenticationOptions(
+                new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+                ),
                 services.GetService<ILoggerFactory>()
                 ));
 

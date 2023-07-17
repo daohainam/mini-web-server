@@ -9,6 +9,11 @@ namespace MiniWebServer.Authentication
 {
     public class JwtAuthenticationOptions
     {
-        public TokenValidationParameters? TokenValidationParameters { get; set; }
+        public JwtAuthenticationOptions(TokenValidationParameters tokenValidationParameters)
+        {
+            TokenValidationParameters = tokenValidationParameters ?? throw new ArgumentNullException(nameof(tokenValidationParameters));
+        }
+
+        public TokenValidationParameters TokenValidationParameters { get; }
     }
 }

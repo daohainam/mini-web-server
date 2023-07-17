@@ -11,8 +11,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Net.Http.Headers;
 using Microsoft.IdentityModel.Tokens;
-using System.Data.SqlTypes;
-using MiniWebServer.MiniApp.Security;
+using System.Security.Claims;
+using System.Security.Principal;
 
 namespace MiniWebServer.Authentication
 {
@@ -21,9 +21,9 @@ namespace MiniWebServer.Authentication
         private readonly ILogger<JwtAuthenticationService> logger;
         private readonly JwtAuthenticationOptions options;
 
-        public JwtAuthenticationService(JwtAuthenticationOptions? options, ILoggerFactory? loggerFactory)
+        public JwtAuthenticationService(JwtAuthenticationOptions options, ILoggerFactory? loggerFactory)
         {
-            this.options = options ?? new JwtAuthenticationOptions();
+            this.options = options;
 
             if (loggerFactory != null)
                 logger = loggerFactory.CreateLogger<JwtAuthenticationService>();
@@ -44,13 +44,15 @@ namespace MiniWebServer.Authentication
                         logger.LogInformation("Validating JWT token...");
 
                         var handler = new JwtSecurityTokenHandler();
-                        var token = handler.ReadToken(authHeader[7..]) as JwtSecurityToken;
-
-                        if (await ValidateAsync(token, handler, options.TokenValidationParameters))
+                        var result = await ValidateAsync(authHeader[7..], handler, options.TokenValidationParameters);
+                        if (result.IsValid)
                         {
                             logger.LogInformation("Token validated");
 
-                            //context.User = principle;
+                            //context.User = new GenericPrincipal(result.ClaimsIdentity, result.Claims.Values.Where(c => c.));
+                            context.User = new GenericPrincipal(result.ClaimsIdentity, Array.Empty<string>());
+
+                            return new AuthenticationResult(true, context.User);
                         }
                         else
                         {
@@ -66,28 +68,21 @@ namespace MiniWebServer.Authentication
             return AuthenticationResult.Failed;
         }
 
-        private async Task<bool> ValidateAsync(JwtSecurityToken? token, JwtSecurityTokenHandler handler, TokenValidationParameters? tokenValidationParameters/*, out GenericPrinciple? principle*/)
+        private async Task<TokenValidationResult> ValidateAsync(string token, JwtSecurityTokenHandler handler, TokenValidationParameters? tokenValidationParameters/*, out GenericPrinciple? principle*/)
         {
             //principle = null;
 
             if (tokenValidationParameters == null)
-                return false;
+                return new TokenValidationResult() { IsValid = false };
 
             var result = await handler.ValidateTokenAsync(token, tokenValidationParameters);
 
             if (!result.IsValid)
             {
-                logger.LogInformation("Token rejected: {m}", result);
+                logger.LogInformation("Token rejected: {m}, exeption: {ex}", result, result.Exception);
             }
 
-            //principle = CreatePrincipal(token, result);
-
-            return result.IsValid;
-        }
-
-        private GenericPrinciple? CreatePrincipal(JwtSecurityToken? token, TokenValidationResult result)
-        {
-            throw new NotImplementedException();
+            return result;
         }
     }
 }

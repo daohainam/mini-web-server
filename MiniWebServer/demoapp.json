@@ -1,0 +1,7 @@
+{
+  "Jwt": {
+    "Issuer": "https://www.daohainam.com",
+    "Audience": "https://www.daohainam.com",
+    "SecretKey": "bWluaS13ZWItc2VydmVyMSE="
+  }
+}

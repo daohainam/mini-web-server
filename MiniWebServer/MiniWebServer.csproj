@@ -32,6 +32,9 @@
     <None Update="Certs\localhost.pfx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="demoapp.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Docker\log4net-demoapp.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
