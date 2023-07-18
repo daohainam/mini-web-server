@@ -87,7 +87,7 @@ namespace MiniWebServer
                         AlgorithmValidator = (string algorithm, SecurityKey securityKey, SecurityToken securityToken, TokenValidationParameters validationParameters) => { return "HS256".Equals(algorithm); },
                         ValidIssuer = demoAppConfig.Jwt.Issuer,
                         ValidAudience = demoAppConfig.Jwt.Audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(demoAppConfig.Jwt.SecretKey)),
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(demoAppConfig.Jwt.SecretKey)),
                         ClockSkew = TimeSpan.Zero
                     }));
             }

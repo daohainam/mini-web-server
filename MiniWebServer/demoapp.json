@@ -1,7 +1,7 @@
 {
   "Jwt": {
-    "Issuer": "https://www.daohainam.com",
-    "Audience": "https://www.daohainam.com",
-    "SecretKey": "bWluaS13ZWItc2VydmVyMSE="
+    "Issuer": "https://www.daohainam.com/",
+    "Audience": "https://www.daohainam.com/",
+    "SecretKey": "mini-web-server's d3m0 Kode f0r JWT"
   }
 }

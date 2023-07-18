@@ -13,6 +13,7 @@ using System.Net.Http.Headers;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Security.Principal;
+using Microsoft.IdentityModel.Logging;
 
 namespace MiniWebServer.Authentication
 {
@@ -35,6 +36,7 @@ namespace MiniWebServer.Authentication
         {
             try
             {
+                IdentityModelEventSource.ShowPII = true;
                 var authHeader = context.Request.Headers.Authorization;
 
                 if (!string.IsNullOrEmpty(authHeader))
@@ -49,8 +51,23 @@ namespace MiniWebServer.Authentication
                         {
                             logger.LogInformation("Token validated");
 
-                            //context.User = new GenericPrincipal(result.ClaimsIdentity, result.Claims.Values.Where(c => c.));
-                            context.User = new GenericPrincipal(result.ClaimsIdentity, Array.Empty<string>());
+                            var roles = new List<string>();
+                            foreach (var claim in result.Claims)
+                            {
+                                if (ClaimTypes.Role.Equals(claim.Key))
+                                {
+                                    if (claim.Value is List<object> values)
+                                    {
+                                        foreach (string role in values.Cast<string>())
+                                        {
+                                            roles.Add(role);
+                                        }
+                                    }
+                                }
+                            }
+
+                            context.User = new GenericPrincipal(result.ClaimsIdentity, roles.ToArray());
+                            //context.User = new GenericPrincipal(result.ClaimsIdentity, Array.Empty<string>());
 
                             return new AuthenticationResult(true, context.User);
                         }
@@ -75,6 +92,7 @@ namespace MiniWebServer.Authentication
             if (tokenValidationParameters == null)
                 return new TokenValidationResult() { IsValid = false };
 
+            
             var result = await handler.ValidateTokenAsync(token, tokenValidationParameters);
 
             if (!result.IsValid)
