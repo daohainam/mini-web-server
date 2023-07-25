@@ -1,14 +1,14 @@
-﻿using System;
+﻿using MiniWebServer.MiniApp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp.Authorization
 {
-    public interface IAuthorizationPolicy
+    public interface IClaimValidator
     {
-        bool IsAuthorized(IPrincipal principal);
+        bool Validate(IMiniAppContext context);
     }
 }

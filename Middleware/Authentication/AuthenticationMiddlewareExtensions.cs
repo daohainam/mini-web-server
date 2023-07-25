@@ -1,8 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MiniWebServer.Authentication;
-using MiniWebServer.MiniApp.Authentication;
 using MiniWebServer.MiniApp.Builders;
 using System;
 using System.Collections.Generic;
@@ -10,13 +7,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Session
+namespace MiniWebServer.Authentication
 {
     public static class AuthenticationMiddlewareExtensions
     {
-        public static IMiniAppBuilder UseAuthentication(this IMiniAppBuilder appBuilder, AuthenticationOptions? options = default)
+        public static IMiniAppBuilder UseAuthentication(this IMiniAppBuilder appBuilder, Action<AuthenticationOptions>? optionAction = default)
         {
-            options ??= new AuthenticationOptions();
+            var options = new AuthenticationOptions();
+            if (optionAction != null)
+            {
+                optionAction(options);
+            }
 
             appBuilder.Services.AddTransient(services => new AuthenticationMiddleware(
                 options

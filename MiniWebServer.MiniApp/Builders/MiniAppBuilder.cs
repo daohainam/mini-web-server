@@ -65,7 +65,7 @@ namespace MiniWebServer.MiniApp.Builders
 
             if (typeof(IMiddleware).IsAssignableFrom(middlewareType))
             {
-                middlewareTypes.Insert(0, middlewareType); // LIFO: last added middleware will be
+                middlewareTypes.Insert(0, middlewareType); // LIFO: last added middleware will be called first
             }
             else
             {

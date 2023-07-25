@@ -19,7 +19,6 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Middleware\Authentication\Authentication.csproj" />
     <ProjectReference Include="..\Middleware\Session\Session.csproj" />
     <ProjectReference Include="..\Middleware\StaticFiles\StaticFiles.csproj" />
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />

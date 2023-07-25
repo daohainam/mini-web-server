@@ -1,0 +1,44 @@
+﻿using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp.Authorization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MiniWebServer.MiniApp.Authorization
+{
+    public class Policy : IPolicy
+    {
+        private readonly List<IClaimValidator> claims = new();
+
+        public IPolicy RequireClaim(string claim)
+        {
+            claims.Add(
+                new RequireClaimValidator(claim)
+                );
+
+            return this;
+        }
+
+        public IPolicy RequireClaimValue(string claim, string value, StringComparison? stringComparison = default)
+        {
+            claims.Add(
+                new RequireClaimValueValidator(claim, value, stringComparison)
+                );
+
+            return this;
+        }
+
+        public bool IsValid(IMiniAppContext context)
+        {
+            foreach (var claim in claims)
+            {
+                if (!claim.Validate(context))
+                    return false;
+            }
+
+            return true;
+        }
+    }
+}

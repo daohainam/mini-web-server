@@ -5,10 +5,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using MimeMapping;
 using MiniWebServer.Abstractions;
+using MiniWebServer.Authentication;
+using MiniWebServer.Authorization;
 using MiniWebServer.Configuration;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.MiniApp;
-using MiniWebServer.MiniApp.Authentication;
+using MiniWebServer.MiniApp.Authorization;
 using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.Quote;
 using MiniWebServer.Server;
@@ -70,7 +72,7 @@ namespace MiniWebServer
         {
             var appBuilder = new MiniAppBuilder(services);
 
-            appBuilder.UseAuthentication(new Authentication.AuthenticationOptions() { })
+            appBuilder.UseAuthentication()
                 .UseCookieAuthentication();
 
             if (demoAppConfig != null && demoAppConfig.Jwt != null
@@ -91,6 +93,14 @@ namespace MiniWebServer
                         ClockSkew = TimeSpan.Zero
                     }));
             }
+
+            appBuilder.UseAuthorization(options => {
+                options.Policies.Add("dev-required", policy => policy.RequireClaim("Developer"));
+                
+                // uncomment if you want to add a name check
+                // options.Policies.Add("is-mini-web-server", policy => policy.RequireClaimValue("sub", "mini-web-server"));
+            });
+
             appBuilder.UseSession();
 
             // endpoints should be called last 

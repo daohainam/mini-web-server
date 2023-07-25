@@ -12,10 +12,17 @@ namespace MiniWebServer.Authorization
 {
     public static class AuthorizationMiddlewareExtensions
     {
-        public static void UseAuthorization(this IMiniAppBuilder appBuilder, AuthorizationOptions? options = default)
+        public static void UseAuthorization(this IMiniAppBuilder appBuilder, Action<AuthorizationOptions>? optionAction = default)
         {
-            options ??= new AuthorizationOptions();
+            var options = new AuthorizationOptions();
+            if (optionAction != null)
+            {
+                optionAction(options);
+            }
 
+            appBuilder.Services.AddTransient(services => new AuthorizationMiddleware(
+                options
+            ));
 
             appBuilder.UseMiddleware<AuthorizationMiddleware>();
         }

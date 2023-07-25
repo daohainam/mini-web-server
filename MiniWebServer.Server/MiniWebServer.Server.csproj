@@ -15,6 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Middleware\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\Middleware\Authorization\Authorization.csproj" />
     <ProjectReference Include="..\MimeMapping\MimeMapping.csproj" />
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
     <ProjectReference Include="..\MiniWebServer.Configuration\MiniWebServer.Configuration.csproj" />
