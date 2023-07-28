@@ -14,6 +14,7 @@ namespace MiniWebServer.Abstractions.Http
             { HttpResponseCodes.PartialContent, "Partial Content"},
             { HttpResponseCodes.NotFound, "Not Found"},
             { HttpResponseCodes.BadRequest, "Bad Request"},
+            { HttpResponseCodes.Unauthorized, "Unauthorized"},
             { HttpResponseCodes.Forbidden, "Forbidden"},
             { HttpResponseCodes.MethodNotAllowed, "Method Not Allowed"},
             { HttpResponseCodes.NotImplemented, "Not Implemented"},

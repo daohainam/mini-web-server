@@ -20,6 +20,7 @@ using MiniWebServer.Session;
 using MiniWebServer.StaticFiles;
 using System;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text;
 
 namespace MiniWebServer
@@ -95,10 +96,10 @@ namespace MiniWebServer
             }
 
             appBuilder.UseAuthorization(options => {
-                options.Policies.Add("dev-required", policy => policy.RequireClaim("Developer"));
-                
-                // uncomment if you want to add a name check
-                // options.Policies.Add("is-mini-web-server", policy => policy.RequireClaimValue("sub", "mini-web-server"));
+                options.Policies.Add("is-mini-web-server", policy => policy.RequireClaimValue(ClaimTypes.NameIdentifier, "mini-web-server"));
+                options.Policies.Add("dev-required", policy => policy.RequireClaimValue(ClaimTypes.Role, "Developer"));
+
+                options.Routes.Add("/helpcheck", "is-mini-web-server", "dev-required");
             });
 
             appBuilder.UseSession();

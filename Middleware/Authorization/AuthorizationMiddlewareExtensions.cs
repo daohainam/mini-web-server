@@ -1,12 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
 using MiniWebServer.MiniApp.Builders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Authorization
 {
@@ -15,13 +8,13 @@ namespace MiniWebServer.Authorization
         public static void UseAuthorization(this IMiniAppBuilder appBuilder, Action<AuthorizationOptions>? optionAction = default)
         {
             var options = new AuthorizationOptions();
-            if (optionAction != null)
-            {
-                optionAction(options);
-            }
+            optionAction?.Invoke(options);
+
+            appBuilder.Services.AddTransient<IRouteMatcher>(services => new RegExRouteMatcher());
 
             appBuilder.Services.AddTransient(services => new AuthorizationMiddleware(
-                options
+                options,
+                services.GetRequiredService<IRouteMatcher>()
             ));
 
             appBuilder.UseMiddleware<AuthorizationMiddleware>();
