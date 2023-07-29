@@ -169,7 +169,7 @@ namespace MiniWebServer.Abstractions.Http
 
         public bool TryGetValue(string name, out HttpHeader? header)
         {
-            var h = headers.Where(h => h.Name == name).FirstOrDefault();
+            var h = headers.Where(h => name.Equals(h.Name, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             if (h != null)
             {
                 header = h;

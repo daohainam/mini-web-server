@@ -15,6 +15,7 @@
 
     <div class="panel">
         <button onclick="helpcheck(); return false;">Help check!</button>
+        <input type="checkbox" id="helpcheck-auth" /><label for="helpcheck-auth">Gửi kèm JWT token (bạn sẽ gặp lỗi 401 Unauthorized nếu không đánh dấu vào ô này)</label>
         <div class="message-panel" id="help-check"></div>
         <span>'First time' is stored in Session</span>
     </div>
@@ -57,15 +58,27 @@
             clock('clock');
         };
 
-        async function fetchFromUrl(url) {
-            const response = await fetch(url);
+        async function fetchFromUrl(url, options) {
+            const response = await fetch(url, options);
             return await response.text();
         }
 
         function helpcheck() {
-            fetchFromUrl("/helpcheck").then((value) => {
-                document.getElementById("help-check").innerHTML = value;
-            });
+            let sendAuth = document.getElementById("helpcheck-auth").checked == true;
+
+            if (sendAuth) {
+                const headers = new Headers([["Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL3d3dy5kYW9oYWluYW0uY29tLyIsImlhdCI6MTY4ODE5OTk2NiwiZXhwIjoyMDAzODE5MTY2LCJhdWQiOiJodHRwczovL3d3dy5kYW9oYWluYW0uY29tLyIsInN1YiI6Im1pbmktd2ViLXNlcnZlciIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6WyJUZXN0ZXIiLCJEZXZlbG9wZXIiXX0.bzxwPpw30V5uxCSYROMZetrlM7cIr6nH0gEp_fhlG5E"]]);
+                fetchFromUrl("/helpcheck", {
+                    headers: headers
+                }).then((value) => {
+                    document.getElementById("help-check").innerHTML = value;
+                });
+            }
+            else {
+                fetchFromUrl("/helpcheck").then((value) => {
+                    document.getElementById("help-check").innerHTML = value;
+                });
+            }
         }
 
         function getrandomquote() {
