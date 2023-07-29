@@ -46,7 +46,7 @@ namespace MiniWebServer.Authorization
             }
             else
             {
-                // by default we accept all requests except ones defined in Routes, if you want to denie-all, set options.NoMatchedRoute = (context) => false
+                // by default we accept all requests except ones defined in Routes, if you want to deny-all, set options.NoMatchedRoute = (context) => false
                 if (!options.NoMatchedRoute(context))
                 {
                     context.Response.StatusCode = Abstractions.HttpResponseCodes.Unauthorized;
