@@ -1,4 +1,5 @@
-﻿using MiniWebServer.MiniApp.Authorization;
+﻿using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,5 +15,9 @@ namespace MiniWebServer.Authorization
 
         public IDictionary<string, IPolicy> Policies => policies;
         public IDictionary<string, string[]> Routes => routes;
+        /// <summary>
+        /// return true if you want to accept no-matching urls
+        /// </summary>
+        public Func<IMiniAppContext, bool> NoMatchedRoute { get; set; } = (context) => true;
     }
 }

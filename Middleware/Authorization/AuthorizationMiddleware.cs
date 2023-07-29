@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using MiniWebServer.MiniApp;
-using MiniWebServer.MiniApp.Authentication;
+﻿using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Authorization;
 
 namespace MiniWebServer.Authorization
@@ -32,18 +30,27 @@ namespace MiniWebServer.Authorization
                         if (!options.Policies.TryGetValue(policyName, out IPolicy? policy) || policy == null
                             )
                         {
-                            // if policy not found then return 401 Unauthenticated
+                            // if not found then return 401 Unauthenticated
                             context.Response.StatusCode = Abstractions.HttpResponseCodes.Unauthorized;
                             return;
                         }
 
                         if (!policy.IsValid(context))
                         {
-                            // if policy not found then return 401 Unauthenticated
+                            // if not valid then return 401 Unauthenticated
                             context.Response.StatusCode = Abstractions.HttpResponseCodes.Unauthorized;
                             return;
                         }
                     }
+                }
+            }
+            else
+            {
+                // by default we accept all requests except ones defined in Routes, if you want to denie-all, set options.NoMatchedRoute = (context) => false
+                if (!options.NoMatchedRoute(context))
+                {
+                    context.Response.StatusCode = Abstractions.HttpResponseCodes.Unauthorized;
+                    return;
                 }
             }
 
