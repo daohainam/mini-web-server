@@ -19,6 +19,8 @@ namespace MiniWebServer.Authentication
                 optionAction(options);
             }
 
+            appBuilder.Services.AddTransient<IPrincipalStore>(services => new MemoryPrincipalStore());
+
             appBuilder.Services.AddTransient(services => new AuthenticationMiddleware(
                 options
                 ));
@@ -39,8 +41,6 @@ namespace MiniWebServer.Authentication
 
         public static IMiniAppBuilder UseJwtAuthentication(this IMiniAppBuilder appBuilder, JwtAuthenticationOptions? options = null)
         {
-            appBuilder.Services.AddTransient<IPrincipalStore>(services => new MemoryPrincipalStore());
-
             appBuilder.Services.AddTransient(services => new JwtAuthenticationService(options ?? new JwtAuthenticationOptions(
                 new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
                 ),
