@@ -18,7 +18,7 @@ namespace MiniWebServer.MiniApp.Content
         private static readonly byte[] CRLF_Bytes = Encoding.ASCII.GetBytes("\r\n");
         private static readonly byte[] EndOfChunked_CRLF_Bytes = Encoding.ASCII.GetBytes("0\r\n\r\n");
 
-        private readonly Stream stream;
+        private readonly Stream inputStream;
         private readonly bool autoCloseStream;
         private readonly HttpHeaders headers;
 
@@ -26,11 +26,11 @@ namespace MiniWebServer.MiniApp.Content
         {
         }
 
-        public StreamContent(Stream stream, bool autoCloseStream)
+        public StreamContent(Stream inputStream, bool autoCloseStream)
         {
-            this.stream = stream ?? throw new ArgumentNullException(nameof(stream));
+            this.inputStream = inputStream ?? throw new ArgumentNullException(nameof(inputStream));
 
-            if (!stream.CanRead)
+            if (!inputStream.CanRead)
             {
                 throw new ArgumentException("stream is not readable");
             }
@@ -42,28 +42,28 @@ namespace MiniWebServer.MiniApp.Content
 
         public override HttpHeaders Headers => headers;
 
-        public override async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
+        public override async Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
             long totalBytesSent = 0L;
 
             try
             {
-                var bytesRead = await stream.ReadAsync(buffer, cancellationToken);
+                var bytesRead = await inputStream.ReadAsync(buffer, cancellationToken);
 
                 while (bytesRead > 0)
                 {
                     totalBytesSent += bytesRead;
 
-                    writer.Write(Encoding.ASCII.GetBytes(bytesRead.ToString("X")));
-                    writer.Write(CRLF_Bytes);
-                    writer.Write(buffer.AsSpan()[..bytesRead]); // don't use buffer[..bytesRead], it will create a copy of data
-                    writer.Write(CRLF_Bytes);
+                    stream.Write(Encoding.ASCII.GetBytes(bytesRead.ToString("X")));
+                    stream.Write(CRLF_Bytes);
+                    stream.Write(buffer.AsSpan()[..bytesRead]); // don't use buffer[..bytesRead], it will create a copy of data
+                    stream.Write(CRLF_Bytes);
 
-                    bytesRead = await stream.ReadAsync(buffer, cancellationToken);
+                    bytesRead = await inputStream.ReadAsync(buffer, cancellationToken);
                 }
 
-                writer.Write(EndOfChunked_CRLF_Bytes);
+                stream.Write(EndOfChunked_CRLF_Bytes);
 
                 return totalBytesSent;
             }
@@ -77,7 +77,7 @@ namespace MiniWebServer.MiniApp.Content
 
                 if (autoCloseStream)
                 {
-                    stream.Close();
+                    inputStream.Close();
                 }
             }
         }

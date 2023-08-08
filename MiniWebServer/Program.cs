@@ -19,6 +19,7 @@ using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Session;
 using MiniWebServer.StaticFiles;
 using System;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
@@ -51,7 +52,7 @@ namespace MiniWebServer
             var server = serverBuilder.Build();
             var host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices(
-                    services => 
+                    services =>
                     {
                         services.AddHostedService(services => server);
                         services.AddWindowsService(options =>
@@ -73,7 +74,12 @@ namespace MiniWebServer
         {
             var appBuilder = new MiniAppBuilder(services);
 
-            appBuilder.UseAuthentication()
+            appBuilder.UseAuthentication(
+                options =>
+                {
+                    options.DefaultAuthenticateScheme = CookieDefaults.AuthenticationScheme;
+                }
+                )
                 .UseCookieAuthentication();
 
             if (demoAppConfig != null && demoAppConfig.Jwt != null
@@ -82,20 +88,21 @@ namespace MiniWebServer
                 && !string.IsNullOrEmpty(demoAppConfig.Jwt.SecretKey)
                 )
             {
-                appBuilder.UseJwtAuthentication(new Authentication.JwtAuthenticationOptions(new TokenValidationParameters()
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        AlgorithmValidator = (string algorithm, SecurityKey securityKey, SecurityToken securityToken, TokenValidationParameters validationParameters) => { return "HS256".Equals(algorithm); },
-                        ValidIssuer = demoAppConfig.Jwt.Issuer,
-                        ValidAudience = demoAppConfig.Jwt.Audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(demoAppConfig.Jwt.SecretKey)),
-                        ClockSkew = TimeSpan.Zero
-                    }));
+                appBuilder.UseJwtAuthentication(new JwtAuthenticationOptions(new TokenValidationParameters()
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    AlgorithmValidator = (string algorithm, SecurityKey securityKey, SecurityToken securityToken, TokenValidationParameters validationParameters) => { return "HS256".Equals(algorithm); },
+                    ValidIssuer = demoAppConfig.Jwt.Issuer,
+                    ValidAudience = demoAppConfig.Jwt.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(demoAppConfig.Jwt.SecretKey)),
+                    ClockSkew = TimeSpan.Zero
+                }));
             }
 
-            appBuilder.UseAuthorization(options => {
+            appBuilder.UseAuthorization(options =>
+            {
                 options.Policies.Add("is-mini-web-server", policy => policy.RequireClaimValue(ClaimTypes.NameIdentifier, "mini-web-server"));
                 options.Policies.Add("dev-required", policy => policy.RequireClaimValue(ClaimTypes.Role, "Developer"));
 
@@ -112,7 +119,8 @@ namespace MiniWebServer
 
         private static IMiniApp MapRoutes(IMiniApp app)
         {
-            app.MapGet("/helpcheck", async (context, cancellationToken) => {
+            app.MapGet("/helpcheck", async (context, cancellationToken) =>
+            {
                 try
                 {
                     await context.Session.LoadAsync();
@@ -125,25 +133,29 @@ namespace MiniWebServer
                     }
 
                     context.Response.Content = new MiniApp.Content.StringContent($"Service status: OK {DateTime.Now}, First time: {firstTime}");
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     context.Response.Content = new MiniApp.Content.StringContent($"Service status: ERROR {DateTime.Now} ({ex.Message})");
                 }
             });
 
-            app.MapGet("/file/textfile.txt", (context, cancellationToken) => {
+            app.MapGet("/file/textfile.txt", (context, cancellationToken) =>
+            {
                 context.Response.Content = new MiniApp.Content.FileContent(Path.Combine("wwwroot", "textfile.txt"));
 
                 return Task.CompletedTask;
             });
 
-            app.MapGet("/quote/random", async (context, cancellationToken) => {
+            app.MapGet("/quote/random", async (context, cancellationToken) =>
+            {
                 string quote = await QuoteServiceFactory.GetQuoteService().GetRandomAsync();
 
                 context.Response.Content = new MiniApp.Content.StringContent(quote);
             });
 
-            app.MapGet("/string-api/toupper", (context, cancellationToken) => {
+            app.MapGet("/string-api/toupper", (context, cancellationToken) =>
+            {
                 string p = context.Request.QueryParameters["text"].Value ?? string.Empty;
 
                 context.Response.Content = new MiniApp.Content.StringContent(p + " ===> " + p.ToUpper());
@@ -151,7 +163,8 @@ namespace MiniWebServer
                 return Task.CompletedTask;
             });
 
-            app.MapPost("/post/form1", async (context, cancellationToken) => {
+            app.MapPost("/post/form1", async (context, cancellationToken) =>
+            {
                 var form = await context.Request.ReadFormAsync(context.Services.GetService<ILoggerFactory>(), cancellationToken);
 
                 StringBuilder sb = new();
@@ -167,7 +180,8 @@ namespace MiniWebServer
                 context.Response.Content = new MiniApp.Content.StringContent(sb.ToString());
             });
 
-            app.MapPost("/post/form2", async (context, cancellationToken) => {
+            app.MapPost("/post/form2", async (context, cancellationToken) =>
+            {
                 var text = await context.Request.ReadAsStringAsync(cancellationToken);
                 context.Response.Content = new MiniApp.Content.StringContent("Received as text: " + text);
             });
@@ -181,7 +195,7 @@ namespace MiniWebServer
             services.AddDistributedMemoryCache();
 
             // todo: we should be able to safely remove the following registrations to use the defaults
-            services.AddTransient<IHttpComponentParser, ByteSequenceHttpParser>(); 
+            services.AddTransient<IHttpComponentParser, ByteSequenceHttpParser>();
             services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
         }

@@ -24,9 +24,9 @@ namespace MiniWebServer.MiniApp.Content
 
         public override HttpHeaders Headers => headers;
 
-        public override async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
+        public override async Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken)
         {
-            writer.Write(content);
+            stream.Write(content);
 
             return await Task.FromResult(content.Length);
         }

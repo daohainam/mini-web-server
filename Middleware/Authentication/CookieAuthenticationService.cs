@@ -7,6 +7,7 @@ using MiniWebServer.MiniApp.Authentication;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,11 +16,13 @@ namespace MiniWebServer.Authentication
     public class CookieAuthenticationService : IAuthenticationService
     {
         private readonly CookieAuthenticationOptions options;
+        private readonly IPrincipalKeyGenerator principalKeyGenerator;
         private readonly ILogger<CookieAuthenticationService> logger;
 
-        public CookieAuthenticationService(CookieAuthenticationOptions? options, ILoggerFactory? loggerFactory)
+        public CookieAuthenticationService(CookieAuthenticationOptions? options, IPrincipalKeyGenerator? principalKeyGenerator, ILoggerFactory? loggerFactory)
         {
             this.options = options ?? new CookieAuthenticationOptions();
+            this.principalKeyGenerator = principalKeyGenerator ?? new DefaultPrincipalKeyGenerator();
 
             if (loggerFactory != null)
                 logger = loggerFactory.CreateLogger<CookieAuthenticationService>();
@@ -36,9 +39,9 @@ namespace MiniWebServer.Authentication
 
                 if (context.Request.Cookies != null)
                 {
-                    var princpalStore = context.Services.GetService<IPrincipalStore>();
+                    var principalStore = context.Services.GetService<IPrincipalStore>();
 
-                    if (princpalStore == null)
+                    if (principalStore == null)
                     {
                         logger.LogWarning("No IPrincipleStore registered");
                     }
@@ -53,7 +56,7 @@ namespace MiniWebServer.Authentication
                                     return new AuthenticationResult(false, null);
                                 }
 
-                                var principle = princpalStore.GetPrincipal(cookie.Value);
+                                var principle = principalStore.GetPrincipal(cookie.Value);
                                 if (principle != null)
                                 {
                                     return new AuthenticationResult(true, principle);
@@ -69,6 +72,60 @@ namespace MiniWebServer.Authentication
             }
 
             return new AuthenticationResult(false, null);
+        }
+
+        public Task SignInAsync(IMiniAppContext context, System.Security.Claims.ClaimsPrincipal principal)
+        {
+            var principalStore = context.Services.GetService<IPrincipalStore>();
+
+            if (principalStore == null)
+            {
+                logger.LogWarning("No IPrincipleStore registered");
+            }
+            else
+            {
+                string? key = principalKeyGenerator.GeneratePrincipalKey(principal);
+
+                if (!string.IsNullOrEmpty(key))
+                {
+                    if (principalStore.SetPrincipal(key, principal))
+                    {
+                        context.Response.Cookies.TryAdd(options.CookieName, new HttpCookie(
+                            options.CookieName,
+                            key,
+                            httpOnly: true
+                        )
+                        );
+                    }
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task SignOutAsync(IMiniAppContext context)
+        {
+            var principal = context.User; 
+            if (principal == null)
+                return Task.CompletedTask;
+
+            context.Response.Cookies.Remove(options.CookieName);
+            var principalStore = context.Services.GetService<IPrincipalStore>();
+
+            if (principalStore == null)
+            {
+                logger.LogWarning("No IPrincipleStore registered");
+            }
+            else
+            {
+                string? key = principalKeyGenerator.GeneratePrincipalKey(principal);
+
+                if (!string.IsNullOrEmpty(key))
+                {
+                    principalStore.RemovePrincipal(key);
+                }
+            }
+            return Task.CompletedTask;
         }
 
         private Task<bool> IsValidAuthenticationCookieAsync(string cookieValue)

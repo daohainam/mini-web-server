@@ -21,6 +21,11 @@ namespace MiniWebServer.Authentication
             return null;
         }
 
+        public bool RemovePrincipal(string key)
+        {
+            return principals.Remove(key, out ClaimsPrincipal? _);
+        }
+
         public bool SetPrincipal(string key, ClaimsPrincipal principal)
         {
             return principals.TryAdd(key, principal);

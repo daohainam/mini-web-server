@@ -10,12 +10,14 @@ namespace Middleware.Session.Tests
         [TestMethod]
         public void StringTests()
         {
-            Dictionary<string, string> keyValuePairs = new();
-            keyValuePairs["key1"] = "value1";
-            keyValuePairs["key2"] = "v32r2t43qyqyb qn43n3n36nnqn6q4";
-            keyValuePairs["key3"] = "bq253q53wb4n   yw4 7y5w4 7yw4 yw yw ";
-            keyValuePairs["key4"] = "\r\n\t\0";
-            keyValuePairs["key5"] = "!#¤%&/()=?";
+            Dictionary<string, string> keyValuePairs = new()
+            {
+                ["key1"] = "value1",
+                ["key2"] = "v32r2t43qyqyb qn43n3n36nnqn6q4",
+                ["key3"] = "bq253q53wb4n   yw4 7y5w4 7yw4 yw yw ",
+                ["key4"] = "\r\n\t\0",
+                ["key5"] = "!#¤%&/()=?"
+            };
 
             var services = new ServiceCollection();
 

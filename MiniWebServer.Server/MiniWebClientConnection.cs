@@ -69,11 +69,11 @@ namespace MiniWebServer.Server
                         {
                             isKeepAlive = false; // we always close wrongly working connections
 
-                            var response = new HttpResponse(HttpResponseCodes.BadRequest);
+                            var response = new HttpResponse(HttpResponseCodes.BadRequest, config.ClientStream);
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
-                            await SendResponseAsync(responsePipeWriter, response, cancellationToken);
+                            await SendResponseAsync(response, cancellationToken);
 
                             break;
                         }
@@ -88,7 +88,7 @@ namespace MiniWebServer.Server
 
                             var app = FindApp(request); // should we reuse apps???
 
-                            var response = new HttpResponse();
+                            var response = new HttpResponse(HttpResponseCodes.NotFound, config.ClientStream);
                             
                             if (app != null)
                             {
@@ -115,7 +115,7 @@ namespace MiniWebServer.Server
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
-                            await SendResponseAsync(responsePipeWriter, response, cancellationToken);
+                            await SendResponseAsync(response, cancellationToken);
                         }
                     } catch (OperationCanceledException)
                     {
@@ -134,24 +134,18 @@ namespace MiniWebServer.Server
 
         private MiniAppConnectionContext BuildMiniAppConnectionContext()
         {
-            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
+            //var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 
             var connectionContext = new MiniAppConnectionContext(serviceProvider.CreateScope().ServiceProvider);
 
             return connectionContext;
         }
 
-        private async Task SendResponseAsync(PipeWriter writer, HttpResponse response, CancellationToken cancellationToken)
+        private async Task SendResponseAsync(HttpResponse response, CancellationToken cancellationToken)
         {
-            await config.ProtocolHandler.WriteResponseAsync(writer, response, cancellationToken);
+            await config.ProtocolHandler.WriteResponseAsync(response, cancellationToken);
 
-            await writer.FlushAsync(cancellationToken);
-        }
-        private async Task SendResponseAsync(Stream stream, HttpResponse response, CancellationToken cancellationToken)
-        {
-            await config.ProtocolHandler.WriteResponseAsync(stream, response, cancellationToken);
-
-            await stream.FlushAsync(cancellationToken);
+            await response.Body.FlushAsync(cancellationToken);
         }
 
         private IMiniApp? FindApp(HttpRequest request)

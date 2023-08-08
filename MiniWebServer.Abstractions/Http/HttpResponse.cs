@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -11,17 +12,12 @@ namespace MiniWebServer.Abstractions.Http
     {
         private HttpResponseCodes statusCode;
 
-        public HttpResponse()
-        {
-            StatusCode = HttpResponseCodes.NotFound;
-            ReasonPhrase = HttpResponseReasonPhrases.GetReasonPhrase(HttpResponseCodes.NotFound);
-            Headers = new();
-            Cookies = new();
-            Content = EmptyContent.Instance;
-        }
-        public HttpResponse(HttpResponseCodes statusCode, string? reasonPhrase = null, HttpResponseHeaders? headers = null, HttpCookies? cookies = null, IHttpContent? content = null)
+        public HttpResponse(HttpResponseCodes statusCode, Stream body,
+            string? reasonPhrase = null, HttpResponseHeaders? headers = null, HttpCookies? cookies = null, IHttpContent? content = null)
         {
             StatusCode = statusCode;
+            Body = body;
+
             ReasonPhrase = reasonPhrase ?? HttpResponseReasonPhrases.GetReasonPhrase(statusCode);
             Headers = headers ?? new HttpResponseHeaders();
             Cookies = cookies ?? new HttpCookies();
@@ -41,5 +37,6 @@ namespace MiniWebServer.Abstractions.Http
         public HttpResponseHeaders Headers { get; }
         public IHttpContent Content { get; set; }
         public HttpCookies Cookies { get; }
+        public Stream Body { get; set; }
     }
 }

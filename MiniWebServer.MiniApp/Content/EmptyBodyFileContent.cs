@@ -18,7 +18,7 @@ namespace MiniWebServer.MiniApp.Content
         {
         }
 
-        public override Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
+        public override Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken)
         {
             // we send nothing, this response content is used mainly to serve HEAD requests
 

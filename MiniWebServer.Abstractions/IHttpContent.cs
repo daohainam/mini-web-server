@@ -11,6 +11,6 @@ namespace MiniWebServer.Abstractions
     public interface IHttpContent
     {
         HttpHeaders Headers { get; }
-        Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken);
+        Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken);
     }
 }

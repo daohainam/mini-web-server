@@ -85,6 +85,16 @@ namespace MiniWebServer.Authentication
             return AuthenticationResult.Failed;
         }
 
+        public Task SignInAsync(IMiniAppContext context, ClaimsPrincipal principal)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SignOutAsync(IMiniAppContext context)
+        {
+            return Task.CompletedTask;
+        }
+
         private async Task<TokenValidationResult> ValidateAsync(string token, JwtSecurityTokenHandler handler, TokenValidationParameters? tokenValidationParameters/*, out GenericPrinciple? principle*/)
         {
             //principle = null;

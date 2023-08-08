@@ -4,6 +4,15 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Mini-Web-Server</Title>
+    <Authors>Dao Hai Nam</Authors>
+    <RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
+    <PackageProjectUrl>http://www.mini-web-server.com/</PackageProjectUrl>
+    <PackageIcon>favicon.png</PackageIcon>
+    <PackageTags>webserver</PackageTags>
+    <Version>0.2.9</Version>
+    <Description>A light-weight web server</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +37,13 @@
 
   <ItemGroup>
     <Folder Include="BodyReaders\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\MiniWebServer\wwwroot\favicon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

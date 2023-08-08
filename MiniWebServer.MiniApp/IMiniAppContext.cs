@@ -10,5 +10,6 @@ namespace MiniWebServer.MiniApp
         ISession Session { get; set; }
         IServiceProvider Services { get; }
         ClaimsPrincipal? User { get; set; }
+
     }
 }

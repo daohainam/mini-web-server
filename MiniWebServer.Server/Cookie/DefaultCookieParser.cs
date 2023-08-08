@@ -15,7 +15,7 @@ namespace MiniWebServer.Server.Cookie
     /// </summary>
     public partial class DefaultCookieParser : ICookieValueParser
     {
-        private ILoggerFactory loggerFactory;
+        private readonly ILoggerFactory loggerFactory;
 
         public DefaultCookieParser(ILoggerFactory loggerFactory)
         {

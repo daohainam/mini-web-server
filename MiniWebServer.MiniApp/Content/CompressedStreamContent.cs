@@ -62,7 +62,7 @@ namespace MiniWebServer.MiniApp.Content
         public override HttpHeaders Headers => headers;
 
 
-        public override async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
+        public override async Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
@@ -75,22 +75,22 @@ namespace MiniWebServer.MiniApp.Content
 
                 var encoder = new BrotliEncoder(quality: compressionQuality, window: 24);
 
-                var bytesRead = await stream.ReadAsync(buffer, cancellationToken);
+                var bytesRead = await this.stream.ReadAsync(buffer, cancellationToken);
 
                 while (bytesRead > 0)
                 {
                     originalSize += bytesRead;
 
-                    Write(ref encoder, buffer[..bytesRead], writer, ref compressedSize, false);
+                    Write(ref encoder, buffer[..bytesRead], stream, ref compressedSize, false);
 
-                    bytesRead = await stream.ReadAsync(buffer, cancellationToken);
+                    bytesRead = await this.stream.ReadAsync(buffer, cancellationToken);
                 }
 
-                Write(ref encoder, Array.Empty<byte>(), writer, ref compressedSize, true);
+                Write(ref encoder, Array.Empty<byte>(), stream, ref compressedSize, true);
 
                 encoder.Dispose();
 
-                writer.Write(EndOfChunked_CRLF_Bytes);
+                stream.Write(EndOfChunked_CRLF_Bytes);
 
                 compressedSize += EndOfChunked_CRLF_Bytes.Length;
 
@@ -107,12 +107,12 @@ namespace MiniWebServer.MiniApp.Content
                 ArrayPool<byte>.Shared.Return(buffer);
                 if (autoCloseStream)
                 {
-                    stream.Close();
+                    this.stream.Close();
                 }
             }
         }
 
-        private static void Write(ref BrotliEncoder encoder, byte[] data, IContentWriter writer, ref long lBytesWritten, bool isFinalBlock)
+        private static void Write(ref BrotliEncoder encoder, byte[] data, Stream stream, ref long lBytesWritten, bool isFinalBlock)
         {
             byte[] compressBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
 
@@ -128,10 +128,10 @@ namespace MiniWebServer.MiniApp.Content
                 {
                     var lengthBytes = Encoding.ASCII.GetBytes(bytesWritten.ToString("X"));
 
-                    writer.Write(lengthBytes);
-                    writer.Write(CRLF_Bytes);
-                    writer.Write(compressBuffer.AsSpan(0, bytesWritten));
-                    writer.Write(CRLF_Bytes);
+                    stream.Write(lengthBytes);
+                    stream.Write(CRLF_Bytes);
+                    stream.Write(compressBuffer.AsSpan(0, bytesWritten));
+                    stream.Write(CRLF_Bytes);
 
                     lBytesWritten += bytesWritten + lengthBytes.Length + 4; // total of bytes sent including 2 CRLFs 
                 }

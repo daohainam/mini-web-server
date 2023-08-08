@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -10,14 +11,33 @@ namespace MiniWebServer.MiniApp.Authentication
 {
     public static class AppContextAuthenticationExtensions
     {
-        public static void SignIn(this IMiniAppContext context, ClaimsPrincipal principal)
+        public static async Task SignInAsync(this IMiniAppContext context, ClaimsPrincipal principal)
         {
             context.User = principal;
+
+            var authenticationServices = context.Services.GetServices<IAuthenticationService>();
+            if (authenticationServices != null)
+            {
+                foreach (var authenticationService in authenticationServices)
+                {
+                    await authenticationService.SignInAsync(context, principal);
+                }
+            }
+
         }
 
-        public static void SignOut(this IMiniAppContext context)
+        public static async Task SignOutAsync(this IMiniAppContext context)
         {
             context.User = null;
+
+            var authenticationServices = context.Services.GetServices<IAuthenticationService>();
+            if (authenticationServices != null)
+            {
+                foreach (var authenticationService in authenticationServices)
+                {
+                    await authenticationService.SignOutAsync(context);
+                }
+            }
         }
     }
 }

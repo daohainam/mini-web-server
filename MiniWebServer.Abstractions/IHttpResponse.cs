@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -15,5 +16,6 @@ namespace MiniWebServer.Abstractions
         HttpResponseHeaders Headers { get; }
         IHttpContent Content { get; set; }
         HttpCookies Cookies { get; }
+        Stream Body { get; set; }
     }
 }

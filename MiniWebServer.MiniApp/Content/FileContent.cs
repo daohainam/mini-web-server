@@ -50,7 +50,7 @@ namespace MiniWebServer.MiniApp.Content
 
         public override HttpHeaders Headers => headers;
 
-        public override async Task<long> WriteToAsync(IContentWriter writer, CancellationToken cancellationToken)
+        public override async Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken)
         {
             long length = file.Length;
             var buffer = ArrayPool<byte>.Shared.Rent(8192); // rent a 8K-buffer
@@ -84,9 +84,9 @@ namespace MiniWebServer.MiniApp.Content
                 while (length > 0)
                 {
                     if (bytesRead != buffer.Length)
-                        writer.Write(buffer.AsSpan(0, bytesRead));
+                        stream.Write(buffer.AsSpan(0, bytesRead));
                     else
-                        writer.Write(buffer.AsSpan());
+                        stream.Write(buffer.AsSpan());
 
                     length -= bytesRead;
                     if (length > 0)
