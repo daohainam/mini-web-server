@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp
 {
-    internal class ActionDelegate
+    internal class ActionDelegate: ICallableBuilder
     {
         public ActionDelegate(string route, ICallable requestDelegate, params Abstractions.Http.HttpMethod[] httpMethods)
         {
@@ -17,8 +17,29 @@ namespace MiniWebServer.MiniApp
         }
 
         public string Route { get; }
-        public ICallable RequestDelegate { get; }
+        public ICallable RequestDelegate { get; private set;  }
         public Abstractions.Http.HttpMethod[] HttpMethods { get; }
+
+        public ICallableBuilder AddFilter(ICallableFilter filter)
+        {
+            RequestDelegate = new FilteredRequestDelegate(RequestDelegate, filter);
+
+            return this;
+        }
+
+        public ICallableBuilder AddFilter(Func<IMiniAppContext, CancellationToken, bool> filter)
+        {
+            RequestDelegate = new FilteredRequestDelegate(RequestDelegate, new RequestDelegateCallableFilter(filter));
+
+            return this;
+        }
+
+        public ICallableBuilder AddFilter(Func<IMiniAppContext, CancellationToken, Task<bool>> filter)
+        {
+            RequestDelegate = new FilteredRequestDelegate(RequestDelegate, new RequestDelegateAsyncCallableFilter(filter));
+
+            return this;
+        }
 
         public bool IsMatched(string route, Abstractions.Http.HttpMethod httpMethod)
         {

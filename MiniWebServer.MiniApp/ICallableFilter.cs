@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp
 {
-    public interface IMiniApp: ICallableService, ICallable
+    public interface ICallableFilter
     {
-        ICallableBuilder Map(string route, ICallable action, params Abstractions.Http.HttpMethod[] methods);
+        Task<bool> InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken);
     }
 }

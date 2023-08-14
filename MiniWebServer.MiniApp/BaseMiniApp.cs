@@ -23,11 +23,11 @@ namespace MiniWebServer.MiniApp
             this.middlewareChain = middlewareChain ?? throw new ArgumentNullException(nameof(middlewareChain));
         }
 
-        public void Map(string route, ICallable action, params Abstractions.Http.HttpMethod[] methods)
+        public ICallableBuilder Map(string route, ICallable action, params Abstractions.Http.HttpMethod[] methods)
         {
             if (!methods.Any())
             {
-                return;
+                throw new ArgumentException("Methods required", nameof(methods));
             }
 
             var r = new ActionDelegate(route, action, methods);
@@ -36,6 +36,8 @@ namespace MiniWebServer.MiniApp
                 endpoints[route] = r;
             else
                 endpoints.Add(route, r);
+
+            return r;
         }
 
 
