@@ -10,12 +10,8 @@ namespace MiniWebServer.Server
 {
     public class MiniWebServerConfiguration
     {
-        public IPEndPoint HttpEndPoint { get; init; } = new(IPAddress.Loopback, 80);
-        /// <summary>
-        /// a connection will be closed if it has no data in ConnectionTimeout (in ms)
-        /// </summary>
-        public X509Certificate2? Certificate { get; internal set; }
 
+        public List<MiniWebServerBindingConfiguration> Bindings = new();
         public List<HostConfiguration> Hosts = new();
 
         // advanced settings

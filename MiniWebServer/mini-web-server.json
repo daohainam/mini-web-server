@@ -1,11 +1,17 @@
 {
-  "BindingOptions": {
-    "Port": 8080,
-    "Address": "127.0.0.1",
-    "Certificate": "certs\\localhost.pfx",
-    "CertificatePassword": "mini-web-server",
-    "SSL": false
-  },
+  "BindingOptions": [
+    {
+      "Port": 8080,
+      "Address": "127.0.0.1"
+    },
+    {
+      "Port": 8443,
+      "Address": "127.0.0.1",
+      "Certificate": "certs\\localhost.pfx",
+      "CertificatePassword": "mini-web-server",
+      "SSL": true
+    }
+  ],
   "HostOptions": [],
   "FeatureOptions": {
     "MaxRequestBodySize":  10000000000

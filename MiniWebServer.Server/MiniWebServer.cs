@@ -18,7 +18,6 @@ namespace MiniWebServer.Server
         private readonly IProtocolHandlerFactory protocolHandlerFactory;
         private readonly IDictionary<string, Host.Host> hostContainers;
         private readonly ILogger<MiniWebServer> logger;
-        private TcpListener? server;
         private bool running;
         private ulong nextClientId = 0;
         private readonly IRequestIdManager requestIdManager;
@@ -50,12 +49,12 @@ namespace MiniWebServer.Server
             requestIdManager = serviceProvider.GetService<IRequestIdManager>() ?? new RequestIdManager();
         }
 
-        private async Task HandleNewClientConnectionAsync(ulong connectionId, TcpClient tcpClient)
+        private async Task HandleNewClientConnectionAsync(ulong connectionId, MiniWebServerBindingConfiguration binding, TcpClient tcpClient)
         {
             try
             {
                 Stream stream = tcpClient.GetStream();
-                if (config.Certificate != null)
+                if (binding.Certificate != null)
                 {
                     var sslStream = new SslStream(stream);
 
@@ -65,7 +64,7 @@ namespace MiniWebServer.Server
                         {
                             SslApplicationProtocol.Http11
                         },
-                        ServerCertificate = config.Certificate,
+                        ServerCertificate = binding.Certificate,
                         EnabledSslProtocols = SslProtocols.None, // use the system default version
                         ClientCertificateRequired = false,
                         CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
@@ -121,22 +120,22 @@ namespace MiniWebServer.Server
             return true; // accept all :D
         }
 
-        private async Task ClientConnectionListeningProc(CancellationToken cancellationToken)
+        private async Task ClientConnectionListeningProc(MiniWebServerBindingConfiguration binding, CancellationToken cancellationToken)
         {
-            server = new(config.HttpEndPoint);
-            server.Start();
+            var listener = new TcpListener(binding.HttpEndPoint);
+            listener.Start();
 
-            logger.LogInformation("Server started on {binding}", config.HttpEndPoint);
+            logger.LogInformation("Server started on {binding}({https})", binding.HttpEndPoint, binding.Certificate != null ? "HTTPS" : "HTTP");
 
             while (running && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    TcpClient client = await server.AcceptTcpClientAsync(cancellationToken);
+                    TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);
 
                     var connectionId = Interlocked.Increment(ref nextClientId); // this function can be called concurrently (or not?) so we cannot use ++
 
-                    Task t = HandleNewClientConnectionAsync(connectionId, client);
+                    Task t = HandleNewClientConnectionAsync(connectionId, binding, client);
 
                     if (!clientTasks.TryAdd(connectionId, t))
                     {
@@ -146,17 +145,17 @@ namespace MiniWebServer.Server
                 }
                 catch (OperationCanceledException)
                 {
-                    logger.LogInformation("Server socket stopped listening");
+                    logger.LogInformation("Server socket stopped listening on {binding}", binding.HttpEndPoint);
                     break;
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error accepting client socket");
+                    logger.LogError(ex, "Error accepting client socket on {binding}", binding.HttpEndPoint);
                     break;
                 }
             }
 
-            server.Stop();
+            listener.Stop();
 
             Task.WaitAll(clientTasks.Values.ToArray(), TimeSpan.FromSeconds(30));
         }
@@ -167,22 +166,31 @@ namespace MiniWebServer.Server
             tcpClient.Dispose();
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             logger.LogInformation("Starting web server...");
-
-            if (config.Certificate != null)
-            {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
-            }
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
 
             running = true;
+            var clientConnectionListeningProcs = new List<Task>();
 
-            await ClientConnectionListeningProc(stoppingToken);
+            foreach (var binding in config.Bindings)
+            {
+                clientConnectionListeningProcs.Add(ClientConnectionListeningProc(binding, stoppingToken));
+            }
+
+            Task.WaitAll(clientConnectionListeningProcs.ToArray(), stoppingToken);
+
+            return Task.CompletedTask;
         }
 
         public Task Start(CancellationToken? cancellationToken = null)
         {
+            if (!config.Bindings.Any())
+            {
+                throw new InvalidOperationException("No binding settings found");
+            }
+
             return ExecuteAsync(cancellationToken ?? CancellationToken.None);
         }
 

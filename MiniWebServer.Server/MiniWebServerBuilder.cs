@@ -11,10 +11,7 @@ namespace MiniWebServer.Server
 {
     public class MiniWebServerBuilder : IServerBuilder
     {
-        private IPAddress address = IPAddress.Loopback;
-        private int httpPort = 80;
-        private string certificateFile = string.Empty;
-        private string certificatePassword = string.Empty;
+        private List<MiniWebServerBindingConfiguration> bindings = new();
         private readonly Dictionary<string, HostConfiguration> hosts = new();
         private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
         private int connectionTimeout;
@@ -37,20 +34,22 @@ namespace MiniWebServer.Server
                 throw new ArgumentNullException(nameof(serverOptions));
             }
 
-            if (serverOptions.BindingOptions != null)
+            if (serverOptions.BindingOptions.Any())
             {
-                if (serverOptions.BindingOptions.Port > 0)
+                foreach (var bindingOptions in serverOptions.BindingOptions)
                 {
-                    UseHttpPort(serverOptions.BindingOptions.Port);
-                }
-                if (!string.IsNullOrEmpty(serverOptions.BindingOptions.Address))
-                {
-                    BindToAddress(serverOptions.BindingOptions.Address);
-                }
-                if (serverOptions.BindingOptions.SSL && !string.IsNullOrEmpty(serverOptions.BindingOptions.Certificate))
-                {
-                    // note that a certificate might have empty password
-                    AddCertificate(serverOptions.BindingOptions.Certificate, serverOptions.BindingOptions.CertificatePassword);
+                    if (bindingOptions.Port > 0 && !string.IsNullOrEmpty(bindingOptions.Address))
+                    {
+                        if (bindingOptions.SSL && !string.IsNullOrEmpty(bindingOptions.Certificate))
+                        {
+                            // note that a certificate might have empty password
+                            BindToHttps(bindingOptions.Address, bindingOptions.Port, bindingOptions.Certificate, bindingOptions.CertificatePassword);
+                        }
+                        else
+                        {
+                            BindToHttp(bindingOptions.Address, bindingOptions.Port);
+                        }
+                    }
                 }
                 if (serverOptions.FeatureOptions != null)
                 {
@@ -100,41 +99,37 @@ namespace MiniWebServer.Server
             return this;
         }
 
-        public IServerBuilder AddCertificate(string certificateFile, string certificatePassword)
+        public IServerBuilder BindToHttp(string address, int port)
         {
-            if (File.Exists(certificateFile))
+            if (!IPAddress.TryParse(address, out IPAddress? ip))
+                throw new ArgumentException(null, nameof(address));
+
+            bindings.Add(new(
+                    new IPEndPoint(ip, port)
+                ));
+
+            return this;
+        }
+
+        public IServerBuilder BindToHttps(string address, int port, string certificate, string certificatePassword)
+        {
+            if (!IPAddress.TryParse(address, out IPAddress? ip))
+                throw new ArgumentException(null, nameof(address));
+
+            if (File.Exists(certificate))
             {
-                this.certificateFile = certificateFile;
-                this.certificatePassword = certificatePassword;
+                var cert = new X509Certificate2(certificate, certificatePassword);
+
+                bindings.Add(new(
+                        new IPEndPoint(ip, port), cert
+                    ));
+
+                return this;
             }
             else
             {
-                throw new FileNotFoundException(nameof(certificateFile));
+                throw new FileNotFoundException(nameof(certificate));
             }
-
-            return this;
-        }
-
-        public IServerBuilder BindToAddress(string ipAddress)
-        {
-            if (!IPAddress.TryParse(ipAddress, out IPAddress? ip))
-                throw new ArgumentException(null, nameof(ipAddress));
-
-            address = ip;
-
-            return this;
-        }
-
-        public IServerBuilder UseHttpPort(int httpPort)
-        {
-            if (httpPort < 0 || httpPort > 65535)
-            {
-                throw new ArgumentOutOfRangeException(nameof(httpPort));
-            }
-
-            this.httpPort = httpPort;
-
-            return this;
         }
 
         public IServerBuilder AddHost(string hostName, IMiniApp app)
@@ -166,9 +161,8 @@ namespace MiniWebServer.Server
 
             var server = new MiniWebServer(new MiniWebServerConfiguration()
                 {
-                    HttpEndPoint = new IPEndPoint(address, httpPort),
+                    Bindings = bindings,
                     Hosts = hosts.Values.ToList(),
-                    Certificate = string.IsNullOrEmpty(certificateFile) ? null : new X509Certificate2(certificateFile, certificatePassword),
                     MaxRequestBodySize = maxRequestBodySize,
                     ConnectionTimeout = connectionTimeout,
                     ReadBufferSize = readBufferSize,
@@ -198,6 +192,10 @@ namespace MiniWebServer.Server
 
         private void Validate() // move validating routines here so we can make Build function cleaner 
         {
+            if (!bindings.Any())
+            {
+                throw new InvalidOperationException("No bindings found");
+            }
         }
     }
 }
