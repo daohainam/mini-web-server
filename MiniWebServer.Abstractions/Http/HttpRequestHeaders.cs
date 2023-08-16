@@ -1,4 +1,5 @@
 ﻿using MiniWebServer.Abstractions.Http.Header;
+using MiniWebServer.Abstractions.Http.Header.Parsers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,11 @@ namespace MiniWebServer.Abstractions.Http
     // here is the this of standard request headers defined in 
     public class HttpRequestHeaders: HttpHeaders
     {
+        private readonly Dictionary<string, IHeaderParser> headerParsers = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, object> parsedValues = new(StringComparer.OrdinalIgnoreCase);
         public HttpRequestHeaders() {
+            headerParsers.Add(HttpHeaderNames.Range, new RangeHeaderParser());
+
             HeaderAdded += HttpRequestHeaders_AddedOrModified;
             HeaderChanged += HttpRequestHeaders_AddedOrModified;
             HeaderRemoved += HttpRequestHeaders_HeaderRemoved;
@@ -18,10 +23,7 @@ namespace MiniWebServer.Abstractions.Http
 
         private void HttpRequestHeaders_HeaderRemoved(HttpHeader header)
         {
-            if (header.Name == "Range")
-            {
-                Range = null;
-            }
+            parsedValues.Remove(HttpHeaderNames.Range);
         }
 
         private void HttpRequestHeaders_AddedOrModified(HttpHeader header)
@@ -29,16 +31,29 @@ namespace MiniWebServer.Abstractions.Http
             if (header == null)
                 return;
 
-            if (header.Name == "Range")
+            //if (header.Name == HttpHeaderNames.Range)
+            //{
+            //    var value = header.Value.FirstOrDefault();
+            //    if (value != null && RangeHeader.TryParse(value, out var range))
+            //    {
+            //        this.Range = range;
+            //    }
+            //    else
+            //    {
+            //        throw new InvalidOperationException("Invalid Range header");
+            //    }
+            //}
+
+            if (headerParsers.TryGetValue(header.Name, out IHeaderParser? parser))
             {
                 var value = header.Value.FirstOrDefault();
-                if (value != null && RangeHeader.TryParse(value, out var range))
+                if (value != null && RangeHeader.TryParse(value, out var parsedValue) && parsedValue != null)
                 {
-                    this.Range = range;
+                    parsedValues.Add(header.Name, parsedValue);
                 }
                 else
                 {
-                    throw new InvalidOperationException("Invalid Range header");
+                    throw new InvalidOperationException($"Unable to parse {header.Name} header, value: {string.Join(", ", header.Value)}");
                 }
             }
         }
@@ -108,7 +123,17 @@ namespace MiniWebServer.Abstractions.Http
             }
         }
 
-        public RangeHeader? Range { get; private set; }
+        public RangeHeader? Range { 
+            get 
+            { 
+                if (parsedValues.TryGetValue(HttpHeaderNames.Range, out var range))
+                {
+                    return range as RangeHeader;
+                }
+
+                return null;
+            } 
+        }
 
         private string TryGetValueAsString(string name, string defaultValue = "")
         {

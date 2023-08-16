@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http.Header.Parsers
 {
-    internal partial class RangeHeaderParser
+    internal partial class RangeHeaderParser: IHeaderParser
     {
         public static bool TryParse(string s, out RangeHeader? rangeHeader)
         {
@@ -57,5 +57,20 @@ namespace MiniWebServer.Abstractions.Http.Header.Parsers
 
         [GeneratedRegex(@"(?<unit>[\w-_]+)=(?<values>((?<start>[\d]+)-(?<end>[\d]*))(, )?)+")]
         private static partial Regex RangeHeaderRegex();
+
+        public object? Parse(string? value)
+        {
+            if (value == null)
+                return null;
+
+            if (TryParse(value, out var rangeHeader))
+            {
+                return rangeHeader;
+            }
+            else
+            {
+                return null;
+            }
+        }
     }
 }

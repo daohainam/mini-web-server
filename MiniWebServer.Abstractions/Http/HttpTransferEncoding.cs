@@ -42,5 +42,15 @@ namespace MiniWebServer.Abstractions.Http
         {
             return other?.encoding == encoding;
         }
+
+        public override bool Equals(object? obj)
+        {
+            return Equals(obj as HttpTransferEncoding);
+        }
+
+        public override int GetHashCode()
+        {
+            return encoding.GetHashCode();
+        }
     }
 }

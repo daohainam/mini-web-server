@@ -294,12 +294,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             return true;
         }
 
-        private static void Write(IBufferWriter<byte> writer, string s)
-        {
-            var bytes = Encoding.ASCII.GetBytes(s);
-            writer.Write(bytes.AsSpan());
-        }
-
         private static void Write(Stream stream, string s)
         {
             var bytes = Encoding.ASCII.GetBytes(s);

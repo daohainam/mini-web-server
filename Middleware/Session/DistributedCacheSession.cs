@@ -215,11 +215,6 @@ namespace MiniWebServer.Session
             return false;
         }
 
-        internal void LoadFromJson()
-        {
-
-        }
-
         public string? GetString(string key)
         {
             var bytes = Get(key);

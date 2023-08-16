@@ -176,7 +176,7 @@ namespace MiniWebServer.StaticFiles
                         }
                         catch (Exception ex)
                         {
-                            logger.LogError(ex, message: null);
+                            logger.LogError(ex, "Error processing request");
                             context.Response.StatusCode = HttpResponseCodes.InternalServerError;
                         }
                     }
@@ -197,7 +197,5 @@ namespace MiniWebServer.StaticFiles
                 await next.InvokeAsync(context, cancellationToken);
             }
         }
-
-        private static bool IsText(string mimeType) => mimeType.StartsWith("text/");
     }
 }

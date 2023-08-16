@@ -24,7 +24,7 @@ namespace MiniWebServer.Server.BodyReaders.Form.Tests
             var form = await formReader.ReadAsync(pipeReader);
 
             Assert.IsNotNull(form);
-            Assert.AreEqual(formCount, form.Count());
+            Assert.AreEqual(formCount, form.Count);
         }
 }
 }

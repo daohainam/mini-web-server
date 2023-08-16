@@ -138,6 +138,10 @@ namespace MiniWebServer
                 {
                     context.Response.Content = new MiniApp.Content.StringContent($"Service status: ERROR {DateTime.Now} ({ex.Message})");
                 }
+            }).AddFilter((context, cancellationToken) => {
+                context.Response.Headers.Add("Filtered", "true");
+
+                return true;
             });
 
             app.MapGet("/file/textfile.txt", (context, cancellationToken) =>

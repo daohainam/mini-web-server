@@ -17,8 +17,6 @@ namespace MiniWebServer.Abstractions.Http
             headers = new();
         }
 
-        public long ContentLength => 0;
-
         public HttpHeaders Headers => headers;
 
         public async Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken)

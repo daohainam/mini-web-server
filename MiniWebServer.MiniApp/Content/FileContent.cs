@@ -79,7 +79,7 @@ namespace MiniWebServer.MiniApp.Content
                     }
                 }
 
-                var bytesRead = await fs.ReadAsync(buffer, 0, (int)Math.Min(length, buffer.Length), cancellationToken);
+                var bytesRead = await fs.ReadAsync(buffer.AsMemory(0, (int)Math.Min(length, buffer.Length)), cancellationToken);
 
                 while (length > 0)
                 {
