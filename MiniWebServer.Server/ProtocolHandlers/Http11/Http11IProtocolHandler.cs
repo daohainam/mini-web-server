@@ -179,7 +179,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 }
 
                 return true;
-            } catch (Exception ex)
+            }
+            catch (OperationCanceledException)
+            {
+                logger.LogInformation("Connection expired");
+                return false;
+            }
+            catch (Exception ex)
             {
                 logger.LogError(ex, "Error reading request");
                 return false;
