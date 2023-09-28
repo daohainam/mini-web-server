@@ -1,0 +1,11 @@
+version: '3'
+services:
+  front-site:
+    image: namdh/miniwebserver:latest
+    restart: always
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    ports:
+      - 80:80
+      - 443:443      
+  
