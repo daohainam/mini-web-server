@@ -1,5 +1,4 @@
-﻿using MiniWebServer.MiniApp;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Mvc
 {
-    public interface IActionFinder
+    public class MvcOptions
     {
-        ActionInfo? Find(IMiniAppContext context);
+        public IActionFinder? ActionFinder { get; set; }
     }
 }
