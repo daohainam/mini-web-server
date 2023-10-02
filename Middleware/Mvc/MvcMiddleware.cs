@@ -54,11 +54,7 @@ namespace MiniWebServer.Mvc
                         // init standard properties
                         controller.ControllerContext = new ControllerContext(context);
 
-                        if (CallActionMethod(localServiceProvider, controller, actionInfo, context, cancellationToken))
-                        {
-
-                        }
-                        else
+                        if (!CallActionMethod(localServiceProvider, controller, actionInfo, context, cancellationToken))
                         {
                             logger.LogError("Error processing action {a}", actionInfo.MethodInfo);
                             context.Response.StatusCode = Abstractions.HttpResponseCodes.InternalServerError;
