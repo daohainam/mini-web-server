@@ -21,15 +21,7 @@ namespace MiniWebServer.Mvc
             this.serviceCollection = serviceCollection ?? throw new ArgumentNullException(nameof(serviceCollection));
 
             logger = loggerFactory != null ? loggerFactory.CreateLogger<MvcMiddleware>() : NullLogger<MvcMiddleware>.Instance;
-
-            if (options.ActionFinder != null)
-            {
-                actionFinder = options.ActionFinder;
-            }
-            else
-            {
-                actionFinder = new LocalActionFinder();
-            }
+            actionFinder = options.ActionFinder;
         }
 
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
