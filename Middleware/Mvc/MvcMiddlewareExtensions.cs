@@ -1,18 +1,11 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Win32;
 using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.Mvc;
 using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.LocalAction;
 using MiniWebServer.Mvc.RouteMatchers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Session
 {
@@ -22,9 +15,10 @@ namespace MiniWebServer.Session
         {
             if (options == null) {
                 var registry = ScanLocalControllers();
+                var routeMatcher = new RegexRouteMatcher();
 
                 options = new MvcOptions(
-                                new LocalActionFinder(), 
+                                new LocalActionFinder(registry, routeMatcher), 
                                 new RegexRouteMatcher()
                                 );
             }
@@ -66,11 +60,47 @@ namespace MiniWebServer.Session
                         var routeAttribute = attributes.Where(a => a is RouteAttribute).FirstOrDefault();
                         string route = routeAttribute != null ? ((RouteAttribute)routeAttribute).Route : $"/{controllerType.Name}/{action.Name}";
 
+                        var methods = ActionMethods.None;
+                        foreach (var attr in attributes)
+                        {
+                            if (attr is HttpGetAttribute)
+                            {
+                                methods |= ActionMethods.Get;
+                            }
+                            else if (attr is HttpPutAttribute)
+                            {
+                                methods |= ActionMethods.Put;
+                            }
+                            else if (attr is HttpPostAttribute)
+                            {
+                                methods |= ActionMethods.Post;
+                            }
+                            else if (attr is HttpOptionsAttribute)
+                            {
+                                methods |= ActionMethods.Options;
+                            }
+                            else if (attr is HttpDeleteAttribute)
+                            {
+                                methods |= ActionMethods.Delete;
+                            }
+                            else if (attr is HttpHeadAttribute)
+                            {
+                                methods |= ActionMethods.Head;
+                            }
+                        }
+
+                        // if no Http* attribute defined, we support all
+                        if (methods == ActionMethods.None)
+                        {
+                            methods = ActionMethods.All;
+                        }
+
                         registry.Register(route, new LocalAction(
                             route,
                             new ActionInfo(
                                 action.Name, action, controllerType
-                                )
+                                ),
+                            methods
                             ));
                     }
                 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public record HttpMethod
+    public sealed record HttpMethod: IEquatable<HttpMethod>
     {
         // https://datatracker.ietf.org/doc/html/rfc9110#name-method-definitions
 
@@ -26,10 +26,22 @@ namespace MiniWebServer.Abstractions.Http
         public static readonly HttpMethod Connect = new("CONNECT");
         public static readonly HttpMethod Options = new("OPTIONS");
         public static readonly HttpMethod Trace = new("TRACE");
+        public static readonly HttpMethod Patch = new("PATCH");
 
         public override string ToString()
         {
             return method;
+        }
+
+        bool IEquatable<HttpMethod>.Equals(HttpMethod? other)
+        {
+            if (other == null)
+                return false;
+
+            if (this.method == other.method)
+                return true;
+            else
+                return false;
         }
     }
 }
