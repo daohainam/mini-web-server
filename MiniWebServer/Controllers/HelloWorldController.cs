@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Controllers
 {
-    public class ProfileController: Controller
+    public class HelloWorldController: Controller
     {
-        public string Index()
+        public string Index(string? name)
         {
-            return "Hello world!";
+            return "Hello world! " + (name ?? string.Empty);
         } 
     }
 }

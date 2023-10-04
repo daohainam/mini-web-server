@@ -6,6 +6,7 @@ using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.LocalAction;
+using System.Reflection.Metadata;
 using System.Xml.Linq;
 
 namespace MiniWebServer.Mvc
@@ -94,7 +95,7 @@ namespace MiniWebServer.Mvc
             foreach (var parameter in actionParameters)
             {
                 var parameterName = parameter.Name;
-                if (!string.IsNullOrEmpty(parameterName))
+                if (string.IsNullOrEmpty(parameterName))
                 {
                     logger.LogError("Parameter name cannot be empty");
                     return false;
@@ -118,7 +119,7 @@ namespace MiniWebServer.Mvc
                 }
             }
 
-            var actionResult = actionInfo.MethodInfo.Invoke(controller, actionParameters.ToArray());
+            var actionResult = actionInfo.MethodInfo.Invoke(controller, actionParameterValues.ToArray());
             if (actionResult != null)
             {
                 if (actionResult is IViewActionResult)
@@ -176,6 +177,12 @@ namespace MiniWebServer.Mvc
             if (valueFromDI != null)
             {
                 value = valueFromDI;
+                return true;
+            }
+
+            if (Nullable.GetUnderlyingType(parameterType) == null)
+            {
+                value = null;
                 return true;
             }
 

@@ -6,6 +6,7 @@ using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.LocalAction;
 using MiniWebServer.Mvc.RouteMatchers;
 using System.Reflection;
+using System.Xml.Linq;
 
 namespace MiniWebServer.Session
 {
@@ -41,67 +42,86 @@ namespace MiniWebServer.Session
                 .SelectMany(s => s.GetTypes())
                 .Where(t => type.IsAssignableFrom(t) && t != type);
 
-            foreach ( var controllerType in controllerTypes)
+            foreach (var controllerType in controllerTypes)
             {
-                var actions = controllerType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+                var actions = controllerType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
                 foreach ( var action in actions)
                 {
-                    var attributes = action.GetCustomAttributes(false);
-
-                    if (attributes != null )
+                    var actionParameters = action.GetParameters();
+                    bool isValid = true;
+                    foreach ( var parameter in actionParameters)
                     {
-                        if (attributes.Where(a => a is NonActionAttribute).Any())
+                        if (parameter.IsOut)
                         {
-                            // we skip NonAction methods
-                            continue;
+                            isValid = false;
+                            break;
                         }
-                        
-                        var routeAttribute = attributes.Where(a => a is RouteAttribute).FirstOrDefault();
-                        string route = routeAttribute != null ? ((RouteAttribute)routeAttribute).Route : $"/{controllerType.Name}/{action.Name}";
+                    }
 
-                        var methods = ActionMethods.None;
-                        foreach (var attr in attributes)
+                    if (isValid)
+                    {
+                        var attributes = action.GetCustomAttributes(false);
+
+                        if (attributes != null)
                         {
-                            if (attr is HttpGetAttribute)
+                            if (attributes.Where(a => a is NonActionAttribute).Any())
                             {
-                                methods |= ActionMethods.Get;
+                                // we skip NonAction methods
+                                continue;
                             }
-                            else if (attr is HttpPutAttribute)
-                            {
-                                methods |= ActionMethods.Put;
-                            }
-                            else if (attr is HttpPostAttribute)
-                            {
-                                methods |= ActionMethods.Post;
-                            }
-                            else if (attr is HttpOptionsAttribute)
-                            {
-                                methods |= ActionMethods.Options;
-                            }
-                            else if (attr is HttpDeleteAttribute)
-                            {
-                                methods |= ActionMethods.Delete;
-                            }
-                            else if (attr is HttpHeadAttribute)
-                            {
-                                methods |= ActionMethods.Head;
-                            }
-                        }
 
-                        // if no Http* attribute defined, we support all
-                        if (methods == ActionMethods.None)
-                        {
-                            methods = ActionMethods.All;
-                        }
+                            var routeAttribute = attributes.Where(a => a is RouteAttribute).FirstOrDefault();
+                            var controllerTypeName = controllerType.Name;
+                            if (controllerTypeName.EndsWith("Controller", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                controllerTypeName = controllerTypeName[..^10];
+                            }
+                            string route = routeAttribute != null ? ((RouteAttribute)routeAttribute).Route : $"/{controllerTypeName}/{action.Name}";
 
-                        registry.Register(route, new LocalAction(
-                            route,
-                            new ActionInfo(
-                                action.Name, action, controllerType
-                                ),
-                            methods
-                            ));
+                            var methods = ActionMethods.None;
+                            foreach (var attr in attributes)
+                            {
+                                if (attr is HttpGetAttribute)
+                                {
+                                    methods |= ActionMethods.Get;
+                                }
+                                else if (attr is HttpPutAttribute)
+                                {
+                                    methods |= ActionMethods.Put;
+                                }
+                                else if (attr is HttpPostAttribute)
+                                {
+                                    methods |= ActionMethods.Post;
+                                }
+                                else if (attr is HttpOptionsAttribute)
+                                {
+                                    methods |= ActionMethods.Options;
+                                }
+                                else if (attr is HttpDeleteAttribute)
+                                {
+                                    methods |= ActionMethods.Delete;
+                                }
+                                else if (attr is HttpHeadAttribute)
+                                {
+                                    methods |= ActionMethods.Head;
+                                }
+                            }
+
+                            // if no Http* attribute defined, we support all
+                            if (methods == ActionMethods.None)
+                            {
+                                methods = ActionMethods.All;
+                            }
+
+                            registry.Register(route, new LocalAction(
+                                route,
+                                new ActionInfo(
+                                    action.Name, action, controllerType
+                                    ),
+                                methods
+                                ));
+                        }
                     }
                 }
             }

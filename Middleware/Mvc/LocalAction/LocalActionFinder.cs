@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Mvc.LocalAction
 {
@@ -24,7 +25,7 @@ namespace MiniWebServer.Mvc.LocalAction
             {
                 if (registry.Actions.TryGetValue(key, out LocalAction? localAction))
                 {
-                    if (((localAction.ActionMethods & ActionMethods.Get) == ActionMethods.Get) && context.Request.Method.Equals(HttpMethod.Get))
+                    if (((localAction.ActionMethods & ActionMethods.Get) == ActionMethods.Get) && context.Request.Method == HttpMethod.Get)
                     {
                         return localAction.ActionInfo;
                     }
