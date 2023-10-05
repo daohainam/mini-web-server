@@ -6,6 +6,7 @@ using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.LocalAction;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Xml.Linq;
 
@@ -61,7 +62,7 @@ namespace MiniWebServer.Mvc
                         context.Response.StatusCode = Abstractions.HttpResponseCodes.InternalServerError;
 
                         return;
-                    }
+                    } 
                 }
                 else
                 {
@@ -131,6 +132,8 @@ namespace MiniWebServer.Mvc
                 {
                     context.Response.Content = new MiniApp.Content.StringContent(actionResult.ToString() ?? string.Empty);
                 }
+
+                return true;
             }
 
             return false;
@@ -151,12 +154,14 @@ namespace MiniWebServer.Mvc
                         return true;
                     }
 
-                    // looking for a public static TryParse method
-                    var tryParseMethod = parameterType.GetMethod("TryParse", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    if (tryParseMethod != null)
+                    // looking for a public static bool TryParse method
+                    var tryParseMethod = parameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
+                        new Type[] { typeof(string), parameterType.MakeByRefType() },
+                        null);
+                    if (tryParseMethod != null && tryParseMethod.ReturnType == typeof(bool))
                     {
                         // normally, a TryParse method returns a bool value and accepts 2 parameters: a string and a parsed value
-                        var tryParseParameters = new object?[] { requestParameter, null }; // null is place holder of the 2nd parameter (for example: out int? value in int.TryParse)
+                        var tryParseParameters = new object?[] { requestParameter.Value, null }; // null is place holder of the 2nd parameter (for example: out int? value in int.TryParse)
                         var b = (bool?)tryParseMethod.Invoke(null, tryParseParameters);
 
                         if (b.HasValue && b.Value)

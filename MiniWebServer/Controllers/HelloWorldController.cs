@@ -13,5 +13,10 @@ namespace MiniWebServer.Controllers
         {
             return "Hello world! " + (name ?? string.Empty);
         } 
+
+        public int Sum(int x, int y)
+        {
+            return x + y;
+        }
     }
 }
