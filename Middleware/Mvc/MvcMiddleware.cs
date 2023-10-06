@@ -50,7 +50,7 @@ namespace MiniWebServer.Mvc
                         // init standard properties
                         controller.ControllerContext = new ControllerContext(context);
 
-                        if (!CallActionMethod(localServiceProvider, controller, actionInfo, context, cancellationToken))
+                        if (!await CallActionMethodAsync(localServiceProvider, controller, actionInfo, context, cancellationToken))
                         {
                             logger.LogError("Error processing action {a}", actionInfo.MethodInfo);
                             context.Response.StatusCode = Abstractions.HttpResponseCodes.InternalServerError;
@@ -77,7 +77,7 @@ namespace MiniWebServer.Mvc
             }
         }
 
-        private bool CallActionMethod(ServiceProvider localServiceProvider, Controller controller, ActionInfo actionInfo, IMiniAppContext context, CancellationToken cancellationToken)
+        private async Task<bool> CallActionMethodAsync(ServiceProvider localServiceProvider, Controller controller, ActionInfo actionInfo, IMiniAppContext context, CancellationToken cancellationToken)
         {
             /* how do we execute an action?
                - get action parameters
@@ -123,10 +123,12 @@ namespace MiniWebServer.Mvc
             var actionResult = actionInfo.MethodInfo.Invoke(controller, actionParameterValues.ToArray());
             if (actionResult != null)
             {
-                if (actionResult is IViewActionResult)
+                if (actionResult is Abstraction.IActionResult ar)
                 {
                     // todo: build result content
-                    context.Response.Content = new MiniApp.Content.StringContent("IViewActionResult not implemented: " + actionResult.ToString() ?? string.Empty);
+                    // context.Response.Content = new MiniApp.Content.StringContent("IViewActionResult not implemented: " + actionResult.ToString() ?? string.Empty);
+
+                    await ar.ExecuteResultAsync(context);
                 }
                 else
                 {
