@@ -4,6 +4,7 @@ using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.Mvc;
 using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.LocalAction;
+using MiniWebServer.Mvc.RazorEngine;
 using MiniWebServer.Mvc.RouteMatchers;
 using System.Reflection;
 using System.Xml.Linq;
@@ -16,11 +17,13 @@ namespace MiniWebServer.Session
         {
             if (options == null) {
                 var registry = ScanLocalControllers();
-                var routeMatcher = new RegexRouteMatcher();
+                var routeMatcher = new StringEqualsRouteMatcher();
 
                 options = new MvcOptions(
-                                new LocalActionFinder(registry, routeMatcher), 
-                                new RegexRouteMatcher()
+                                new LocalActionFinder(registry, routeMatcher),
+                                new RazorViewEngine(
+                                    new RazorViewEngineOptions()
+                                    )
                                 );
             }
 

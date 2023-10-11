@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Mvc.Abstraction;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,13 +9,13 @@ namespace MiniWebServer.Mvc
 {
     public class MvcOptions
     {
-        public MvcOptions(IActionFinder actionFinder, IRouteMatcher routeMatcher)
+        public MvcOptions(IActionFinder actionFinder, IViewEngine viewEngine)
         {
             ActionFinder = actionFinder ?? throw new ArgumentNullException(nameof(actionFinder));
-            RouteMatcher = routeMatcher ?? throw new ArgumentNullException(nameof(routeMatcher));
+            ViewEngine = viewEngine ?? throw new ArgumentNullException(nameof(viewEngine));
         }
 
         public IActionFinder ActionFinder { get; }
-        public IRouteMatcher RouteMatcher { get; }
+        public IViewEngine ViewEngine { get; }
     }
 }

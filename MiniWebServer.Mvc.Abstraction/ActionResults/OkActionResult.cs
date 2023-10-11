@@ -13,7 +13,7 @@ namespace MiniWebServer.Mvc.Abstraction.ActionResults
             this.value = value;
         }
 
-        public Task ExecuteResultAsync(MiniApp.IMiniAppContext context)
+        public Task ExecuteResultAsync(ActionResultContext context)
         {
             context.Response.StatusCode = Abstractions.HttpResponseCodes.OK; 
 

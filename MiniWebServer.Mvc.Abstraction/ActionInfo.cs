@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Mvc
+namespace MiniWebServer.Mvc.Abstraction
 {
     public class ActionInfo
     {

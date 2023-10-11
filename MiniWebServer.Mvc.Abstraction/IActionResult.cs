@@ -9,6 +9,6 @@ namespace MiniWebServer.Mvc.Abstraction
 {
     public interface IActionResult
     {
-        Task ExecuteResultAsync(IMiniAppContext context);
+        Task ExecuteResultAsync(ActionResultContext context);
     }
 }

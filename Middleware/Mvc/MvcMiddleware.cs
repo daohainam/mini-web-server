@@ -6,6 +6,7 @@ using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.LocalAction;
+using System.ComponentModel;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Xml.Linq;
@@ -14,18 +15,19 @@ namespace MiniWebServer.Mvc
 {
     public class MvcMiddleware : IMiddleware
     {
-        private readonly MvcOptions options;
         private readonly IServiceCollection serviceCollection;
         private readonly ILogger<MvcMiddleware> logger;
         private readonly IActionFinder actionFinder;
+        private readonly IViewEngine viewEngine;
 
         public MvcMiddleware(MvcOptions options, ILoggerFactory loggerFactory, IServiceCollection serviceCollection)
         {
-            this.options = options ?? throw new ArgumentNullException(nameof(options));
+            ArgumentNullException.ThrowIfNull(nameof(options));
             this.serviceCollection = serviceCollection ?? throw new ArgumentNullException(nameof(serviceCollection));
 
             logger = loggerFactory != null ? loggerFactory.CreateLogger<MvcMiddleware>() : NullLogger<MvcMiddleware>.Instance;
             actionFinder = options.ActionFinder;
+            viewEngine = options.ViewEngine;
         }
 
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
@@ -48,7 +50,7 @@ namespace MiniWebServer.Mvc
                     if (ActivatorUtilities.CreateInstance(localServiceProvider, actionInfo.ControllerType) is Controller controller)
                     {
                         // init standard properties
-                        controller.ControllerContext = new ControllerContext(context);
+                        controller.ControllerContext = new ControllerContext(context, viewEngine);
 
                         if (!await CallActionMethodAsync(localServiceProvider, controller, actionInfo, context, cancellationToken))
                         {
@@ -125,10 +127,9 @@ namespace MiniWebServer.Mvc
             {
                 if (actionResult is Abstraction.IActionResult ar)
                 {
-                    // todo: build result content
-                    // context.Response.Content = new MiniApp.Content.StringContent("IViewActionResult not implemented: " + actionResult.ToString() ?? string.Empty);
+                    var actionContext = new ActionResultContext(controller, actionInfo, context);
 
-                    await ar.ExecuteResultAsync(context);
+                    await ar.ExecuteResultAsync(actionContext);
                 }
                 else
                 {
@@ -143,18 +144,30 @@ namespace MiniWebServer.Mvc
 
         private static bool TryCreateValue(string? parameterName, Type parameterType, ServiceProvider localServiceProvider, IMiniAppContext context, out object? value)
         {
+            /*
+             * How to create an action parameter
+             * ---------------------------------
+             * Request parameter data type is string, so if action parameter is:
+             * - A string: simply use it, else
+             * - Try to find a TryParse method (public static bool TryParse(string, out <Action paramtere type?>), if found then use it, else
+             * - Try to find a TypeConverter using TypeDescriptor.GetConverter, if found then use it, else
+             * - Try to find a model binder (not implemented yet), else
+             * - Return false, (then a bad request)
+             */
+
             var requestParameter = context.Request.QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
             if (requestParameter != null) // a parameter found in Request
             {
-                var requestParameterValues = requestParameter.Values.FirstOrDefault(); // currently we support single values only (no array support)
+                var requestParameterValue = requestParameter.Values.FirstOrDefault(); // currently we support single values only (no array support)
 
-                if (requestParameter != null)
+                if (parameterType == typeof(string)) // no conversion required
                 {
-                    if (parameterType == typeof(string))
-                    {
-                        value = requestParameterValues;
-                        return true;
-                    }
+                    value = requestParameterValue;
+                    return true;
+                }
+
+                if (requestParameterValue != null)
+                {
 
                     // looking for a public static bool TryParse method
                     var tryParseMethod = parameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
@@ -163,7 +176,7 @@ namespace MiniWebServer.Mvc
                     if (tryParseMethod != null && tryParseMethod.ReturnType == typeof(bool))
                     {
                         // normally, a TryParse method returns a bool value and accepts 2 parameters: a string and a parsed value
-                        var tryParseParameters = new object?[] { requestParameter.Value, null }; // null is place holder of the 2nd parameter (for example: out int? value in int.TryParse)
+                        var tryParseParameters = new object?[] { requestParameterValue, null }; // null is place holder of the 2nd parameter (for example: out int? value in int.TryParse)
                         var b = (bool?)tryParseMethod.Invoke(null, tryParseParameters);
 
                         if (b.HasValue && b.Value)
@@ -173,8 +186,23 @@ namespace MiniWebServer.Mvc
                         }
                     }
                     else
-                    { 
-                        // todo: find a databinder and convert data
+                    {
+                        var converter = TypeDescriptor.GetConverter(parameterType);
+                        if (converter != null) // if we can find a TypeConverter the we use it
+                        {
+                            if (converter.IsValid(requestParameterValue))
+                            {
+                                value = converter.ConvertFromString(requestParameterValue);
+                                return true;
+                            }
+                            else
+                            {
+                                value = null;
+                                return false;
+                            }
+                        }
+
+                        // todo: find a binder and convert data
                     }
                 }
             }
