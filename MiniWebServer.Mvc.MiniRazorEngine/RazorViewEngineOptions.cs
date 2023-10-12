@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Mvc.RazorEngine
 {
-    public class RazorViewEngineOptions
+    public class MiniRazorViewEngineOptions
     {
         public string ViewDirectory { get; set; } = "Views";
         public string TempDirectory { get; set; } = ".tmp";

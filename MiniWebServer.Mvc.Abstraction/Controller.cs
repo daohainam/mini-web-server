@@ -3,6 +3,7 @@ using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction.ActionResults;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Mime;
 using System.Reflection;
@@ -50,12 +51,15 @@ namespace MiniWebServer.Mvc.Abstraction
         {
             return new ViewActionResult(controllerContext!, viewName, model, contentType ?? "text/html", viewData ?? new Dictionary<string, object>(), controllerContext!.ViewEngine);
         }
-        public IActionResult View([CallerMemberName] string callerName = "")
+        public IActionResult View() // we don't use CallerMemberName since it interferes with method parameter (object model) 
         {
+            var callerName = (new StackFrame(1)?.GetMethod()?.Name) ?? throw new InvalidOperationException("Cannot get method name");
             return View(callerName, null, null, null);
         }
-        public IActionResult View(object? model, [CallerMemberName] string callerName = "")
+        public IActionResult View(object? model)
         {
+            var callerName = (new StackFrame(1)?.GetMethod()?.Name) ?? throw new InvalidOperationException("Cannot get method name");
+
             return View(callerName, model, null, null);
         }
         public IActionResult View(string viewName, object model)

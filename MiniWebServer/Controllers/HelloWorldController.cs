@@ -20,7 +20,7 @@ namespace MiniWebServer.Controllers
         }
         public IActionResult IndexView(string? name)
         {
-            return View((object?)name);
+            return View(name);
         }
     }
 }

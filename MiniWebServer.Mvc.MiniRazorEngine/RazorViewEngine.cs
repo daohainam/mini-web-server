@@ -2,11 +2,11 @@
 
 namespace MiniWebServer.Mvc.RazorEngine
 {
-    public class RazorViewEngine: IViewEngine
+    public class MiniRazorViewEngine: IViewEngine
     {
-        private readonly RazorViewEngineOptions options;
+        private readonly MiniRazorViewEngineOptions options;
 
-        public RazorViewEngine(RazorViewEngineOptions options)
+        public MiniRazorViewEngine(MiniRazorViewEngineOptions options)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
         }
