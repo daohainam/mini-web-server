@@ -21,8 +21,8 @@ namespace MiniWebServer.Session
 
                 options = new MvcOptions(
                                 new LocalActionFinder(registry, routeMatcher),
-                                new RazorViewEngine(
-                                    new RazorViewEngineOptions()
+                                new MiniRazorViewEngine(
+                                    new MiniRazorViewEngineOptions()
                                     )
                                 );
             }

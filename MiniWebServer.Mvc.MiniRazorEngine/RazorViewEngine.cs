@@ -1,4 +1,5 @@
 ﻿using MiniWebServer.Mvc.Abstraction;
+using MiniWebServer.Mvc.Abstraction.ViewContent;
 
 namespace MiniWebServer.Mvc.RazorEngine
 {
@@ -11,11 +12,9 @@ namespace MiniWebServer.Mvc.RazorEngine
             this.options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        Task<bool> IViewEngine.RenderAsync(string viewName, object? model, IDictionary<string, object> viewData, out string? renderedContent)
+        public async Task<IViewContent?> RenderAsync(string viewName, object? model, IDictionary<string, object> viewData)
         {
-            renderedContent = "Content rendered by RazorViewEngine, viewName = " + viewName;
-
-            return Task.FromResult(true);
+            return await Task.FromResult(new StringViewContent("Content rendered by RazorViewEngine, viewName = " + viewName));
         }
     }
 }

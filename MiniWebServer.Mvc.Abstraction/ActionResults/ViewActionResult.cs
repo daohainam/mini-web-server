@@ -28,12 +28,11 @@ namespace MiniWebServer.Mvc.Abstraction.ActionResults
 
         public async Task ExecuteResultAsync(ActionResultContext context)
         {
-            var result = await viewEngine.RenderAsync(viewName, model, viewData, out string? content);
+            var content = await viewEngine.RenderAsync(viewName, model, viewData);
 
-            if (result)
+            if (content != null)
             {
-                controllerContext.Context.Response.Content = new MiniApp.Content.StringContent(content ?? string.Empty);
-                controllerContext.Context.Response.StatusCode = Abstractions.HttpResponseCodes.OK;
+                await content.RenderAsync(context);
             }
             else
             {
