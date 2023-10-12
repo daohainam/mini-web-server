@@ -53,9 +53,12 @@
     <None Update="mini-web-server.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="wwwroot\**">
-		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	</None>
+	  <None Include="wwwroot\**">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Include="Views\**">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\home\" />

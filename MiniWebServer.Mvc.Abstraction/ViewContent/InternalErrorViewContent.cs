@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Mvc.Abstraction.ViewContent
 {
-    public class StringViewContent : IViewContent
+    public class InternalErrorViewContent : IViewContent
     {
         private readonly string content;
 
-        public StringViewContent(string content)
+        public InternalErrorViewContent(string content = "")
         {
             this.content = content ?? string.Empty;
         }
@@ -18,7 +18,7 @@ namespace MiniWebServer.Mvc.Abstraction.ViewContent
         public Task RenderAsync(ActionResultContext context)
         {
             context.Response.Content = new MiniApp.Content.StringContent(content);
-            context.Response.StatusCode = Abstractions.HttpResponseCodes.OK;
+            context.Response.StatusCode = Abstractions.HttpResponseCodes.InternalServerError;
 
             return Task.CompletedTask;
         }

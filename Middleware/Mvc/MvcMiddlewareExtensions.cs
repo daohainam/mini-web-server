@@ -22,7 +22,8 @@ namespace MiniWebServer.Session
                 options = new MvcOptions(
                                 new LocalActionFinder(registry, routeMatcher),
                                 new MiniRazorViewEngine(
-                                    new MiniRazorViewEngineOptions()
+                                    new MiniRazorViewEngineOptions(),
+                                    appBuilder.Services.BuildServiceProvider().GetRequiredService<ILogger<MiniRazorViewEngine>>()
                                     )
                                 );
             }

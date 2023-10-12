@@ -28,7 +28,7 @@ namespace MiniWebServer.Mvc.Abstraction.ActionResults
 
         public async Task ExecuteResultAsync(ActionResultContext context)
         {
-            var content = await viewEngine.RenderAsync(viewName, model, viewData);
+            var content = await viewEngine.RenderAsync(context, viewName, model, viewData);
 
             if (content != null)
             {

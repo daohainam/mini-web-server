@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MiniWebServer.Mvc.MiniRazorEngine.Parser;
+using MiniWebServer.Mvc.MiniRazorEngine.Superpower;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +10,6 @@ namespace MiniWebServer.Mvc.RazorEngine
 {
     public class MiniRazorViewEngineOptions
     {
-        public string ViewDirectory { get; set; } = "Views";
         public string TempDirectory { get; set; } = ".tmp";
         public string AssembyCacheDirectory => Path.Combine(TempDirectory, "asmcache");
     }
