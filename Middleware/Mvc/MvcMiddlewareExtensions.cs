@@ -4,8 +4,10 @@ using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.Mvc;
 using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.LocalAction;
+using MiniWebServer.Mvc.MiniRazorEngine.Parser;
 using MiniWebServer.Mvc.RazorEngine;
 using MiniWebServer.Mvc.RouteMatchers;
+using MiniWebServer.Mvc.SuperpowerTemplateParser;
 using System.Reflection;
 using System.Xml.Linq;
 
@@ -15,15 +17,17 @@ namespace MiniWebServer.Session
     {
         public static void UseMvc(this IMiniAppBuilder appBuilder, MvcOptions? options = default)
         {
-            if (options == null) {
+            if (options == null)
+            {
                 var registry = ScanLocalControllers();
                 var routeMatcher = new StringEqualsRouteMatcher();
 
                 options = new MvcOptions(
                                 new LocalActionFinder(registry, routeMatcher),
                                 new MiniRazorViewEngine(
-                                    new MiniRazorViewEngineOptions(),
-                                    appBuilder.Services.BuildServiceProvider().GetRequiredService<ILogger<MiniRazorViewEngine>>()
+                                new MiniRazorViewEngineOptions(),
+                                    appBuilder.Services.BuildServiceProvider().GetRequiredService<ILogger<MiniRazorViewEngine>>(), // todo: don't build service provider using this ugly way :|
+                                                                            new SuperpowerTemplateParser()
                                     )
                                 );
             }
@@ -50,11 +54,11 @@ namespace MiniWebServer.Session
             {
                 var actions = controllerType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
-                foreach ( var action in actions)
+                foreach (var action in actions)
                 {
                     var actionParameters = action.GetParameters();
                     bool isValid = true;
-                    foreach ( var parameter in actionParameters)
+                    foreach (var parameter in actionParameters)
                     {
                         if (parameter.IsOut)
                         {

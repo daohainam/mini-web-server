@@ -3,7 +3,6 @@ using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.Abstraction.ViewContent;
 using MiniWebServer.Mvc.MiniRazorEngine;
 using MiniWebServer.Mvc.MiniRazorEngine.Parser;
-using MiniWebServer.Mvc.MiniRazorEngine.Superpower;
 
 namespace MiniWebServer.Mvc.RazorEngine
 {
@@ -16,13 +15,13 @@ namespace MiniWebServer.Mvc.RazorEngine
         private readonly IViewFinder viewFinder;
         private readonly ITemplateParser templateParser;
 
-        public MiniRazorViewEngine(MiniRazorViewEngineOptions options, ILogger<MiniRazorViewEngine> logger, IViewFinder? viewFinder = default, ITemplateParser? templateParser = default)
+        public MiniRazorViewEngine(MiniRazorViewEngineOptions options, ILogger<MiniRazorViewEngine> logger, ITemplateParser templateParser, IViewFinder? viewFinder = default)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
+            this.templateParser = templateParser ?? throw new ArgumentNullException(nameof(templateParser));
             this.logger = logger;
 
             this.viewFinder = viewFinder ?? new DefaultViewFinder(DefaultViewFolder);
-            this.templateParser = templateParser ?? new SuperpowerTemplateParser();
         }
 
         public async Task<IViewContent?> RenderAsync(ActionResultContext context, string viewName, object? model, IDictionary<string, object> viewData)

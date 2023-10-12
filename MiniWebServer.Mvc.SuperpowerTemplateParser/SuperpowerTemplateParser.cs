@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Mvc.MiniRazorEngine.Superpower
+namespace MiniWebServer.Mvc.SuperpowerTemplateParser
 {
     public class SuperpowerTemplateParser : ITemplateParser
     {
