@@ -7,9 +7,11 @@
     {
       "Port": 8443,
       "Address": "127.0.0.1",
-      "Certificate": "certs\\localhost.pfx",
+      "Certificate": "fullchain1.pem",
+      "CertificatePrivateKey": "privkey1.pem",
       "CertificatePassword": "mini-web-server",
-      "SSL": true
+      "SSL": true,
+      "Enable": false
     }
   ],
   "HostOptions": [],

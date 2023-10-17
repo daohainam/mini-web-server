@@ -15,7 +15,7 @@ namespace MiniWebServer.Server.Abstractions
     {
         IServiceCollection Services { get; }
         IServerBuilder BindToHttp(string ipAddress, int port);
-        IServerBuilder BindToHttps(string address, int port, string certificate, string certificatePassword);
+        IServerBuilder BindToHttps(string address, int port, string certificate, string certificatePrivateKey, string certificatePassword);
         IServerBuilder AddHost(string hostName, IMiniApp host);
         IServerBuilder UseOptions(ServerOptions serverOptions);
         IServerBuilder SetMaxRequestBodySize(long maxRequestBodySize);

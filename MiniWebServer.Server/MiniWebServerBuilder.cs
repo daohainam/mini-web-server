@@ -5,6 +5,8 @@ using MiniWebServer.Configuration;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Server.Abstractions;
 using System.Net;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace MiniWebServer.Server
@@ -38,12 +40,12 @@ namespace MiniWebServer.Server
             {
                 foreach (var bindingOptions in serverOptions.BindingOptions)
                 {
-                    if (bindingOptions.Port > 0 && !string.IsNullOrEmpty(bindingOptions.Address))
+                    if (bindingOptions.Enable && bindingOptions.Port > 0 && !string.IsNullOrEmpty(bindingOptions.Address))
                     {
                         if (bindingOptions.SSL && !string.IsNullOrEmpty(bindingOptions.Certificate))
                         {
                             // note that a certificate might have empty password
-                            BindToHttps(bindingOptions.Address, bindingOptions.Port, bindingOptions.Certificate, bindingOptions.CertificatePassword);
+                            BindToHttps(bindingOptions.Address, bindingOptions.Port, bindingOptions.Certificate, bindingOptions.CertificatePrivateKey, bindingOptions.CertificatePassword);
                         }
                         else
                         {
@@ -111,14 +113,14 @@ namespace MiniWebServer.Server
             return this;
         }
 
-        public IServerBuilder BindToHttps(string address, int port, string certificate, string certificatePassword)
+        public IServerBuilder BindToHttps(string address, int port, string certificate, string certificatePrivateKey, string certificatePassword)
         {
             if (!IPAddress.TryParse(address, out IPAddress? ip))
                 throw new ArgumentException(null, nameof(address));
 
             if (File.Exists(certificate))
             {
-                var cert = new X509Certificate2(certificate, certificatePassword);
+                var cert = ".pem".Equals(Path.GetExtension(certificate)) ? GenerateCertOnWindows(X509Certificate2.CreateFromPemFile(certificate, certificatePrivateKey)) : new X509Certificate2(certificate, certificatePassword);
 
                 bindings.Add(new(
                         new IPEndPoint(ip, port), cert
@@ -128,7 +130,22 @@ namespace MiniWebServer.Server
             }
             else
             {
-                throw new FileNotFoundException(nameof(certificate));
+                throw new FileNotFoundException(certificate);
+            }
+
+            static X509Certificate2 GenerateCertOnWindows(X509Certificate2 cert) // this function works as a workaround for a bug on Windows (https://github.com/dotnet/runtime/issues/23749)
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return new X509Certificate2(
+                         cert.Export(
+                            X509ContentType.Pkcs12
+                         ));
+                }
+                else
+                {
+                    return cert;
+                }
             }
         }
 
