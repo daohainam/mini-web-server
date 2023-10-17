@@ -7,5 +7,11 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     ports:
       - 80:80
-      - 443:443      
+      - 443:443
+    volumes:
+      - ./volumns/letsencrypt/etc/:/etc/mini-web-server/certs/:ro
+      - ./volumns/mini-web-server/logs/:/app/logs/
+    env_file:
+      - ./settings.env
+
   

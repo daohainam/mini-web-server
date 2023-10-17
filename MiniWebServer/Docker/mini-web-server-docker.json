@@ -1,11 +1,20 @@
 {
-  "BindingOptions": {
-    "Port": 80,
-    "Address": "0.0.0.0",
-    "Certificate": "",
-    "CertificatePassword": "",
-    "SSL": false
-  },
+  "BindingOptions": [
+    {
+      "Port": 80,
+      "Address": "0.0.0.0",
+      "SSL": false,
+      "Enable":  true
+    },
+    {
+      "Port": 443,
+      "Address": "0.0.0.0",
+      "Certificate": "",
+      "CertificatePrivateKey": "",
+      "SSL": true,
+      "Enable":  false
+    }
+  ],
   "HostOptions": [],
   "FeatureOptions": {
     "MaxRequestBodySize": 1000000

@@ -1,0 +1,1 @@
+sudo docker run -it --rm --name certbot -v "./volumns/letsencrypt/etc:/etc/letsencrypt" -v "./volumns/letsencrypt/var:/var/lib/letsencrypt" -p 80:80 certbot/certbot certonly
