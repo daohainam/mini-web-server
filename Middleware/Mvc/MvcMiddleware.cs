@@ -15,6 +15,8 @@ namespace MiniWebServer.Mvc
 {
     public class MvcMiddleware : IMiddleware
     {
+        // https://github.com/daohainam/mini-web-server/issues/6
+
         private readonly IServiceCollection serviceCollection;
         private readonly ILogger<MvcMiddleware> logger;
         private readonly IActionFinder actionFinder;
