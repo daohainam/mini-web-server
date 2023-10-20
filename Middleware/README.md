@@ -6,6 +6,13 @@ Khi Mini-Web-Server tạo xong một đối tượng context (IMiniAppContext, c
 - ICallable next: đối tượng kế tiếp trong chuỗi middleware. 
 - CancellationToken cancellationToken: một cancellationToken cho phép server dừng xử lý request, server sẽ yêu cầu hủy khi nó không có nhu cầu tiếp tục xử lý nữa (request timeout, connection bị đóng, xảy ra lỗi ở một phần nào đó...).
 
+![image](https://github.com/daohainam/mini-web-server/assets/11513104/6e6ba02f-c0c8-42dd-a3b1-ec23e7b933cb)
+Minh họa middleware chain.
+Các đường mũi tên liền biểu thị lời gọi đến các middle kế tiếp.
+Các đường mũi tên đứt khúc biểu thị việc middle trở về mà không gọi đến middleware kế tiếp trong chuỗi (khi gặp một điều kiện nào đó). 
+Trong hình minh họa này, Authentication middleware sẽ luôn gọi đến Authorization, bất kể nó nó thể xác minh được người dùng hay không, nó sẽ đơn giản là đặt người dùng ở trạng thái không xác minh thay vì ngừng middleware chain.
+Việc kết thúc chuỗi middleware chỉ đơn giản là ngưng gọi đến cái kế tiếp, middleware hiện tại vẫn phải trở lại middleware trước đó gọi nó (hoặc về server nếu nó là middleware đầu tiên trong chuỗi - trong hình minh họa là Rate Limit).
+
 ## Tham số next
 Ta thấy ICallable được thiết kế như một phiên bản rút gọn của IMiddleware, hàm InvokeAsync của nó tương tự nhưng rút bớt tham số ICallable để gọi đến middleware kế tiếp. Từ góc độ thiết kế ta có thể coi một callable cũng là một middleware, chỉ khác là nó chỉ thực hiện một hành động nào đó, chứ không tiếp tục gọi đến các callable khác như với middleware. 
 Thực chất các ICallable được truyền đến trong nhiều trường hợp chỉ là một wrapper của một middleware, ngoài trường hợp này ICallable có thể rơi vào một trong hai trường hợp:
