@@ -28,7 +28,7 @@ Từ đây ta thấy thứ tự thêm vào các middleware rất quan trọng, l
 
 _Note: middleware nào được thêm vào sau sẽ được gọi trước._
 
-Một ví dụ khác là Authentication middleware và Authorization middleware: Authentication có nhiệm vụ xác định xem người dùng là ai, và tự động tạo một đối tượng User phù hợp trong IMiniAppContext, còn Authorization có nhiệm vụ xác định quyền truy cập vào một tài nguyên của một User. Nếu Authorization được gọi trước Authentication, khi đối tượng User còn chưa được khởi tạo, đồng nghĩ với việc người dùng ở trạng thái chưa đăng nhập, bạn sẽ luôn bị lỗi không đủ quyền truy xuất tài nguyên.
+Một ví dụ khác là Authentication middleware và Authorization middleware: Authentication có nhiệm vụ xác định xem người dùng là ai, và tự động tạo một đối tượng User phù hợp trong IMiniAppContext, còn Authorization có nhiệm vụ xác định quyền truy cập vào một tài nguyên của một User. Nếu Authorization được gọi trước Authentication, khi đối tượng User còn chưa được khởi tạo, đồng nghĩa với việc người dùng ở trạng thái chưa đăng nhập, bạn sẽ luôn bị lỗi không đủ quyền truy xuất tài nguyên.
 
 _Note: Trong ASP.NET, các hàm Build sẽ tự động sắp xếp lại thứ tự các middleware nên bạn sẽ không bị những lỗi như trên, trong Mini-Web-Server, tôi vẫn muốn để như vậy để giúp các bạn dễ hiểu hơn về cách mọi thứ bên dưới hoạt động (trong tương lai có thể thêm các lớp hỗ trợ tự động sắp xếp)._
 
