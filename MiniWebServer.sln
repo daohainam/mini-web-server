@@ -30,6 +30,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Helpers", "MiniWebServer.Helpers\MiniWebServer.Helpers.csproj", "{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Middleware", "Middleware", "{CDB8B9EF-99E4-41E1-BE46-698647123255}"
+	ProjectSection(SolutionItems) = preProject
+		Middleware\README.md = Middleware\README.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StaticFiles", "Middleware\StaticFiles\StaticFiles.csproj", "{574B1766-8B0E-4F7A-AF14-D9B235375346}"
 EndProject
@@ -47,9 +50,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mvc", "Middleware\Mvc\Mvc.c
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.Abstraction", "MiniWebServer.Mvc.Abstraction\MiniWebServer.Mvc.Abstraction.csproj", "{02D6A22A-19A6-4132-93CE-53B0188DCB6D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.Mvc.MiniRazorEngine", "MiniWebServer.Mvc.MiniRazorEngine\MiniWebServer.Mvc.MiniRazorEngine.csproj", "{D8C81730-5885-4543-914D-FFA6B4506E74}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.MiniRazorEngine", "MiniWebServer.Mvc.MiniRazorEngine\MiniWebServer.Mvc.MiniRazorEngine.csproj", "{D8C81730-5885-4543-914D-FFA6B4506E74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.Mvc.SuperpowerTemplateParser", "MiniWebServer.Mvc.SuperpowerTemplateParser\MiniWebServer.Mvc.SuperpowerTemplateParser.csproj", "{27D4F3E8-C068-45D1-A3BB-87B1C17A7195}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.SuperpowerTemplateParser", "MiniWebServer.Mvc.SuperpowerTemplateParser\MiniWebServer.Mvc.SuperpowerTemplateParser.csproj", "{27D4F3E8-C068-45D1-A3BB-87B1C17A7195}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
