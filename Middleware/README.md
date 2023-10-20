@@ -1,6 +1,6 @@
 ﻿# Middleware
 
-Một middleware là một class implement interface [MiniWebServer.MiniApp.IMiddleware](https://github.com/daohainam/mini-web-server/blob/master/MiniWebServer.MiniApp/IMiddleware.cs), và sẽ được đưa vào một chuỗi middleware (middleware chain), khi một middleware được thêm vào, nó sẽ trở thành đầu vào (entry point) của chuỗi.
+Một middleware là một lớp implement interface [MiniWebServer.MiniApp.IMiddleware](https://github.com/daohainam/mini-web-server/blob/master/MiniWebServer.MiniApp/IMiddleware.cs), và sẽ được đưa vào một chuỗi middleware (middleware chain), khi một middleware được thêm vào, nó sẽ trở thành đầu vào (entry point) của chuỗi.
 Khi Mini-Web-Server tạo xong một đối tượng context (IMiniAppContext, chứa request, response và các thông tin khác), nó sẽ gọi đến hàm InvokeAsync của entry point, khi gọi nó sẽ truyền vào 3 tham số:
 - [IMiniAppContext](https://github.com/daohainam/mini-web-server/blob/master/MiniWebServer.MiniApp/IMiniAppContext.cs) context: đối tượng chứa thông tin về lời gọi.
 - [ICallable](https://github.com/daohainam/mini-web-server/blob/master/MiniWebServer.MiniApp/ICallable.cs) next: đối tượng kế tiếp trong chuỗi middleware. 
@@ -8,8 +8,8 @@ Khi Mini-Web-Server tạo xong một đối tượng context (IMiniAppContext, c
 
 ![image](https://github.com/daohainam/mini-web-server/assets/11513104/6e6ba02f-c0c8-42dd-a3b1-ec23e7b933cb)
 _Minh họa middleware chain._
-- Các đường mũi tên liền biểu thị lời gọi đến các middle kế tiếp.
-- Các đường mũi tên đứt khúc biểu thị việc middle trở về mà không gọi đến middleware kế tiếp trong chuỗi (khi gặp một điều kiện nào đó). 
+- Các đường mũi tên liền biểu thị lời gọi đến middleware kế tiếp.
+- Các đường mũi tên đứt khúc biểu thị việc middleware return mà không gọi đến middleware kế tiếp trong chuỗi (khi gặp một điều kiện nào đó). 
 - Trong hình minh họa này, Authentication middleware sẽ luôn gọi đến Authorization, bất kể nó nó thể xác minh được người dùng hay không, nó sẽ đơn giản là đặt người dùng ở trạng thái không xác minh thay vì ngừng middleware chain.
 Việc kết thúc chuỗi middleware chỉ đơn giản là ngưng gọi đến cái kế tiếp, middleware hiện tại vẫn phải trở lại middleware trước đó gọi nó (hoặc về server nếu nó là middleware đầu tiên trong chuỗi - trong hình minh họa là Rate Limit).
 
