@@ -1,0 +1,45 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using RazorTest.Utils;
+
+public class MiniRazorView__[x]: MiniRazorView // [x] is a string identifying which view
+{
+	private readonly RazorTest.Model.TestModel __model;
+	private Model => __model;
+
+	private readonly RazorTest.TimeService TimeService;
+
+	public MiniRazorView__[x] (IServiceProvider serviceProvider, RazorTest.Model.TestModel model) {
+		__model = model;
+
+		TimeService = serviceProvider.GetRequiredService<RazorTest.TimeService>();
+	}
+
+	public override void GenerateContent(StringBuilder sb)
+	{
+		sb.Append(@"
+<html>
+<head>
+	<title>
+	    Mini Razor Test 1
+	</title>
+</head>
+Hello Mini Razor ");
+		sb.Append(" world");
+		sb.Append(@"!
+");
+
+		int second = TimeService.GetNow().Second;
+		int s100 = 100 * second;
+		sb.Append(@"
+<b> 100 * "); sb.Append(second); sb.Append(@" = "); sb.Append(s100.ToString()); sb.Append(@"</b>
+
+Model.TotalValue = "); sb.Append(RazorTestUtils.ToMoneyString(@(Model.TotalValue)));
+		sb.Append(@"
+</html>");
+	}
+}
