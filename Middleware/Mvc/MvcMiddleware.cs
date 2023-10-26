@@ -213,7 +213,8 @@ namespace MiniWebServer.Mvc
                 return true;
             }
 
-            if (Nullable.GetUnderlyingType(parameterType) == null)
+            var underlyingType = Nullable.GetUnderlyingType(parameterType);
+            if (underlyingType != null) // this is a nullable type
             {
                 value = null;
                 return true;
