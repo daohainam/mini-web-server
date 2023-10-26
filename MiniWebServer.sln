@@ -54,7 +54,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.MiniRazor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.SuperpowerTemplateParser", "MiniWebServer.Mvc.SuperpowerTemplateParser\MiniWebServer.Mvc.SuperpowerTemplateParser.csproj", "{27D4F3E8-C068-45D1-A3BB-87B1C17A7195}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperpowerTemplateTests", "MiniWebServer.Mvc.SuperpowerTemplateParser\Tests\SuperpowerTemplateTests\SuperpowerTemplateTests.csproj", "{F22ACC05-2C31-46C5-B970-33926F88FA82}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SuperpowerTemplateTests", "MiniWebServer.Mvc.SuperpowerTemplateParser\Tests\SuperpowerTemplateTests\SuperpowerTemplateTests.csproj", "{F22ACC05-2C31-46C5-B970-33926F88FA82}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.Mvc.RazorLightTemplateParser", "MiniWebServer.Mvc.RazorLightTemplateParser\MiniWebServer.Mvc.RazorLightTemplateParser.csproj", "{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -154,6 +156,10 @@ Global
 		{F22ACC05-2C31-46C5-B970-33926F88FA82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F22ACC05-2C31-46C5-B970-33926F88FA82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F22ACC05-2C31-46C5-B970-33926F88FA82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

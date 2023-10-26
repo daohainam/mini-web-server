@@ -6,6 +6,7 @@ using MiniWebServer.Mvc.Abstraction;
 using MiniWebServer.Mvc.LocalAction;
 using MiniWebServer.Mvc.MiniRazorEngine.Parser;
 using MiniWebServer.Mvc.RazorEngine;
+using MiniWebServer.Mvc.RazorLightTemplateParser;
 using MiniWebServer.Mvc.RouteMatchers;
 using MiniWebServer.Mvc.SuperpowerTemplateParser;
 using System.Reflection;
@@ -27,7 +28,7 @@ namespace MiniWebServer.Session
                                 new MiniRazorViewEngine(
                                 new MiniRazorViewEngineOptions(),
                                     appBuilder.Services.BuildServiceProvider().GetRequiredService<ILogger<MiniRazorViewEngine>>(), // todo: don't build service provider using this ugly way :|
-                                                                            new SuperpowerTemplateParser()
+                                                                            new RazorLightTemplateParser()
                                     )
                                 );
             }

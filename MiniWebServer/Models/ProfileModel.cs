@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Models
 {
-    internal class ProfileModel
+    public class ProfileModel
     {
         public required string Name { get; set; }
         public required int YearOfBirth { get; set; }

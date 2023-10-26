@@ -7,6 +7,6 @@
     <title></title>
 </head>
 <body>
-    Hi @Model.Name, you are @Model.YearOfBirth years old!
+    Hi @Model.Name, you are @(System.DateTime.Today.Year - Model.YearOfBirth) years old!
 </body>
 </html>

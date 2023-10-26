@@ -52,16 +52,17 @@ namespace MiniWebServer.Mvc.RazorEngine
                     return await Task.FromResult(new InternalErrorViewContent());
                 }
 
-                if (templateParser.TryParse(template, out var generatedSource) && generatedSource != null)
+                var parseResult = await templateParser.ParseAsync(viewName, template, model);
+                if (parseResult.Compiled)
                 {
-                    string builtContent = generatedSource;
+                    string compiledContent = parseResult.CompiledContent;
 
-                    return await Task.FromResult(new StringViewContent(builtContent));
+                    return await Task.FromResult(new StringViewContent(compiledContent));
                 }
                 else
                 {
-                    logger.LogError("Error parsing view: {v}", viewName);
-                    return await Task.FromResult(new InternalErrorViewContent());
+                    logger.LogError(parseResult.Exception, "Error parsing view: {v}", viewName);
+                    return await Task.FromResult(new InternalErrorViewContent(parseResult.Exception?.ToString() ?? string.Empty));
                 }
             }
             catch (Exception ex)

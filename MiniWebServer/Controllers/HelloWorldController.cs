@@ -1,4 +1,5 @@
-﻿using MiniWebServer.Mvc.Abstraction;
+﻿using MiniWebServer.Models;
+using MiniWebServer.Mvc.Abstraction;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace MiniWebServer.Controllers
         }
         public IActionResult Profile(string? name)
         {
-            return View(name);
+            return View(new ProfileModel() { Name = name ?? string.Empty, YearOfBirth = 2000 });
         }
     }
 }
