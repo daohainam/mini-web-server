@@ -307,7 +307,7 @@ namespace MiniWebServer.Mvc
                         else
                         {
                             var converter = TypeDescriptor.GetConverter(parameterType);
-                            if (converter != null) // if we can find a TypeConverter the we use it
+                            if (converter != null) // if we can find a TypeConverter then we use it
                             {
                                 if (converter.IsValid(requestParameterValue))
                                 {
