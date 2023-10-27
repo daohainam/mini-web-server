@@ -31,7 +31,7 @@ namespace MiniWebServer.Mvc
         }
 
 
-        // we have some singleton values here to prevent alloc/free memory
+        // we have some singleton values here to prevent alloc/free memory blocks
 
         private static readonly CreateParameterValueResult failResult = new() 
         {
