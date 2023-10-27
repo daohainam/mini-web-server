@@ -2,10 +2,13 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using MiniWebServer.Abstractions;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction;
+using System;
 using System.ComponentModel;
 using System.Reflection;
+using System.Text.Json;
 
 namespace MiniWebServer.Mvc
 {
@@ -109,9 +112,17 @@ namespace MiniWebServer.Mvc
                     return false;
                 }
 
-                if (TryCreateValue(parameterName, parameterType, localServiceProvider, context, out object? value))
+                var attributes = parameter.CustomAttributes;
+                // check From* attributes
+                if (!TryGetParameterSources(parameterName, attributes, out var parameterSources))
                 {
-                    actionParameterValues.Add(value);
+                    return false;
+                }
+
+                var result = await TryCreateValueAsync(parameterName, parameterType, parameterSources, localServiceProvider, context, cancellationToken);
+                if (result.IsCreated)
+                {
+                    actionParameterValues.Add(result.Value);
                 }
                 else
                 {
@@ -140,7 +151,65 @@ namespace MiniWebServer.Mvc
             return false;
         }
 
-        private static bool TryCreateValue(string? parameterName, Type parameterType, ServiceProvider localServiceProvider, IMiniAppContext context, out object? value)
+        private bool TryGetParameterSources(string parameterName, IEnumerable<CustomAttributeData> attributes, out ParameterSources parameterSources)
+        {
+            parameterSources = ParameterSources.None;
+            if (attributes != null)
+            {
+                foreach (var attribute in attributes)
+                {
+                    if (attribute.AttributeType == typeof(FromQueryAttribute))
+                    {
+                        if ((parameterSources & ParameterSources.Body) == ParameterSources.Body)
+                        {
+                            logger.LogError("Cannot bind parameter {p}: FromQuery can not be used with FromBody", parameterName);
+                            return false;
+                        }
+
+                        parameterSources |= ParameterSources.Query;
+                    }
+                    else if (attribute.AttributeType == typeof(FromHeaderAttribute))
+                    {
+                        if ((parameterSources & ParameterSources.Body) == ParameterSources.Body)
+                        {
+                            logger.LogError("Cannot bind parameter {p}: FromHeader can not be used with FromBody", parameterName);
+                            return false;
+                        }
+
+                        parameterSources |= ParameterSources.Header;
+                    }
+                    else if (attribute.AttributeType == typeof(FromFormAttribute))
+                    {
+                        if ((parameterSources & ParameterSources.Body) == ParameterSources.Body)
+                        {
+                            logger.LogError("Cannot bind parameter {p}: FromHeader can not be used with FromBody", parameterName);
+                            return false;
+                        }
+
+                        parameterSources |= ParameterSources.Form;
+                    }
+                    else if (attribute.AttributeType == typeof(FromBodyAttribute))
+                    {
+                        if (parameterSources != ParameterSources.None) // FromBody can not be used with other sources
+                        {
+                            logger.LogError("Cannot bind parameter {p}: FromBody can not be used with other sources", parameterName);
+                            return false;
+                        }
+
+                        parameterSources |= ParameterSources.Body;
+                    }
+                }
+            }
+
+            if (parameterSources == ParameterSources.None) // Can we get a parameter value from no sources? No!
+            {
+                parameterSources = ParameterSources.Any;
+            }
+
+            return true;
+        }
+
+        private async Task<CreateParameterValueResult> TryCreateValueAsync(string parameterName, Type parameterType, ParameterSources parameterSources, ServiceProvider localServiceProvider, IMiniAppContext context, CancellationToken cancellationToken)
         {
             /*
              * How to create an action parameter
@@ -153,54 +222,105 @@ namespace MiniWebServer.Mvc
              * - Return false, (then a bad request)
              */
 
-            var requestParameter = context.Request.QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
-            if (requestParameter != null) // a parameter found in Request
+            if (parameterSources == ParameterSources.Body)
             {
-                var requestParameterValue = requestParameter.Values.FirstOrDefault(); // currently we support single values only (no array support)
+                var body = await context.Request.ReadAsStringAsync(cancellationToken);
 
-                if (parameterType == typeof(string)) // no conversion required
+                try
                 {
-                    value = requestParameterValue;
-                    return true;
+                    var value = JsonSerializer.Deserialize(body, parameterType);
+
+                    return CreateParameterValueResult.Success(value);
+                } catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error deserializing body to parameter: {p}", parameterName);
+
+                    return CreateParameterValueResult.Fail();
+                }
+            }
+            else
+            {
+                string? requestParameterValue = default;
+                bool parameterFound = false;
+
+                if ((parameterSources & ParameterSources.Query) == ParameterSources.Query)
+                {
+                    var requestParameter = context.Request.QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
+                    if (requestParameter != null) // a parameter found in Request.Query
+                    {
+                        requestParameterValue = requestParameter.Values.FirstOrDefault(); // currently we support single values only (no array support)
+                        parameterFound = true;
+                    }
                 }
 
-                if (requestParameterValue != null)
+                if (!parameterFound && (parameterSources & ParameterSources.Header) == ParameterSources.Header)
                 {
-
-                    // looking for a public static bool TryParse method
-                    var tryParseMethod = parameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
-                        new Type[] { typeof(string), parameterType.MakeByRefType() },
-                        null);
-                    if (tryParseMethod != null && tryParseMethod.ReturnType == typeof(bool))
+                    if (context.Request.Headers.TryGetValue(parameterName, out var header)) // a parameter found in Request.Query
                     {
-                        // normally, a TryParse method returns a bool value and accepts 2 parameters: a string and a parsed value
-                        var tryParseParameters = new object?[] { requestParameterValue, null }; // null is place holder of the 2nd parameter (for example: out int? value in int.TryParse)
-                        var b = (bool?)tryParseMethod.Invoke(null, tryParseParameters);
-
-                        if (b.HasValue && b.Value)
+                        if (header != null)
                         {
-                            value = tryParseParameters[1];
-                            return true;
+                            requestParameterValue = header.Value.FirstOrDefault(); // currently we support single values only (no array support)
+                            parameterFound = true;
                         }
                     }
-                    else
+                }
+
+                if (!parameterFound && (parameterSources & ParameterSources.Form) == ParameterSources.Form)
+                {
+                    var form = await context.Request.ReadFormAsync();
+                    if (form != null)
                     {
-                        var converter = TypeDescriptor.GetConverter(parameterType);
-                        if (converter != null) // if we can find a TypeConverter the we use it
+                        if (form.Keys.Contains(parameterName)) // TODO: we should do some optimizings here
                         {
-                            if (converter.IsValid(requestParameterValue))
+                            var value = form[parameterName]; 
+
+                            requestParameterValue = value.FirstOrDefault(); // currently we support single values only (no array support)
+                            parameterFound = true;
+                        }
+                    }
+                }
+
+                if (parameterFound)
+                {
+                    if (parameterType == typeof(string)) // no conversion required
+                    {
+                        return CreateParameterValueResult.Success(requestParameterValue);
+                    }
+
+                    if (requestParameterValue != null)
+                    {
+                        // looking for a public static bool TryParse method
+                        var tryParseMethod = parameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
+                            new Type[] { typeof(string), parameterType.MakeByRefType() },
+                            null);
+                        if (tryParseMethod != null && tryParseMethod.ReturnType == typeof(bool))
+                        {
+                            // normally, a TryParse method returns a bool value and accepts 2 parameters: a string and a parsed value
+                            var tryParseParameters = new object?[] { requestParameterValue, null }; // null is place holder of the 2nd parameter (for example: out int? value in int.TryParse)
+                            var b = (bool?)tryParseMethod.Invoke(null, tryParseParameters);
+
+                            if (b.HasValue && b.Value)
                             {
-                                value = converter.ConvertFromString(requestParameterValue);
-                                return true;
-                            }
-                            else
-                            {
-                                value = null;
-                                return false;
+                                return CreateParameterValueResult.Success(tryParseParameters[1]);
                             }
                         }
+                        else
+                        {
+                            var converter = TypeDescriptor.GetConverter(parameterType);
+                            if (converter != null) // if we can find a TypeConverter the we use it
+                            {
+                                if (converter.IsValid(requestParameterValue))
+                                {
+                                    return CreateParameterValueResult.Success(converter.ConvertFromString(requestParameterValue));
+                                }
+                                else
+                                {
+                                    return CreateParameterValueResult.Fail();
+                                }
+                            }
 
-                        // todo: find a binder and convert data
+                            // todo: find a binder and convert data
+                        }
                     }
                 }
             }
@@ -209,19 +329,16 @@ namespace MiniWebServer.Mvc
             var valueFromDI = localServiceProvider.GetService(parameterType);
             if (valueFromDI != null)
             {
-                value = valueFromDI;
-                return true;
+                return CreateParameterValueResult.Success(valueFromDI);
             }
 
             var underlyingType = Nullable.GetUnderlyingType(parameterType);
             if (underlyingType != null) // this is a nullable type
             {
-                value = null;
-                return true;
+                return CreateParameterValueResult.Success(null);
             }
 
-            value = null;
-            return false;
+            return CreateParameterValueResult.Fail();
         }
     }
 }
