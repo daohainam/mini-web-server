@@ -62,6 +62,11 @@ namespace MiniWebServer.Abstractions.Http
             return form.GetEnumerator();
         }
 
+        public bool TryGetValue(string key, out StringValues values)
+        {
+            return form.TryGetValue(key, out values);
+        }
+
         IEnumerator IEnumerable.GetEnumerator()
         {
             return form.GetEnumerator();

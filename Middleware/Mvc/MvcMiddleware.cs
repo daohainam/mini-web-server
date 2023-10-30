@@ -250,7 +250,7 @@ namespace MiniWebServer.Mvc
                     var requestParameter = context.Request.QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
                     if (requestParameter != null) // a parameter found in Request.Query
                     {
-                        requestParameterValue = requestParameter.Values.FirstOrDefault(); // currently we support single values only (no array support)
+                        requestParameterValue = requestParameter.Values.FirstOrDefault(); // TODO: we should support multi value parameters
                         parameterFound = true;
                     }
                 }
@@ -261,7 +261,7 @@ namespace MiniWebServer.Mvc
                     {
                         if (header != null)
                         {
-                            requestParameterValue = header.Value.FirstOrDefault(); // currently we support single values only (no array support)
+                            requestParameterValue = header.Value.FirstOrDefault(); // TODO: we should support multi value parameters
                             parameterFound = true;
                         }
                     }
@@ -273,11 +273,9 @@ namespace MiniWebServer.Mvc
 
                     if (form != null)
                     {
-                        if (form.Keys.Contains(parameterName)) // TODO: we should do some optimizings here
+                        if (form.TryGetValue(parameterName, out var values))
                         {
-                            var value = form[parameterName]; 
-
-                            requestParameterValue = value.FirstOrDefault(); // currently we support single values only (no array support)
+                            requestParameterValue = values.FirstOrDefault(); // TODO: we should support multi value parameters
                             parameterFound = true;
                         }
                     }
