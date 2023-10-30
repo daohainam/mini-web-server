@@ -29,6 +29,22 @@ namespace MiniWebServer.Abstractions.Http
         public event HeaderChangedHandler? HeaderChanged;
         public event HeaderRemovedHandler? HeaderRemoved;
 
+        public HttpHeaders()
+        {
+        }
+        public HttpHeaders(string name, string value)
+        {
+            Add(name, value);
+        }
+
+        public HttpHeaders(params HttpHeader[] headers)
+        {
+            foreach (var header in headers)
+            {
+                Add(header);
+            }
+        }
+
         public virtual HttpHeaders Add(string name, string value) // we return a HttpHeaders so we can make a chain of call, for example: headers.Add("Connection", "Close").Add("ETag", "ABCD") ...
         {
             var header = new HttpHeader(name, value);

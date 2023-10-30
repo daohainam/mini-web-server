@@ -110,9 +110,8 @@ namespace MiniWebServer
             });
 
             appBuilder.UseSession();
-
-            // endpoints should be called last 
             appBuilder.UseStaticFiles("wwwroot", defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days
+            appBuilder.UseMvc();
 
             return appBuilder.Build();
         }

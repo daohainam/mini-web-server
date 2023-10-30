@@ -1,11 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using MiniWebServer.Abstractions;
-using MiniWebServer.MiniApp;
-using HttpMethod = global::MiniWebServer.Abstractions.Http.HttpMethod;
-using System.IO;
-using MiniWebServer.Server.Abstractions;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Text;
+using MiniWebServer.MiniApp;
 
 namespace MiniWebServer.OutputCaching
 {

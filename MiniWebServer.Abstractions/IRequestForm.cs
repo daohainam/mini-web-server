@@ -13,5 +13,6 @@ namespace MiniWebServer.Abstractions
         public int Count { get; }
         ICollection<string> Keys { get; }
         StringValues this[string key] { get; }
+        bool TryGetValue(string key, out StringValues values);
     }
 }

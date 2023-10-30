@@ -30,6 +30,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Helpers", "MiniWebServer.Helpers\MiniWebServer.Helpers.csproj", "{53E8D5D2-B35F-4320-9EA2-A7E1CABDD3E2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Middleware", "Middleware", "{CDB8B9EF-99E4-41E1-BE46-698647123255}"
+	ProjectSection(SolutionItems) = preProject
+		Middleware\README.md = Middleware\README.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StaticFiles", "Middleware\StaticFiles\StaticFiles.csproj", "{574B1766-8B0E-4F7A-AF14-D9B235375346}"
 EndProject
@@ -41,7 +44,21 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Authentication", "Middlewar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Authorization", "Middleware\Authorization\Authorization.csproj", "{000B72B4-FB1B-4E49-9A80-68CFB5745DAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutputCaching", "Middleware\OutputCaching\OutputCaching.csproj", "{6FD32F01-C70E-49EC-9FF7-8BF877C157F7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OutputCaching", "Middleware\OutputCaching\OutputCaching.csproj", "{6FD32F01-C70E-49EC-9FF7-8BF877C157F7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mvc", "Middleware\Mvc\Mvc.csproj", "{9D33416B-0C1A-4978-92DD-2FA9312425FE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.Abstraction", "MiniWebServer.Mvc.Abstraction\MiniWebServer.Mvc.Abstraction.csproj", "{02D6A22A-19A6-4132-93CE-53B0188DCB6D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.MiniRazorEngine", "MiniWebServer.Mvc.MiniRazorEngine\MiniWebServer.Mvc.MiniRazorEngine.csproj", "{D8C81730-5885-4543-914D-FFA6B4506E74}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.SuperpowerTemplateParser", "MiniWebServer.Mvc.SuperpowerTemplateParser\MiniWebServer.Mvc.SuperpowerTemplateParser.csproj", "{27D4F3E8-C068-45D1-A3BB-87B1C17A7195}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SuperpowerTemplateTests", "MiniWebServer.Mvc.SuperpowerTemplateParser\Tests\SuperpowerTemplateTests\SuperpowerTemplateTests.csproj", "{F22ACC05-2C31-46C5-B970-33926F88FA82}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.Mvc.RazorLightTemplateParser", "MiniWebServer.Mvc.RazorLightTemplateParser\MiniWebServer.Mvc.RazorLightTemplateParser.csproj", "{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MvcMiddlewareTests", "Tests\MvcMiddlewareTests\MvcMiddlewareTests.csproj", "{AC56CA64-FA61-4B42-9C66-3DD808A01F9F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -121,6 +138,34 @@ Global
 		{6FD32F01-C70E-49EC-9FF7-8BF877C157F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6FD32F01-C70E-49EC-9FF7-8BF877C157F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6FD32F01-C70E-49EC-9FF7-8BF877C157F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D33416B-0C1A-4978-92DD-2FA9312425FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D33416B-0C1A-4978-92DD-2FA9312425FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D33416B-0C1A-4978-92DD-2FA9312425FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D33416B-0C1A-4978-92DD-2FA9312425FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02D6A22A-19A6-4132-93CE-53B0188DCB6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02D6A22A-19A6-4132-93CE-53B0188DCB6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02D6A22A-19A6-4132-93CE-53B0188DCB6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02D6A22A-19A6-4132-93CE-53B0188DCB6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8C81730-5885-4543-914D-FFA6B4506E74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8C81730-5885-4543-914D-FFA6B4506E74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8C81730-5885-4543-914D-FFA6B4506E74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8C81730-5885-4543-914D-FFA6B4506E74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{27D4F3E8-C068-45D1-A3BB-87B1C17A7195}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27D4F3E8-C068-45D1-A3BB-87B1C17A7195}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27D4F3E8-C068-45D1-A3BB-87B1C17A7195}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27D4F3E8-C068-45D1-A3BB-87B1C17A7195}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F22ACC05-2C31-46C5-B970-33926F88FA82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F22ACC05-2C31-46C5-B970-33926F88FA82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F22ACC05-2C31-46C5-B970-33926F88FA82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F22ACC05-2C31-46C5-B970-33926F88FA82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EAF50DD-B797-4E2B-A4B4-F3C842F8C930}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC56CA64-FA61-4B42-9C66-3DD808A01F9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC56CA64-FA61-4B42-9C66-3DD808A01F9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC56CA64-FA61-4B42-9C66-3DD808A01F9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC56CA64-FA61-4B42-9C66-3DD808A01F9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -134,6 +179,9 @@ Global
 		{7ADB76EB-E66A-4485-A79F-8932DD6E809B} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
 		{000B72B4-FB1B-4E49-9A80-68CFB5745DAD} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
 		{6FD32F01-C70E-49EC-9FF7-8BF877C157F7} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
+		{9D33416B-0C1A-4978-92DD-2FA9312425FE} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
+		{F22ACC05-2C31-46C5-B970-33926F88FA82} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
+		{AC56CA64-FA61-4B42-9C66-3DD808A01F9F} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D1843708-76D1-4698-A487-8D1531533306}

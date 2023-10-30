@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using MiniWebServer.MiniApp;
+﻿using MiniWebServer.MiniApp;
 
 namespace MiniWebServer.Session
 {

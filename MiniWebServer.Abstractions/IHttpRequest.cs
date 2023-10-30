@@ -1,4 +1,5 @@
-﻿using MiniWebServer.Abstractions.Http;
+﻿using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions.Http;
 using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -8,15 +9,13 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions
 {
-    public interface IHttpRequest 
+    public interface IHttpRequest: IParametersContainer, IRequestHeadersContainer, IFormContainer, IRequestBodyReader
     {
         Http.HttpMethod Method { get; }
         string Url { get; }
-        HttpRequestHeaders Headers { get; }
         bool KeepAliveRequested { get; }
         HttpCookies Cookies { get; }
         Pipe BodyPipeline { get; }
-        HttpParameters QueryParameters { get; }
         string Hash { get; }
         string QueryString { get; }
         long ContentLength { get; }

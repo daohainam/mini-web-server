@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	<PreserveCompilationContext>true</PreserveCompilationContext>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="7.0.0" />
@@ -15,10 +16,11 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="6.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="7.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Middleware\Mvc\Mvc.csproj" />
     <ProjectReference Include="..\Middleware\Session\Session.csproj" />
     <ProjectReference Include="..\Middleware\StaticFiles\StaticFiles.csproj" />
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
@@ -70,9 +72,12 @@
     <None Update="mini-web-server.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="wwwroot\**">
-		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	</None>
+	  <None Include="wwwroot\**">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Include="Views\**">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\home\" />

@@ -8,8 +8,19 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpParameters : Dictionary<string, HttpParameter>
     {
-        public HttpParameters()
+        public HttpParameters(params HttpParameter[] httpParameter)
         {
+            foreach (var item in httpParameter)
+            {
+                if (ContainsKey(item.Name))
+                {
+                    this[item.Name].AddValue(item.Value ?? string.Empty);
+                }
+                else
+                {
+                    Add(item.Name, item);
+                }
+            }
         }
 
         public HttpParameters(HttpParameters others)

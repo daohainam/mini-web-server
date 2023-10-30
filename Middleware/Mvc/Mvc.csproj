@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>MiniWebServer.$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace>MiniWebServer.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
+    <ProjectReference Include="..\..\MiniWebServer.Mvc.Abstraction\MiniWebServer.Mvc.Abstraction.csproj" />
+    <ProjectReference Include="..\..\MiniWebServer.Mvc.MiniRazorEngine\MiniWebServer.Mvc.MiniRazorEngine.csproj" />
+    <ProjectReference Include="..\..\MiniWebServer.Mvc.RazorLightTemplateParser\MiniWebServer.Mvc.RazorLightTemplateParser.csproj" />
+    <ProjectReference Include="..\..\MiniWebServer.Mvc.SuperpowerTemplateParser\MiniWebServer.Mvc.SuperpowerTemplateParser.csproj" />
+  </ItemGroup>
+
+</Project>

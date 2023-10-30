@@ -1,0 +1,22 @@
+@model RazorTest.Model.TestModel
+@using RazorTest.Utils
+@inject RazorTest.TimeService TimeService
+
+<html>
+<head>
+	<title>
+		Mini Razor Test 1
+	</title>
+</head>
+Hello Mini Razor @(" world")!
+
+@{
+	int second = DateTime.Now.Second;
+	int s100 = 100 * second;
+}
+
+<b>100 * @(second) = @(s100.ToString())</b>
+
+Model.TotalValue = @(RazorTestUtils.ToMoneyString(@(Model.TotalValue)))
+
+</html>
