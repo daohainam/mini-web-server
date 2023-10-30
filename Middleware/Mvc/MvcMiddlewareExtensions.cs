@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.Mvc;
 using MiniWebServer.Mvc.Abstraction;
@@ -16,14 +17,12 @@ namespace MiniWebServer.Session
 {
     public static class MvcMiddlewareExtensions
     {
-        public static void UseMvc(this IMiniAppBuilder appBuilder, MvcOptions? options = default)
+        public static void UseMvc(this IMiniAppBuilder appBuilder, Action<MvcOptions>? configureOptions = default)
         {
-            if (options == null)
-            {
-                var registry = ScanLocalControllers();
-                var routeMatcher = new StringEqualsRouteMatcher();
+            var registry = ScanLocalControllers();
+            var routeMatcher = new StringEqualsRouteMatcher();
 
-                options = new MvcOptions(
+            var options = new MvcOptions(
                                 new LocalActionFinder(registry, routeMatcher),
                                 new MiniRazorViewEngine(
                                 new MiniRazorViewEngineOptions(),
@@ -31,7 +30,8 @@ namespace MiniWebServer.Session
                                                                             new RazorLightTemplateParser()
                                     )
                                 );
-            }
+
+            configureOptions?.Invoke(options);
 
             appBuilder.Services.AddTransient(services => new MvcMiddleware(
                 options,

@@ -119,7 +119,12 @@ namespace MiniWebServer.Mvc
                     return false;
                 }
 
-                var result = await TryCreateValueAsync(parameterName, parameterType, parameterSources, localServiceProvider, context, cancellationToken);
+                var result = await TryCreateValueAsync(parameterName, parameterType, parameterSources, localServiceProvider,
+                    () => context.Request,
+                    () => context.Request,
+                    () => context.Request,
+                    () => context.Request,
+                    cancellationToken, logger);
                 if (result.IsCreated)
                 {
                     actionParameterValues.Add(result.Value);
@@ -209,7 +214,18 @@ namespace MiniWebServer.Mvc
             return true;
         }
 
-        private async Task<CreateParameterValueResult> TryCreateValueAsync(string parameterName, Type parameterType, ParameterSources parameterSources, ServiceProvider localServiceProvider, IMiniAppContext context, CancellationToken cancellationToken)
+        static public async Task<CreateParameterValueResult> TryCreateValueAsync(
+            string parameterName, 
+            Type parameterType, 
+            ParameterSources parameterSources, 
+            ServiceProvider localServiceProvider, 
+            Func<IParametersContainer> parametersContainer,
+            Func<IRequestHeadersContainer> requestHeadersContainer,
+            Func<IRequestBodyReader> requestBodyReader,
+            Func<IFormContainer> formContainer,
+            //Func<Task<IRequestForm>> formReader, // instead of reading form directly from context, we use an action here to test easier
+            CancellationToken cancellationToken = default, 
+            ILogger? logger = default)
         {
             /*
              * How to create an action parameter
@@ -224,7 +240,7 @@ namespace MiniWebServer.Mvc
 
             if (parameterSources == ParameterSources.Body)
             {
-                var body = await context.Request.ReadAsStringAsync(cancellationToken);
+                var body = await requestBodyReader().ReadAsStringAsync(cancellationToken);
 
                 try
                 {
@@ -233,7 +249,7 @@ namespace MiniWebServer.Mvc
                     return CreateParameterValueResult.Success(value);
                 } catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error deserializing body to parameter: {p}", parameterName);
+                    logger?.LogError(ex, "Error deserializing body to parameter: {p}", parameterName);
 
                     return CreateParameterValueResult.Fail();
                 }
@@ -247,7 +263,7 @@ namespace MiniWebServer.Mvc
 
                 if ((parameterSources & ParameterSources.Query) == ParameterSources.Query)
                 {
-                    var requestParameter = context.Request.QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
+                    var requestParameter = parametersContainer().QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
                     if (requestParameter != null) // a parameter found in Request.Query
                     {
                         requestParameterValue = requestParameter.Values.FirstOrDefault(); // TODO: we should support multi value parameters
@@ -257,7 +273,7 @@ namespace MiniWebServer.Mvc
 
                 if (!parameterFound && (parameterSources & ParameterSources.Header) == ParameterSources.Header)
                 {
-                    if (context.Request.Headers.TryGetValue(parameterName, out var header)) // a parameter found in Request.Query
+                    if (requestHeadersContainer().Headers.TryGetValue(parameterName, out var header)) // a parameter found in Request.Query
                     {
                         if (header != null)
                         {
@@ -269,7 +285,7 @@ namespace MiniWebServer.Mvc
 
                 if (!parameterFound && (parameterSources & ParameterSources.Form) == ParameterSources.Form)
                 {
-                    var form = await context.Request.ReadFormAsync(cancellationToken: cancellationToken);
+                    var form = await formContainer().ReadFormAsync(cancellationToken: cancellationToken);
 
                     if (form != null)
                     {

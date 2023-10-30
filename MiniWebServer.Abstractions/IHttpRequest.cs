@@ -9,22 +9,18 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions
 {
-    public interface IHttpRequest 
+    public interface IHttpRequest: IParametersContainer, IRequestHeadersContainer, IFormContainer, IRequestBodyReader
     {
         Http.HttpMethod Method { get; }
         string Url { get; }
-        HttpRequestHeaders Headers { get; }
         bool KeepAliveRequested { get; }
         HttpCookies Cookies { get; }
         Pipe BodyPipeline { get; }
-        HttpParameters QueryParameters { get; }
         string Hash { get; }
         string QueryString { get; }
         long ContentLength { get; }
         string ContentType { get; }
         string[] Segments { get; }
         public IRequestBodyManager BodyManager { get; }
-
-        Task<IRequestForm> ReadFormAsync(ILoggerFactory? loggerFactory = default, CancellationToken cancellationToken = default);
     }
 }

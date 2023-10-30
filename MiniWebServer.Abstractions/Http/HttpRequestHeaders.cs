@@ -20,6 +20,18 @@ namespace MiniWebServer.Abstractions.Http
             HeaderChanged += HttpRequestHeaders_AddedOrModified;
             HeaderRemoved += HttpRequestHeaders_HeaderRemoved;
         }
+        public HttpRequestHeaders(string name, string value): this()
+        {
+            Add(name, value);
+        }
+
+        public HttpRequestHeaders(params HttpHeader[] headers): this()
+        {
+            foreach (var header in headers)
+            {
+                Add(header);
+            }
+        }
 
         private void HttpRequestHeaders_HeaderRemoved(HttpHeader header)
         {

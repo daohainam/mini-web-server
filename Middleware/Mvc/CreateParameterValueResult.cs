@@ -1,17 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Mvc
+﻿namespace MiniWebServer.Mvc
 {
-    internal class CreateParameterValueResult
+    public class CreateParameterValueResult
     {
-        public required object? Value { get; internal init; }
-        public required bool IsCreated { get; internal init; }
+        public required object? Value { get; init; }
+        public required bool IsCreated { get; init; }
 
         public static CreateParameterValueResult Success(object? value)
         {
