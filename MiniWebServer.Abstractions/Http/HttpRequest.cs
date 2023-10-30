@@ -15,7 +15,6 @@ namespace MiniWebServer.Abstractions.Http
     {
         private static readonly IRequestForm EmptyForm = new RequestForm();
 
-
         public HttpRequest(ulong requestId, 
             HttpMethod method, 
             string url, 
@@ -27,7 +26,8 @@ namespace MiniWebServer.Abstractions.Http
             HttpCookies cookies, 
             Pipe bodyPipeline, 
             long contentLength, 
-            string contentType)
+            string contentType,
+            bool isHttps)
         {
             if (queryParameters is null)
             {
@@ -46,6 +46,7 @@ namespace MiniWebServer.Abstractions.Http
             BodyPipeline = bodyPipeline;
             ContentLength = contentLength;
             ContentType = contentType;
+            IsHttps = isHttps;
 
             BodyManager = new RequestBodyManager(BodyPipeline.Reader);
         }
@@ -54,6 +55,7 @@ namespace MiniWebServer.Abstractions.Http
         public HttpCookies Cookies { get; }
         public long ContentLength { get; }
         public string ContentType { get; }
+        public bool IsHttps { get; }
         public string Hash { get; }
         public ulong RequestId { get; }
         public HttpMethod Method { get; }

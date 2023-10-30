@@ -81,7 +81,7 @@ namespace MiniWebServer.Server
                         {
                             isKeepAlive = false; // we will close the connection if there is any error while building request
                             var requestId = config.RequestIdManager.GetNext();
-                            requestBuilder.SetRequestId(requestId);
+                            requestBuilder.SetRequestId(requestId).SetHttps(config.IsHttps);
                             var request = requestBuilder.Build();
 
                             isKeepAlive = request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later

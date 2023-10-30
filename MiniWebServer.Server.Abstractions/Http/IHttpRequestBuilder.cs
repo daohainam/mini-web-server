@@ -26,5 +26,6 @@ namespace MiniWebServer.Server.Abstractions.Http
         IHttpRequestBuilder SetContentLength(long contentLength);
         IHttpRequestBuilder SetContentType(string contentType);
         IHttpRequestBuilder SetSegments(string[] segments);
+        IHttpRequestBuilder SetHttps(bool isHttps);
     }
 }

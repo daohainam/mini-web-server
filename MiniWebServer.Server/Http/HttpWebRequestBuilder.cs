@@ -25,6 +25,7 @@ namespace MiniWebServer.Server.Http
         private string contentType = string.Empty;
         private string[] segments = Array.Empty<string>();
         private ulong requestId;
+        private bool isHttps = false;
         private readonly HttpParameters parameters = new();
 
         public IHttpRequestBuilder AddHeader(string name, string value)
@@ -58,7 +59,8 @@ namespace MiniWebServer.Server.Http
                 new HttpCookies(cookies), 
                 bodyPipeline ?? new Pipe(), 
                 contentLength, 
-                contentType
+                contentType,
+                isHttps
                 );
 
             return request;
@@ -156,6 +158,13 @@ namespace MiniWebServer.Server.Http
         public IHttpRequestBuilder SetRequestId(ulong requestId)
         {
             this.requestId = requestId;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetHttps(bool isHttps)
+        {
+            this.isHttps = isHttps;
 
             return this;
         }

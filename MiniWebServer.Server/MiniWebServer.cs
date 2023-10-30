@@ -54,6 +54,7 @@ namespace MiniWebServer.Server
             try
             {
                 Stream stream = tcpClient.GetStream();
+                bool isHttps = false;
                 if (binding.Certificate != null)
                 {
                     var sslStream = new SslStream(stream);
@@ -74,6 +75,7 @@ namespace MiniWebServer.Server
                     sslStream.AuthenticateAsServer(options);
 
                     stream = sslStream;
+                    isHttps = true;
                 }
 
                 using var serviceScope = serviceProvider.CreateScope();
@@ -82,6 +84,7 @@ namespace MiniWebServer.Server
                         connectionId,
                         tcpClient,
                         stream,
+                        isHttps,
                         protocolHandlerFactory.Create(
                         new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, config.MaxRequestBodySize)
                     ), // A connection always starts with HTTP 1.1 
