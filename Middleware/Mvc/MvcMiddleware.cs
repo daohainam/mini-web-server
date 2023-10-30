@@ -38,7 +38,7 @@ namespace MiniWebServer.Mvc
                 var actionInfo = actionFinder.Find(context);
                 if (actionInfo != null)
                 {
-                    // build new local service collection, the new collection will contain services from app's collection and some request specific services
+                    // build a new local service collection, the new collection will contain services from app's collection and some request specific services
                     var localServiceCollection = new ServiceCollection();
                     foreach (var serv in serviceCollection)
                     {
