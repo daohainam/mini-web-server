@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions.Http.Form;
+using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
@@ -10,6 +12,9 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpRequest : IHttpRequest
     {
+        private static readonly IRequestForm EmptyForm = new RequestForm();
+
+
         public HttpRequest(ulong requestId, 
             HttpMethod method, 
             string url, 
@@ -57,6 +62,8 @@ namespace MiniWebServer.Abstractions.Http
         public string QueryString { get; }
         public string Url { get; }
 
+        private IRequestForm? form; // a cache object for lazy loading 
+
         public bool KeepAliveRequested { get 
             {
                 return !"close".Equals(Headers.Connection, StringComparison.InvariantCultureIgnoreCase); // it is keep-alive by default
@@ -64,5 +71,31 @@ namespace MiniWebServer.Abstractions.Http
         }
 
         public IRequestBodyManager BodyManager { get; }
+
+        public async Task<IRequestForm> ReadFormAsync(ILoggerFactory? loggerFactory = null, CancellationToken cancellationToken = default)
+        {
+            if (form != null)
+                return form;
+            else
+            {
+                if (ContentType == null)
+                    return EmptyForm;
+
+                var reader = BodyManager.GetReader();
+
+                if (reader == null)
+                {
+                    return EmptyForm;
+                }
+
+                var formReaderFactory = new DefaultFormReaderFactory(loggerFactory);
+
+                var formReader = formReaderFactory.CreateFormReader(ContentType, ContentLength) ?? throw new InvalidHttpStreamException("Not supported content type");
+                var readform = await formReader.ReadAsync(reader, cancellationToken);
+                form =  readform ?? throw new InvalidHttpStreamException("Error reading form data");
+
+                return form;
+            }
+        }
     }
 }

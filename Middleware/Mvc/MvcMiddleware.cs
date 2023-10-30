@@ -56,13 +56,13 @@ namespace MiniWebServer.Mvc
                         if (!await CallActionMethodAsync(localServiceProvider, controller, actionInfo, context, cancellationToken))
                         {
                             logger.LogError("Error processing action {a}", actionInfo.MethodInfo);
-                            context.Response.StatusCode = Abstractions.HttpResponseCodes.InternalServerError;
+                            context.Response.StatusCode = HttpResponseCodes.InternalServerError;
                         }
                     }
                     else
                     {
                         logger.LogError("Error instantiating controller {c}", actionInfo.ControllerType);
-                        context.Response.StatusCode = Abstractions.HttpResponseCodes.InternalServerError;
+                        context.Response.StatusCode = HttpResponseCodes.InternalServerError;
 
                         return;
                     } 
@@ -74,7 +74,7 @@ namespace MiniWebServer.Mvc
             } catch (Exception ex)
             {
                 logger.LogError(ex, "Unhandled error while processing request");
-                context.Response.StatusCode = Abstractions.HttpResponseCodes.InternalServerError;
+                context.Response.StatusCode = HttpResponseCodes.InternalServerError;
 
                 return;
             }
@@ -243,6 +243,8 @@ namespace MiniWebServer.Mvc
                 string? requestParameterValue = default;
                 bool parameterFound = false;
 
+                // if the parameter is defined with a specific location (Query, Header, Form), then we take it from there
+
                 if ((parameterSources & ParameterSources.Query) == ParameterSources.Query)
                 {
                     var requestParameter = context.Request.QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
@@ -267,7 +269,8 @@ namespace MiniWebServer.Mvc
 
                 if (!parameterFound && (parameterSources & ParameterSources.Form) == ParameterSources.Form)
                 {
-                    var form = await context.Request.ReadFormAsync();
+                    var form = await context.Request.ReadFormAsync(cancellationToken: cancellationToken);
+
                     if (form != null)
                     {
                         if (form.Keys.Contains(parameterName)) // TODO: we should do some optimizings here

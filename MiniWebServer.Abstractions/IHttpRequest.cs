@@ -1,4 +1,5 @@
-﻿using MiniWebServer.Abstractions.Http;
+﻿using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions.Http;
 using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
@@ -23,5 +24,7 @@ namespace MiniWebServer.Abstractions
         string ContentType { get; }
         string[] Segments { get; }
         public IRequestBodyManager BodyManager { get; }
+
+        Task<IRequestForm> ReadFormAsync(ILoggerFactory? loggerFactory = default, CancellationToken cancellationToken = default);
     }
 }
