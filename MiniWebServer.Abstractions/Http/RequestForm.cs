@@ -18,6 +18,22 @@ namespace MiniWebServer.Abstractions.Http
             form = new Dictionary<string, StringValues>();
         }
 
+        public RequestForm(string name, string value)
+        {
+            form = new Dictionary<string, StringValues>
+            {
+                { name, value }
+            };
+        }
+
+        public RequestForm(string name, StringValues values)
+        {
+            form = new Dictionary<string, StringValues>
+            {
+                { name, values }
+            };
+        }
+
         public RequestForm(Dictionary<string, StringValues> form)
         {
             this.form = form ?? new Dictionary<string, StringValues>();
