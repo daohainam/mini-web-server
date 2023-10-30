@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp.Content;
 
 namespace MiniWebServer.HttpsRedirection
 {
@@ -30,6 +31,7 @@ namespace MiniWebServer.HttpsRedirection
                 var redirectUrl = BuildRedirectUrl("https", context.Request.Host, options.HttpsPort, context.Request.Url);
 
                 context.Response.Headers.Location = redirectUrl;
+                context.Response.Content = MiniApp.Content.StringContent.Empty;
 
                 return;
             }
