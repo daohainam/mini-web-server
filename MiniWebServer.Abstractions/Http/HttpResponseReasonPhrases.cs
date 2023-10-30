@@ -12,6 +12,7 @@ namespace MiniWebServer.Abstractions.Http
         {
             { HttpResponseCodes.OK, "OK"},
             { HttpResponseCodes.PartialContent, "Partial Content"},
+            { HttpResponseCodes.TemporaryRedirect, "Temporary Redirect"},
             { HttpResponseCodes.NotFound, "Not Found"},
             { HttpResponseCodes.BadRequest, "Bad Request"},
             { HttpResponseCodes.Unauthorized, "Unauthorized"},

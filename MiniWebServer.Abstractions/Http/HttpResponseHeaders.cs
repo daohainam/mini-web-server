@@ -64,6 +64,20 @@ namespace MiniWebServer.Abstractions.Http
             }
         }
 
+        public string? Location
+        {
+            get
+            {
+                return TryGetValueAsString("Location");
+            }
+            set
+            {
+                ArgumentNullException.ThrowIfNull(nameof(value));
+                if (value != null)
+                    AddOrUpdate("Location", value);
+            }
+        }
+
         private string? TryGetValueAsString(string name, string? defaultValue = null)
         {
             if (TryGetValue(name, out var value))

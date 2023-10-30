@@ -4,10 +4,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using MimeMapping;
-using MiniWebServer.Abstractions;
 using MiniWebServer.Authentication;
 using MiniWebServer.Authorization;
 using MiniWebServer.Configuration;
+using MiniWebServer.HttpsRedirection;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Authorization;
@@ -45,7 +45,10 @@ namespace MiniWebServer
                 .UseOptions(serverOptions);
             var demoAppConfig = new ConfigurationBuilder().AddJsonFile("demoapp.json").Build().Get<DemoAppConfig>();
 
-            IMiniApp app = BuildApp(serverBuilder.Services, demoAppConfig); // or server.CreateAppBuilder(); ?
+            var httpsBinding = serverOptions.BindingOptions.Where(b => b.Enable && b.SSL && !string.IsNullOrEmpty(b.Certificate)).FirstOrDefault();
+            int httpsPort = httpsBinding?.Port ?? -1;
+
+            IMiniApp app = BuildApp(serverBuilder.Services, demoAppConfig, httpsPort); // or server.CreateAppBuilder(); ?
             app = MapRoutes(app);
             serverBuilder.AddHost(string.Empty, app);
 
@@ -70,9 +73,16 @@ namespace MiniWebServer
             host.Run();
         }
 
-        private static IMiniApp BuildApp(IServiceCollection services, DemoAppConfig? demoAppConfig)
+        private static IMiniApp BuildApp(IServiceCollection services, DemoAppConfig? demoAppConfig, int httpsPort)
         {
-            var appBuilder = new MiniAppBuilder(services);
+            MiniAppBuilder appBuilder = new(services);
+
+            if (httpsPort > 0)
+            {
+                appBuilder.UseHttpsRedirection((options) => { 
+                    options.HttpsPort = httpsPort;
+                });
+            }
 
             appBuilder.UseAuthentication(
                 options =>

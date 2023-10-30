@@ -9,6 +9,7 @@ using MiniWebServer.Server.MiniApp;
 using MiniWebServer.Server.Session;
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Net;
 using System.Net.Sockets;
 using System.Reflection.PortableExecutable;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
@@ -81,7 +82,13 @@ namespace MiniWebServer.Server
                         {
                             isKeepAlive = false; // we will close the connection if there is any error while building request
                             var requestId = config.RequestIdManager.GetNext();
-                            requestBuilder.SetRequestId(requestId).SetHttps(config.IsHttps);
+
+                            var localEndPoint = config.TcpClient.Client.LocalEndPoint as IPEndPoint ?? throw new InvalidOperationException("TcpClient.Client.LocalEndPoint cannot be casted to IPEndPoint");
+
+                            requestBuilder
+                                .SetRequestId(requestId)
+                                .SetHttps(config.IsHttps)
+                                .SetPort(localEndPoint.Port);
                             var request = requestBuilder.Build();
 
                             isKeepAlive = request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later

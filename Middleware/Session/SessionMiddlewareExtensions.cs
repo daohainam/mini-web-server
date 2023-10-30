@@ -12,9 +12,10 @@ namespace MiniWebServer.Session
 {
     public static class SessionMiddlewareExtensions
     {
-        public static void UseSession(this IMiniAppBuilder appBuilder, SessionOptions? options = default)
+        public static void UseSession(this IMiniAppBuilder appBuilder, Action<SessionOptions>? action = default)
         {
-            options ??= new SessionOptions();
+            var options = new SessionOptions();
+            action?.Invoke(options);
 
             appBuilder.Services.AddTransient<ISessionIdGenerator>(services => new SessionIdGenerator());
 

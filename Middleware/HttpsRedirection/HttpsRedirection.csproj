@@ -10,9 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
-    <ProjectReference Include="..\..\MiniWebServer.Mvc.Abstraction\MiniWebServer.Mvc.Abstraction.csproj" />
-    <ProjectReference Include="..\..\MiniWebServer.Mvc.MiniRazorEngine\MiniWebServer.Mvc.MiniRazorEngine.csproj" />
-    <ProjectReference Include="..\..\MiniWebServer.Mvc.RazorLightTemplateParser\MiniWebServer.Mvc.RazorLightTemplateParser.csproj" />
   </ItemGroup>
 
 </Project>

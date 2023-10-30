@@ -15,8 +15,10 @@ namespace MiniWebServer.Abstractions.Http
     {
         private static readonly IRequestForm EmptyForm = new RequestForm();
 
-        public HttpRequest(ulong requestId, 
-            HttpMethod method, 
+        public HttpRequest(ulong requestId,
+            HttpMethod method,
+            string host,
+            int port,
             string url, 
             HttpRequestHeaders headers, 
             string queryString, 
@@ -34,8 +36,15 @@ namespace MiniWebServer.Abstractions.Http
                 throw new ArgumentNullException(nameof(queryParameters));
             }
 
+            if (port <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(port));
+            }
+
             RequestId = requestId;
             Method = method ?? throw new ArgumentNullException(nameof(method));
+            Host = host ?? throw new ArgumentNullException(nameof(host));
+            Port = port;
             Url = url ?? throw new ArgumentNullException(nameof(url));
             Headers = headers ?? throw new ArgumentNullException(nameof(headers));
             QueryString = queryString ?? string.Empty;
@@ -59,6 +68,8 @@ namespace MiniWebServer.Abstractions.Http
         public string Hash { get; }
         public ulong RequestId { get; }
         public HttpMethod Method { get; }
+        public string Host { get; }
+        public int Port { get; }
         public HttpRequestHeaders Headers { get; }
         public HttpParameters QueryParameters { get; }
         public string[] Segments { get; }

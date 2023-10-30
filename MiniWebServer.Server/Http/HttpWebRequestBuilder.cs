@@ -17,6 +17,8 @@ namespace MiniWebServer.Server.Http
         private readonly HttpRequestHeaders headers = new();
         private readonly List<HttpTransferEncoding> transferEncodings = new();
         private readonly List<HttpCookie> cookies = new();
+        private string host = string.Empty;
+        private int port = 80;
         private string url = "/";
         private string queryString = string.Empty;
         private string hash = string.Empty;
@@ -47,9 +49,16 @@ namespace MiniWebServer.Server.Http
 
         public HttpRequest Build()
         {
+            if (string.IsNullOrEmpty(host))
+            {
+                throw new InvalidOperationException("host cannot be empty");
+            }
+
             var request = new HttpRequest(
                 requestId, 
                 httpMethod, 
+                host,
+                port,
                 url, 
                 headers, 
                 queryString, 
@@ -72,6 +81,24 @@ namespace MiniWebServer.Server.Http
 
             return this;
         }
+        public IHttpRequestBuilder SetPort(int port)
+        {
+            if (port <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(port));
+            }
+
+            this.port = port;
+
+            return this;
+        }
+        public IHttpRequestBuilder SetHost(string host)
+        {
+            this.host = host;
+
+            return this;
+        }
+
         public IHttpRequestBuilder SetUrl(string url)
         {
             this.url = url;

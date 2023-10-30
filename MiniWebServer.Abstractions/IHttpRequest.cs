@@ -12,6 +12,8 @@ namespace MiniWebServer.Abstractions
     public interface IHttpRequest: IParametersContainer, IRequestHeadersContainer, IFormContainer, IRequestBodyReader
     {
         Http.HttpMethod Method { get; }
+        string Host { get; }
+        int Port { get; }
         string Url { get; }
         bool KeepAliveRequested { get; }
         HttpCookies Cookies { get; }

@@ -136,7 +136,18 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                             requestBuilder.AddHeader(headerLine.Name, headerLine.Value);
 
                             // here we have some checks for important headers
-                            if ("Content-Length".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            if ("Host".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                var host = headerLine.Value;
+                                int idx = host.IndexOf(':');
+                                if (idx != -1)
+                                {
+                                    host = host[..idx];
+                                }
+
+                                requestBuilder.SetHost(host);
+                            }
+                            else if ("Content-Length".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 if (long.TryParse(headerLine.Value, out long length) && length >= 0)
                                 {

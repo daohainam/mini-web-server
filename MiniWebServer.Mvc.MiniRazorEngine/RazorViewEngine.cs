@@ -20,7 +20,6 @@ namespace MiniWebServer.Mvc.RazorEngine
             this.options = options ?? throw new ArgumentNullException(nameof(options));
             this.templateParser = templateParser ?? throw new ArgumentNullException(nameof(templateParser));
             this.logger = logger;
-
             this.viewFinder = viewFinder ?? new DefaultViewFinder(DefaultViewFolder);
         }
 
