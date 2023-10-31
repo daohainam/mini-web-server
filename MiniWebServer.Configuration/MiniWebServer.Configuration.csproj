@@ -1,9 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>Mini-Web-Server</Title>
+		<Authors>Dao Hai Nam</Authors>
+		<RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
+		<PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
+		<PackageIcon>Resources\icon-128x128.png</PackageIcon>
+		<PackageTags>webserver;mini-web-server</PackageTags>
+		<Version>0.3.0</Version>
+		<Description>Configuration structures for Mini-Web-Server</Description>
+		<PackageReadmeFile>Resources\README.md</PackageReadmeFile>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Update="Resources\icon-128x128.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Update="Resources\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 ﻿using MiniWebServer.Server.Abstractions;
 
-namespace MimeMapping
+namespace MiniWebServer.MiniWebServer.MimeMapping
 {
     public class StaticMimeMapping : IMimeTypeMapping
     {
@@ -20,7 +20,7 @@ namespace MimeMapping
                 {".xml", "text/xml"}
             }
         };
-        
+
         private readonly Dictionary<string, string> mimeTypes = new();
 
         // Explicit static constructor to tell C# compiler

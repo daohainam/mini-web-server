@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using MimeMapping;
 using MiniWebServer.Authentication;
 using MiniWebServer.Authorization;
 using MiniWebServer.Configuration;
@@ -23,6 +22,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
+using MiniWebServer.MiniWebServer.MimeMapping;
 
 namespace MiniWebServer
 {

@@ -20,6 +20,8 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Middleware\Authentication\Authentication.csproj" />
+    <ProjectReference Include="..\Middleware\Authorization\Authorization.csproj" />
     <ProjectReference Include="..\Middleware\HttpsRedirection\HttpsRedirection.csproj" />
     <ProjectReference Include="..\Middleware\Mvc\Mvc.csproj" />
     <ProjectReference Include="..\Middleware\Session\Session.csproj" />

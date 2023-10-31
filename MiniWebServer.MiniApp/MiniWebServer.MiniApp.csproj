@@ -1,17 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Title>Mini-Web-Server</Title>
+		<Authors>Dao Hai Nam</Authors>
+		<RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
+		<PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
+		<PackageIcon>icon-128x128.png</PackageIcon>
+		<PackageTags>webserver;mini-web-server</PackageTags>
+		<Version>0.3.0</Version>
+		<Description>Base structures for building MiniApps</Description>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
+	</ItemGroup>
 
 </Project>

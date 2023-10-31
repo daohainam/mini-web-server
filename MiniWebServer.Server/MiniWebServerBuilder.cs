@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
-using MimeMapping;
 using MiniWebServer.Configuration;
 using MiniWebServer.MiniApp;
+using MiniWebServer.MiniWebServer.MimeMapping;
 using MiniWebServer.Server.Abstractions;
 using System.Net;
 using System.Reflection.Metadata.Ecma335;

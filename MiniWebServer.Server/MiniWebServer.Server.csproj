@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -8,29 +8,25 @@
     <Title>Mini-Web-Server</Title>
     <Authors>Dao Hai Nam</Authors>
     <RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
-    <PackageProjectUrl>http://www.mini-web-server.com/</PackageProjectUrl>
-    <PackageIcon>favicon.png</PackageIcon>
-    <PackageTags>webserver</PackageTags>
-    <Version>0.2.9</Version>
-    <Description>A light-weight web server</Description>
+    <PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
+    <PackageIcon>Resources\icon-128x128.png</PackageIcon>
+    <PackageTags>webserver;mini-web-server</PackageTags>
+    <Version>0.3.0</Version>
+    <Description>A light-weight web server with route handler, authentication, authorization, Mvc, session... supported.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="HttpMultipartParser" Version="8.2.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Middleware\Authentication\Authentication.csproj" />
-    <ProjectReference Include="..\Middleware\Authorization\Authorization.csproj" />
-    <ProjectReference Include="..\MimeMapping\MimeMapping.csproj" />
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
     <ProjectReference Include="..\MiniWebServer.Configuration\MiniWebServer.Configuration.csproj" />
-    <ProjectReference Include="..\MiniWebServer.Helpers\MiniWebServer.Helpers.csproj" />
     <ProjectReference Include="..\MiniWebServer.HttpParser\MiniWebServer.HttpParser.csproj" />
+    <ProjectReference Include="..\MiniWebServer.MimeMapping\MiniWebServer.MimeMapping.csproj" />
     <ProjectReference Include="..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
     <ProjectReference Include="..\MiniWebServer.Server.Abstractions\MiniWebServer.Server.Abstractions.csproj" />
   </ItemGroup>
@@ -40,7 +36,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\MiniWebServer\wwwroot\favicon.png">
+    <None Update="Resources\icon-128x128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
