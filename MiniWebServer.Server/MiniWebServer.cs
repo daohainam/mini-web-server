@@ -182,7 +182,13 @@ namespace MiniWebServer.Server
                 clientConnectionListeningProcs.Add(ClientConnectionListeningProc(binding, stoppingToken));
             }
 
-            Task.WaitAll(clientConnectionListeningProcs.ToArray(), stoppingToken);
+            try
+            {
+                Task.WaitAll(clientConnectionListeningProcs.ToArray(), stoppingToken);
+            } catch (OperationCanceledException)
+            {
+                // do nothing
+            }
 
             return Task.CompletedTask;
         }
