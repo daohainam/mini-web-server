@@ -8,7 +8,7 @@ namespace MiniWebServer.MiniApp
 {
     internal class RequestDelegateAsyncCallableFilter : ICallableFilter
     {
-        private Func<IMiniAppContext, CancellationToken, Task<bool>> filter;
+        private readonly Func<IMiniAppContext, CancellationToken, Task<bool>> filter;
 
         public RequestDelegateAsyncCallableFilter(Func<IMiniAppContext, CancellationToken, Task<bool>> filter)
         {

@@ -124,7 +124,7 @@ namespace MiniWebServer.Mvc
                     () => context.Request,
                     () => context.Request,
                     () => context.Request,
-                    cancellationToken, logger);
+                    logger, cancellationToken);
                 if (result.IsCreated)
                 {
                     actionParameterValues.Add(result.Value);
@@ -224,8 +224,8 @@ namespace MiniWebServer.Mvc
             Func<IRequestBodyReader> requestBodyReader,
             Func<IFormContainer> formContainer,
             //Func<Task<IRequestForm>> formReader, // instead of reading form directly from context, we use an action here to test easier
-            CancellationToken cancellationToken = default, 
-            ILogger? logger = default)
+            ILogger? logger = default,
+            CancellationToken cancellationToken = default)
         {
             /*
              * How to create an action parameter

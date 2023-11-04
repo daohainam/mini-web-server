@@ -12,9 +12,9 @@ namespace MiniWebServer.Abstractions.Http
         {
             foreach (var item in httpParameter)
             {
-                if (ContainsKey(item.Name))
+                if (TryGetValue(item.Name, out var value))
                 {
-                    this[item.Name].AddValue(item.Value ?? string.Empty);
+                    value.AddValue(item.Value ?? string.Empty);
                 }
                 else
                 {
@@ -27,9 +27,9 @@ namespace MiniWebServer.Abstractions.Http
         {
             foreach (var item in others.Values)
             {
-                if (ContainsKey(item.Name))
+                if (TryGetValue(item.Name, out var value))
                 {
-                    this[item.Name].AddValue(item.Value ?? string.Empty);
+                    value.AddValue(item.Value ?? string.Empty);
                 }
                 else
                 {
@@ -43,9 +43,9 @@ namespace MiniWebServer.Abstractions.Http
         {
             foreach (var item in collection)
             {
-                if (ContainsKey(item.Name))
+                if (TryGetValue(item.Name, out var value))
                 {
-                    this[item.Name].AddValue(item.Value ?? string.Empty);
+                    value.AddValue(item.Value ?? string.Empty);
                 }
                 else
                 {
@@ -56,9 +56,9 @@ namespace MiniWebServer.Abstractions.Http
 
         public void Add(HttpParameter item)
         {
-            if (ContainsKey(item.Name))
+            if (TryGetValue(item.Name, out var value))
             {
-                this[item.Name].AddValue(item.Value ?? string.Empty);
+                value.AddValue(item.Value ?? string.Empty);
             }
             else
             {
