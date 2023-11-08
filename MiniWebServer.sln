@@ -60,6 +60,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpsRedirection", "Middlew
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MimeMapping", "MiniWebServer.MimeMapping\MiniWebServer.MimeMapping.csproj", "{560D19BE-F248-4DA8-9187-0D3F6397DB81}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HstsMiddleware", "Middleware\HstsMiddleware\HstsMiddleware.csproj", "{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -166,6 +168,10 @@ Global
 		{560D19BE-F248-4DA8-9187-0D3F6397DB81}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{560D19BE-F248-4DA8-9187-0D3F6397DB81}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{560D19BE-F248-4DA8-9187-0D3F6397DB81}.Release|Any CPU.Build.0 = Release|Any CPU
+		{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -183,6 +189,7 @@ Global
 		{F22ACC05-2C31-46C5-B970-33926F88FA82} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
 		{AC56CA64-FA61-4B42-9C66-3DD808A01F9F} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
 		{F509000B-F2D0-4477-AE31-DEA2DCC5E43D} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
+		{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D1843708-76D1-4698-A487-8D1531533306}
