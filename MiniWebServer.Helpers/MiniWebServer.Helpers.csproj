@@ -4,6 +4,7 @@
 		<TargetFramework>net7.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>Mini-Web-Server Helpers</Title>
 		<Authors>Dao Hai Nam</Authors>
 		<RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>

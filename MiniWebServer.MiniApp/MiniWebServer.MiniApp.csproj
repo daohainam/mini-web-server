@@ -4,14 +4,16 @@
 		<TargetFramework>net7.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>Mini-Web-Server</Title>
 		<Authors>Dao Hai Nam</Authors>
 		<RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
 		<PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
-		<PackageIcon>icon-128x128.png</PackageIcon>
+		<PackageIcon>Resources\icon-128x128.png</PackageIcon>
 		<PackageTags>webserver;mini-web-server</PackageTags>
 		<Version>0.3.1</Version>
 		<Description>Base structures for building MiniApps</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
@@ -23,5 +25,14 @@
 	<ItemGroup>
 		<ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
 	</ItemGroup>
-
+	<ItemGroup>
+		<None Update="Resources\icon-128x128.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Update="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 </Project>
