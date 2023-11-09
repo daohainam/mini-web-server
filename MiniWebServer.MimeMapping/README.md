@@ -1,0 +1,1 @@
+# Mime mapping for Mini-Web-Server

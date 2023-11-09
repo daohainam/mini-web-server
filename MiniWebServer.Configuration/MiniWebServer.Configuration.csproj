@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net7.0</TargetFramework>
@@ -11,16 +11,18 @@
 		<PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
 		<PackageIcon>Resources\icon-128x128.png</PackageIcon>
 		<PackageTags>webserver;mini-web-server</PackageTags>
-		<Version>0.3.0</Version>
+		<Version>0.3.1</Version>
 		<Description>Configuration structures for Mini-Web-Server</Description>
-		<PackageReadmeFile>Resources\README.md</PackageReadmeFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Update="Resources\icon-128x128.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-		<None Update="Resources\README.md">
+		<None Update="README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

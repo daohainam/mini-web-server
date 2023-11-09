@@ -17,7 +17,7 @@ namespace MiniWebServer.HstsMiddleware
             action?.Invoke(options);
 
             appBuilder.Services.AddTransient(services => new HstsMiddleware(
-                options, services.GetService<ILogger<HstsMiddleware>>()
+                options
                 )
             );
 
