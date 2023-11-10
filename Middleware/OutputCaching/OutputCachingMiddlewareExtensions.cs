@@ -16,6 +16,7 @@ namespace MiniWebServer.OutputCaching
         {
             appBuilder.Services.AddTransient(services => new OutputCachingMiddleware(
                 options,
+                new DefaultOutputCacheKeyGenerator(),
                 services.GetService<ILoggerFactory>()
                 ));
 

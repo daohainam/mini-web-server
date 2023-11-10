@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.MiniApp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.OutputCaching
 {
-    public interface IOutputCacheStorage
+    public interface IOutputCacheKeyGenerator
     {
-        OutputCacheStreamInfo GetCachedStream(string cacheKey);
+        string GenerateCacheKey(IMiniAppContext context);
     }
 }

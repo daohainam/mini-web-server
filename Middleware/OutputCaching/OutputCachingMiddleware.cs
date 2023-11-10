@@ -8,12 +8,16 @@ namespace MiniWebServer.OutputCaching
     {
         private readonly ILogger<OutputCachingMiddleware> logger;
         private readonly OutputCachingOptions options;
+        private readonly IOutputCacheKeyGenerator outputCacheKeyGenerator;
+        private readonly IOutputCacheStorage outputCacheStorage;
 
-        public OutputCachingMiddleware(OutputCachingOptions options, ILoggerFactory? loggerFactory)
+        public OutputCachingMiddleware(OutputCachingOptions options, IOutputCacheKeyGenerator outputCacheKeyGenerator, IOutputCacheStorage outputCacheStorage, ILoggerFactory? loggerFactory)
         {
             ArgumentNullException.ThrowIfNull(options);
 
             this.options = options;
+            this.outputCacheKeyGenerator = outputCacheKeyGenerator ?? throw new ArgumentNullException(nameof(outputCacheKeyGenerator));
+            this.outputCacheStorage = outputCacheStorage ?? throw new ArgumentNullException(nameof(outputCacheStorage));
 
             logger = loggerFactory != null ? loggerFactory.CreateLogger<OutputCachingMiddleware>() : NullLogger<OutputCachingMiddleware>.Instance;
         }
@@ -47,9 +51,21 @@ namespace MiniWebServer.OutputCaching
 
             if (policy != null)
             {
-                await next.InvokeAsync(context, cancellationToken);
+                var cacheKey = outputCacheKeyGenerator.GenerateCacheKey(context);
+                var cachedStream = outputCacheStorage.GetCachedStream(cacheKey);
 
-                // now we will store output to cache storage
+                if (cachedStream != null)
+                {
+                    context.Response.Content = cachedStream.Content;
+                    context.Response.StatusCode = cachedStream.StatusCode;
+                    context.Response.Headers.AddOrUpdate(cachedStream.Headers);
+                }
+                else
+                {
+                    await next.InvokeAsync(context, cancellationToken);
+
+                    // now we will store output to cache storage
+                }
             }
             else
             {

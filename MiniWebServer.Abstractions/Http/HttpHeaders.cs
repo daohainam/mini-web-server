@@ -34,6 +34,9 @@ namespace MiniWebServer.Abstractions.Http
         }
         public HttpHeaders(string name, string value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             Add(name, value);
         }
 
@@ -47,6 +50,9 @@ namespace MiniWebServer.Abstractions.Http
 
         public virtual HttpHeaders Add(string name, string value) // we return a HttpHeaders so we can make a chain of call, for example: headers.Add("Connection", "Close").Add("ETag", "ABCD") ...
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             var header = new HttpHeader(name, value);
 
             headers.Add(header);
@@ -57,6 +63,9 @@ namespace MiniWebServer.Abstractions.Http
 
         public virtual HttpHeaders Add(string name, IEnumerable<string> value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             var header = new HttpHeader(name, value);
 
             headers.Add(header);
@@ -75,6 +84,9 @@ namespace MiniWebServer.Abstractions.Http
 
         public virtual HttpHeaders AddOrUpdate(string name, string value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             var idx = headers.FindIndex(x => x.Name == name);
             if (idx != -1)
             {
@@ -96,6 +108,9 @@ namespace MiniWebServer.Abstractions.Http
 
         public virtual HttpHeaders AddOrUpdate(string name, IEnumerable<string> value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             var idx = headers.FindIndex(x => x.Name == name);
             if (idx != -1)
             {
@@ -117,6 +132,8 @@ namespace MiniWebServer.Abstractions.Http
 
         public virtual HttpHeaders AddOrUpdate(HttpHeader header)
         {
+            ArgumentNullException.ThrowIfNull(header);
+
             var idx = headers.FindIndex(x => x.Name == header.Name);
             if (idx != -1)
             {
@@ -132,8 +149,34 @@ namespace MiniWebServer.Abstractions.Http
             return this;
         }
 
+        public virtual HttpHeaders AddOrUpdate(IEnumerable<HttpHeader> headers)
+        {
+            ArgumentNullException.ThrowIfNull(headers);
+
+            foreach (var header in headers)
+            {
+                var idx = this.headers.FindIndex(x => x.Name == header.Name);
+                if (idx != -1)
+                {
+                    this.headers[idx] = header;
+                    OnHeaderChanged(header);
+                }
+                else
+                {
+                    this.headers.Add(header);
+                    OnHeaderAdded(header);
+                }
+
+            }
+
+            return this;
+        }
+
         public virtual HttpHeaders AddOrSkip(string name, string value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             var idx = headers.FindIndex(x => x.Name == name);
             if (idx == -1)
             {
@@ -148,6 +191,9 @@ namespace MiniWebServer.Abstractions.Http
 
         public virtual HttpHeaders AddOrSkip(string name, IEnumerable<string> value)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             var idx = headers.FindIndex(x => x.Name == name);
             if (idx == -1)
             {
@@ -162,6 +208,8 @@ namespace MiniWebServer.Abstractions.Http
 
         public virtual HttpHeaders AddOrSkip(HttpHeader header)
         {
+            ArgumentNullException.ThrowIfNull(header);
+
             var idx = headers.FindIndex(x => x.Name == header.Name);
             if (idx == -1)
             {
@@ -172,9 +220,11 @@ namespace MiniWebServer.Abstractions.Http
             return this;
         }
 
-        public virtual HttpHeaders Remove(string headerName)
+        public virtual HttpHeaders Remove(string name)
         {
-            var idx = headers.FindIndex(header => header.Name == headerName);
+            ArgumentNullException.ThrowIfNull(name);
+
+            var idx = headers.FindIndex(header => header.Name == name);
             var header = headers[idx];
             headers.RemoveAt(idx);
 
@@ -185,6 +235,8 @@ namespace MiniWebServer.Abstractions.Http
 
         public bool TryGetValue(string name, out HttpHeader? header)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             var h = headers.Where(h => name.Equals(h.Name, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
             if (h != null)
             {
