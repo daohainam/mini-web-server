@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.MiniApp.Builders;
+using MiniWebServer.OutputCaching.CacheStorage;
 using MiniWebServer.Server.Abstractions;
 using System;
 using System.Collections.Generic;
@@ -17,7 +19,8 @@ namespace MiniWebServer.OutputCaching
             appBuilder.Services.AddTransient(services => new OutputCachingMiddleware(
                 options,
                 new DefaultOutputCacheKeyGenerator(),
-                services.GetService<ILoggerFactory>()
+                options.OutputCacheStorage ?? new DistributeCacheStorage(services.GetRequiredService<IDistributedCache>()),
+                services.GetRequiredService<ILogger<OutputCachingMiddleware>>()
                 ));
 
             appBuilder.UseMiddleware<OutputCachingMiddleware>();

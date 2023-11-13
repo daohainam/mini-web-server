@@ -14,5 +14,6 @@ namespace MiniWebServer.OutputCaching
         }
 
         public ICollection<IOutputCachePolicy> Policies { get; }
+        public IOutputCacheStorage? OutputCacheStorage { get; set; }
     }
 }

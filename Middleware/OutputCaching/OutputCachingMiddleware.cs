@@ -11,7 +11,7 @@ namespace MiniWebServer.OutputCaching
         private readonly IOutputCacheKeyGenerator outputCacheKeyGenerator;
         private readonly IOutputCacheStorage outputCacheStorage;
 
-        public OutputCachingMiddleware(OutputCachingOptions options, IOutputCacheKeyGenerator outputCacheKeyGenerator, IOutputCacheStorage outputCacheStorage, ILoggerFactory? loggerFactory)
+        public OutputCachingMiddleware(OutputCachingOptions options, IOutputCacheKeyGenerator outputCacheKeyGenerator, IOutputCacheStorage outputCacheStorage, ILogger<OutputCachingMiddleware> logger)
         {
             ArgumentNullException.ThrowIfNull(options);
 
@@ -19,7 +19,7 @@ namespace MiniWebServer.OutputCaching
             this.outputCacheKeyGenerator = outputCacheKeyGenerator ?? throw new ArgumentNullException(nameof(outputCacheKeyGenerator));
             this.outputCacheStorage = outputCacheStorage ?? throw new ArgumentNullException(nameof(outputCacheStorage));
 
-            logger = loggerFactory != null ? loggerFactory.CreateLogger<OutputCachingMiddleware>() : NullLogger<OutputCachingMiddleware>.Instance;
+            this.logger = logger;
         }
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
         {

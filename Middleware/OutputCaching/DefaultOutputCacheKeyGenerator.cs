@@ -11,7 +11,9 @@ namespace MiniWebServer.OutputCaching
     {
         public string GenerateCacheKey(IMiniAppContext context)
         {
-            throw new NotImplementedException();
+            var key = $"{context.Request.Host}##{context.Request.Port}##{context.Request.Method}##{context.Request.Url}##{context.Request.Hash}##{context.Request.QueryString}";
+
+            return key;
         }
     }
 }

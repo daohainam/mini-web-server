@@ -21,14 +21,14 @@ namespace MiniWebServer.Mvc
         private readonly IActionFinder actionFinder;
         private readonly IViewEngine viewEngine;
 
-        public MvcMiddleware(MvcOptions options, ILoggerFactory loggerFactory, IServiceCollection serviceCollection)
+        public MvcMiddleware(MvcOptions options, IViewEngine viewEngine, ILoggerFactory loggerFactory, IServiceCollection serviceCollection)
         {
             ArgumentNullException.ThrowIfNull(nameof(options));
             this.serviceCollection = serviceCollection ?? throw new ArgumentNullException(nameof(serviceCollection));
 
             logger = loggerFactory != null ? loggerFactory.CreateLogger<MvcMiddleware>() : NullLogger<MvcMiddleware>.Instance;
             actionFinder = options.ActionFinder;
-            viewEngine = options.ViewEngine;
+            this.viewEngine = viewEngine ?? throw new ArgumentNullException(nameof(viewEngine));
         }
 
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)

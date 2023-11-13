@@ -20,18 +20,22 @@ namespace MiniWebServer.Session
             var routeMatcher = new StringEqualsRouteMatcher();
 
             var options = new MvcOptions(
-                                new LocalActionFinder(registry, routeMatcher),
-                                new MiniRazorViewEngine(
-                                new MiniRazorViewEngineOptions(),
-                                    appBuilder.Services.BuildServiceProvider().GetRequiredService<ILogger<MiniRazorViewEngine>>(), // todo: don't build service provider using this ugly way :|
-                                                                            new RazorLightTemplateParser()
-                                    )
+                                new LocalActionFinder(registry, routeMatcher)
                                 );
 
             configureOptions?.Invoke(options);
 
+            appBuilder.Services.AddTransient<IViewEngine>(
+                services => new MiniRazorViewEngine(
+                                    new MiniRazorViewEngineOptions(),
+                                    appBuilder.Services.BuildServiceProvider().GetRequiredService<ILogger<MiniRazorViewEngine>>(), // todo: don't build service provider using this ugly way :|
+                                    new RazorLightTemplateParser()
+                                    )
+                );
+
             appBuilder.Services.AddTransient(services => new MvcMiddleware(
                 options,
+                services.GetRequiredService<IViewEngine>(),
                 services.GetRequiredService<ILoggerFactory>(),
                 appBuilder.Services
                 ));

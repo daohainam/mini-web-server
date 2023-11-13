@@ -9,13 +9,11 @@ namespace MiniWebServer.Mvc
 {
     public class MvcOptions
     {
-        public MvcOptions(IActionFinder actionFinder, IViewEngine viewEngine)
+        public MvcOptions(IActionFinder actionFinder)
         {
             ActionFinder = actionFinder ?? throw new ArgumentNullException(nameof(actionFinder));
-            ViewEngine = viewEngine ?? throw new ArgumentNullException(nameof(viewEngine));
         }
 
         public IActionFinder ActionFinder { get; }
-        public IViewEngine ViewEngine { get; }
     }
 }
