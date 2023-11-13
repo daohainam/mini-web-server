@@ -89,7 +89,7 @@ namespace MiniWebServer.Server
                                 .SetRequestId(requestId)
                                 .SetHttps(config.IsHttps)
                                 .SetPort(localEndPoint.Port);
-                            var request = requestBuilder.Build();
+                                var request = requestBuilder.Build();
 
                             isKeepAlive = request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later
 

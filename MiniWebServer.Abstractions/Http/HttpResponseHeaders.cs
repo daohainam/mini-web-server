@@ -8,6 +8,9 @@ namespace MiniWebServer.Abstractions.Http
 {
     public class HttpResponseHeaders: HttpHeaders
     {
+        public HttpResponseHeaders() { 
+            ContentLength = 0;
+        }
         public long ContentLength
         {
             get
