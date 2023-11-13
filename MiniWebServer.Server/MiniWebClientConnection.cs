@@ -7,12 +7,8 @@ using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
 using MiniWebServer.Server.Session;
-using System.Buffers;
 using System.IO.Pipelines;
 using System.Net;
-using System.Net.Sockets;
-using System.Reflection.PortableExecutable;
-using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server
 {
