@@ -119,7 +119,9 @@ namespace MiniWebServer.Mvc
                     return false;
                 }
 
-                var result = await TryCreateValueAsync(context, parameterName, parameterType, parameterSources, localServiceProvider,
+                var result = await TryCreateValueAsync(parameterName, parameterType,
+                    context.Request.Method.Equals(Abstractions.Http.HttpMethod.Post),
+                    parameterSources, localServiceProvider,
                     () => context.Request,
                     () => context.Request,
                     () => context.Request,
@@ -215,9 +217,9 @@ namespace MiniWebServer.Mvc
         }
 
         static public async Task<CreateParameterValueResult> TryCreateValueAsync(
-            IMiniAppContext context,
             string parameterName, 
-            Type parameterType, 
+            Type parameterType,
+            bool readFromForm,
             ParameterSources parameterSources, 
             ServiceProvider localServiceProvider, 
             Func<IParametersContainer> parametersContainer,
@@ -284,7 +286,7 @@ namespace MiniWebServer.Mvc
                     }
                 }
 
-                if (!parameterFound && (parameterSources & ParameterSources.Form) == ParameterSources.Form && context.Request.Method.Equals(HttpMethod.Post))
+                if (!parameterFound && (parameterSources & ParameterSources.Form) == ParameterSources.Form && readFromForm)
                 {
                     var form = await formContainer().ReadFormAsync(cancellationToken: cancellationToken);
 

@@ -11,6 +11,7 @@ namespace MiniWebServer.Abstractions
         OK = 200,
         PartialContent = 206,
         TemporaryRedirect = 307,
+        PermanentRedirect = 308,
         BadRequest = 400,
         Unauthorized = 401,
         Forbidden = 403,

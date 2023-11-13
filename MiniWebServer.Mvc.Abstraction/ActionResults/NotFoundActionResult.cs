@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
-    public class OkActionResult : IActionResult
+    public class NotFoundActionResult : IActionResult
     {
         private readonly object? value;
-        public OkActionResult(object? value) { 
+        public NotFoundActionResult(object? value) { 
             this.value = value;
         }
 
         public Task ExecuteResultAsync(ActionResultContext context)
         {
-            context.Response.StatusCode = Abstractions.HttpResponseCodes.OK; 
+            context.Response.StatusCode = Abstractions.HttpResponseCodes.NotFound; 
 
             if (value != null)
             {

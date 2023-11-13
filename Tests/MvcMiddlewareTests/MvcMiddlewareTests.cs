@@ -17,7 +17,7 @@ namespace MiniWebServer.Mvc.Tests
             var serviceCollection = new ServiceCollection();
             var service = serviceCollection.BuildServiceProvider();
 
-            var r = await MvcMiddleware.TryCreateValueAsync(parameterName, typeof(string), source, service, 
+            var r = await MvcMiddleware.TryCreateValueAsync(parameterName, typeof(string), false, source, service, 
                 () => new ParametersContainer()
                 {
                     QueryParameters = new HttpParameters(new HttpParameter(parameterName, parameterValue))
@@ -50,7 +50,7 @@ namespace MiniWebServer.Mvc.Tests
             var serviceCollection = new ServiceCollection();
             var service = serviceCollection.BuildServiceProvider();
 
-            var r = await MvcMiddleware.TryCreateValueAsync(parameterName, typeof(string), source, service,
+            var r = await MvcMiddleware.TryCreateValueAsync(parameterName, typeof(string), false, source, service,
                 () => new ParametersContainer()
                 {
                     QueryParameters = new HttpParameters()
@@ -83,7 +83,7 @@ namespace MiniWebServer.Mvc.Tests
             var serviceCollection = new ServiceCollection();
             var service = serviceCollection.BuildServiceProvider();
 
-            var r = await MvcMiddleware.TryCreateValueAsync(parameterName, typeof(string), source, service,
+            var r = await MvcMiddleware.TryCreateValueAsync(parameterName, typeof(string), true, source, service,
                 () => new ParametersContainer()
                 {
                     QueryParameters = new HttpParameters()

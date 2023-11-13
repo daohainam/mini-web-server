@@ -8,7 +8,7 @@ namespace MiniWebServer.MiniApp.Content
 {
     public class StringContent : ByteArrayContent
     {
-        public static StringContent Empty { get; } = new StringContent(string.Empty);
+        public static StringContent Empty => new(string.Empty);
 
         public StringContent(string content, Encoding encoding) : base(encoding.GetBytes(content))
         {
@@ -18,5 +18,16 @@ namespace MiniWebServer.MiniApp.Content
         {
         }
 
+        public static StringContent FromValue(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return Empty;
+            }
+            else
+            {
+                return new StringContent(value);
+            }
+        }
     }
 }
