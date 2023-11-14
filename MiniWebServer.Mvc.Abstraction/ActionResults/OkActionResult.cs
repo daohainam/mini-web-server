@@ -19,8 +19,15 @@ namespace MiniWebServer.Mvc.Abstraction.ActionResults
 
             if (value != null)
             {
-                var valueString = value.ToString();
-                context.Response.Content = MiniApp.Content.StringContent.FromValue(valueString);
+                if (value.GetType() == typeof(string))
+                {
+                    context.Response.Content = MiniApp.Content.StringContent.FromValue((string)value);
+                }
+                else
+                {
+                    var valueString = value.ToString();
+                    context.Response.Content = MiniApp.Content.StringContent.FromValue(valueString);
+                }
             }
             else
             {

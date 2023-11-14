@@ -94,6 +94,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                     reader.AdvanceTo(buffer.Start); // after a successful TryReadLine, buffer.Start advanced to the byte after '\n'
                 }
+                else
+                {
+                    // we could not read header line
+                    return false;
+                }
 
                 // now we read headers
                 while (TryReadLine(ref buffer, out line))

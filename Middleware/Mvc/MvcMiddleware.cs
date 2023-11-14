@@ -9,6 +9,8 @@ using System;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading.Tasks;
+using static System.Collections.Specialized.BitVector32;
 
 namespace MiniWebServer.Mvc
 {
@@ -117,7 +119,11 @@ namespace MiniWebServer.Mvc
                     return false;
                 }
 
-                var result = await TryCreateValueAsync(parameter,
+                var result = await TryCreateValueAsync(
+                    parameterName,
+                    parameterType,
+                    parameter.HasDefaultValue,
+                    parameter.DefaultValue,
                     context.Request.Method.Equals(Abstractions.Http.HttpMethod.Post),
                     parameterSources, localServiceProvider,
                     () => context.Request,
@@ -139,15 +145,47 @@ namespace MiniWebServer.Mvc
             var actionResult = actionInfo.MethodInfo.Invoke(controller, actionParameterValues.ToArray());
             if (actionResult != null)
             {
-                if (actionResult is Abstraction.IActionResult ar)
+                // if this is an async function then we will call it asyncly
+                var returnType = actionResult.GetType();
+                if (returnType.IsGenericType && typeof(Task).IsAssignableFrom(returnType))
                 {
-                    var actionContext = new ActionResultContext(controller, actionInfo, context);
+                    Task taskResult = (Task)actionResult;
+                    await taskResult.ConfigureAwait(false); // make sure it runs into completion
 
-                    await ar.ExecuteResultAsync(actionContext);
+                    // if this is a Task, then we call it and return empty content
+                    if (returnType.GenericTypeArguments.Length == 0)
+                    {
+                        context.Response.Content = MiniApp.Content.StringContent.Empty;
+                    }
+                    else
+                    {
+                        // this is a Task<>, then we get it's value and return as usual
+                        var result = taskResult.GetType().GetProperty("Result")!.GetValue(taskResult);
+
+                        if (result is Abstraction.IActionResult ar)
+                        {
+                            var actionContext = new ActionResultContext(controller, actionInfo, context);
+
+                            await ar.ExecuteResultAsync(actionContext);
+                        }
+                        else
+                        {
+                            context.Response.Content = MiniApp.Content.StringContent.FromValue(result?.ToString() ?? string.Empty);
+                        }
+                    }
                 }
                 else
                 {
-                    context.Response.Content = new MiniApp.Content.StringContent(actionResult.ToString() ?? string.Empty);
+                    if (actionResult is Abstraction.IActionResult ar)
+                    {
+                        var actionContext = new ActionResultContext(controller, actionInfo, context);
+
+                        await ar.ExecuteResultAsync(actionContext);
+                    }
+                    else
+                    {
+                        context.Response.Content = MiniApp.Content.StringContent.FromValue(actionResult.ToString());
+                    }
                 }
 
                 return true;
@@ -215,7 +253,10 @@ namespace MiniWebServer.Mvc
         }
 
         static public async Task<CreateParameterValueResult> TryCreateValueAsync(
-            ParameterInfo parameter, 
+            string parameterName,
+            Type parameterType,
+            bool hasDefaultValue,
+            object? defaultValue,
             bool readFromForm,
             ParameterSources parameterSources, 
             IServiceProvider localServiceProvider, 
@@ -244,19 +285,18 @@ namespace MiniWebServer.Mvc
 
                 try
                 {
-                    var value = JsonSerializer.Deserialize(body, parameter.ParameterType);
+                    var value = JsonSerializer.Deserialize(body, parameterType);
 
                     return CreateParameterValueResult.Success(value);
                 } catch (Exception ex)
                 {
-                    logger?.LogError(ex, "Error deserializing body to parameter: {p}", parameter);
+                    logger?.LogError(ex, "Error deserializing body to parameter: {p}", parameterName);
 
                     return CreateParameterValueResult.Fail();
                 }
             }
             else
             {
-                string parameterName = parameter.Name ?? throw new InvalidOperationException("Parameter has no name");
                 string? requestParameterValue = default;
                 bool parameterFound = false;
 
@@ -264,7 +304,7 @@ namespace MiniWebServer.Mvc
 
                 if ((parameterSources & ParameterSources.Query) == ParameterSources.Query)
                 {
-                    var requestParameter = parametersContainer().QueryParameters.Where(p => p.Key.Equals(parameter.Name, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
+                    var requestParameter = parametersContainer().QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
                     if (requestParameter != null) // a parameter found in Request.Query
                     {
                         requestParameterValue = requestParameter.Values.FirstOrDefault(); // TODO: we should support multi value parameters
@@ -274,7 +314,7 @@ namespace MiniWebServer.Mvc
 
                 if (!parameterFound && (parameterSources & ParameterSources.Header) == ParameterSources.Header)
                 {
-                    if (requestHeadersContainer().Headers.TryGetValue(parameter.Name, out var header)) // a parameter found in Request.Query
+                    if (requestHeadersContainer().Headers.TryGetValue(parameterName, out var header)) // a parameter found in Request.Query
                     {
                         if (header != null)
                         {
@@ -290,7 +330,7 @@ namespace MiniWebServer.Mvc
 
                     if (form != null)
                     {
-                        if (form.TryGetValue(parameter.Name, out var values))
+                        if (form.TryGetValue(parameterName, out var values))
                         {
                             requestParameterValue = values.FirstOrDefault(); // TODO: we should support multi value parameters
                             parameterFound = true;
@@ -300,7 +340,7 @@ namespace MiniWebServer.Mvc
 
                 if (parameterFound)
                 {
-                    if (parameter.ParameterType == typeof(string)) // no conversion required
+                    if (parameterType == typeof(string)) // no conversion required
                     {
                         return CreateParameterValueResult.Success(requestParameterValue);
                     }
@@ -308,8 +348,8 @@ namespace MiniWebServer.Mvc
                     if (requestParameterValue != null)
                     {
                         // looking for a public static bool TryParse method
-                        var tryParseMethod = parameter.ParameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
-                            new Type[] { typeof(string), parameter.ParameterType.MakeByRefType() },
+                        var tryParseMethod = parameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
+                            new Type[] { typeof(string), parameterType.MakeByRefType() },
                             null);
                         if (tryParseMethod != null && tryParseMethod.ReturnType == typeof(bool))
                         {
@@ -324,7 +364,7 @@ namespace MiniWebServer.Mvc
                         }
                         else
                         {
-                            var converter = TypeDescriptor.GetConverter(parameter.ParameterType);
+                            var converter = TypeDescriptor.GetConverter(parameterType);
                             if (converter != null) // if we can find a TypeConverter then we use it
                             {
                                 if (converter.IsValid(requestParameterValue))
@@ -344,24 +384,24 @@ namespace MiniWebServer.Mvc
             }
 
             // if parameter not found, then we try to get a compatible value from DI
-            var valueFromDI = localServiceProvider.GetService(parameter.ParameterType);
+            var valueFromDI = localServiceProvider.GetService(parameterType);
             if (valueFromDI != null)
             {
                 return CreateParameterValueResult.Success(valueFromDI);
             }
 
-            if (parameter.HasDefaultValue)
+            if (hasDefaultValue)
             {
-                return CreateParameterValueResult.Success(parameter.DefaultValue);
+                return CreateParameterValueResult.Success(defaultValue);
             }
 
-            var underlyingType = Nullable.GetUnderlyingType(parameter.ParameterType);
+            var underlyingType = Nullable.GetUnderlyingType(parameterType);
             if (underlyingType != null) // this is a nullable type
             {
                 return CreateParameterValueResult.Success(null);
             }
 
-            if (parameter.ParameterType == typeof(string))
+            if (parameterType == typeof(string))
             {
                 return CreateParameterValueResult.Success(null);
             }

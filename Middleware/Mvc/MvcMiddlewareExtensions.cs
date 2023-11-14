@@ -90,7 +90,22 @@ namespace MiniWebServer.Session
                             {
                                 controllerTypeName = controllerTypeName[..^10];
                             }
-                            string route = routeAttribute != null ? ((RouteAttribute)routeAttribute).Route : $"/{controllerTypeName}/{action.Name}";
+
+                            string route;
+                            if (routeAttribute != null)
+                            {
+                                route = ((RouteAttribute)routeAttribute).Route;
+                            }
+                            else
+                            {
+                                string actionName = action.Name;
+                                // is this an async function, we will remove the postfix
+                                if (actionName.EndsWith("Async", StringComparison.InvariantCultureIgnoreCase) && action.ReturnType.IsGenericType && action.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
+                                {
+                                    actionName = actionName[..^5];
+                                }
+                                route = $"/{controllerTypeName}/{actionName}";
+                            }
 
                             var methods = ActionMethods.None;
                             foreach (var attr in attributes)

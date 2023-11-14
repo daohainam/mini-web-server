@@ -15,13 +15,13 @@ namespace MiniWebServer.Controllers
             return "Hello world! " + (name ?? string.Empty);
         } 
 
-        public int Sum(int x, int y)
+        public async Task<int> SumAsync(int x, int y)
         {
-            return x + y;
+            return await Task.FromResult(x + y);
         }
         public IActionResult Profile(string name, int? yob)
         {
-            return View(new ProfileModel() { Name = name ?? string.Empty, YearOfBirth = yob ?? 2000});
+            return View(new ProfileModel() { Name = name ?? string.Empty, YearOfBirth = yob ?? 2000 });
         }
     }
 }
