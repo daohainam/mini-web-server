@@ -16,15 +16,15 @@ namespace MiniWebServer.Mvc
     {
         // https://github.com/daohainam/mini-web-server/issues/6
 
-        private readonly IServiceCollection serviceCollection;
+        private readonly IServiceProvider serviceProvider;
         private readonly ILogger<MvcMiddleware> logger;
         private readonly IActionFinder actionFinder;
         private readonly IViewEngine viewEngine;
 
-        public MvcMiddleware(MvcOptions options, IViewEngine viewEngine, ILoggerFactory loggerFactory, IServiceCollection serviceCollection)
+        public MvcMiddleware(MvcOptions options, IViewEngine viewEngine, ILoggerFactory loggerFactory, IServiceProvider serviceProvider)
         {
             ArgumentNullException.ThrowIfNull(nameof(options));
-            this.serviceCollection = serviceCollection ?? throw new ArgumentNullException(nameof(serviceCollection));
+            this.serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
             logger = loggerFactory != null ? loggerFactory.CreateLogger<MvcMiddleware>() : NullLogger<MvcMiddleware>.Instance;
             actionFinder = options.ActionFinder;
@@ -38,15 +38,13 @@ namespace MiniWebServer.Mvc
                 var actionInfo = actionFinder.Find(context);
                 if (actionInfo != null)
                 {
-                    // build a new local service collection, the new collection will contain services from app's collection and some request specific services
-                    var localServiceCollection = new ServiceCollection();
-                    foreach (var serv in serviceCollection)
-                    {
-                        localServiceCollection.Add(serv);
-                    }
-                    localServiceCollection.AddTransient(services => context);
+                    using IServiceScope serviceScope = serviceProvider.CreateScope();
 
-                    var localServiceProvider = localServiceCollection.BuildServiceProvider();
+                    // build a new local service collection, the new collection will contain services from app's collection and some request specific services
+
+                    var localServiceCollection = new ServiceCollection();
+                    localServiceCollection.AddTransient(services => context);
+                    var localServiceProvider = new MultipleServiceProvider(serviceScope.ServiceProvider, localServiceCollection.BuildServiceProvider());
 
                     if (ActivatorUtilities.CreateInstance(localServiceProvider, actionInfo.ControllerType) is Controller controller)
                     {
@@ -80,7 +78,7 @@ namespace MiniWebServer.Mvc
             }
         }
 
-        private async Task<bool> CallActionMethodAsync(ServiceProvider localServiceProvider, Controller controller, ActionInfo actionInfo, IMiniAppContext context, CancellationToken cancellationToken)
+        private async Task<bool> CallActionMethodAsync(IServiceProvider localServiceProvider, Controller controller, ActionInfo actionInfo, IMiniAppContext context, CancellationToken cancellationToken)
         {
             /* how do we execute an action?
                - get action parameters
@@ -119,7 +117,7 @@ namespace MiniWebServer.Mvc
                     return false;
                 }
 
-                var result = await TryCreateValueAsync(parameterName, parameterType,
+                var result = await TryCreateValueAsync(parameter,
                     context.Request.Method.Equals(Abstractions.Http.HttpMethod.Post),
                     parameterSources, localServiceProvider,
                     () => context.Request,
@@ -217,11 +215,10 @@ namespace MiniWebServer.Mvc
         }
 
         static public async Task<CreateParameterValueResult> TryCreateValueAsync(
-            string parameterName, 
-            Type parameterType,
+            ParameterInfo parameter, 
             bool readFromForm,
             ParameterSources parameterSources, 
-            ServiceProvider localServiceProvider, 
+            IServiceProvider localServiceProvider, 
             Func<IParametersContainer> parametersContainer,
             Func<IRequestHeadersContainer> requestHeadersContainer,
             Func<IRequestBodyReader> requestBodyReader,
@@ -247,18 +244,19 @@ namespace MiniWebServer.Mvc
 
                 try
                 {
-                    var value = JsonSerializer.Deserialize(body, parameterType);
+                    var value = JsonSerializer.Deserialize(body, parameter.ParameterType);
 
                     return CreateParameterValueResult.Success(value);
                 } catch (Exception ex)
                 {
-                    logger?.LogError(ex, "Error deserializing body to parameter: {p}", parameterName);
+                    logger?.LogError(ex, "Error deserializing body to parameter: {p}", parameter);
 
                     return CreateParameterValueResult.Fail();
                 }
             }
             else
             {
+                string parameterName = parameter.Name ?? throw new InvalidOperationException("Parameter has no name");
                 string? requestParameterValue = default;
                 bool parameterFound = false;
 
@@ -266,7 +264,7 @@ namespace MiniWebServer.Mvc
 
                 if ((parameterSources & ParameterSources.Query) == ParameterSources.Query)
                 {
-                    var requestParameter = parametersContainer().QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
+                    var requestParameter = parametersContainer().QueryParameters.Where(p => p.Key.Equals(parameter.Name, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
                     if (requestParameter != null) // a parameter found in Request.Query
                     {
                         requestParameterValue = requestParameter.Values.FirstOrDefault(); // TODO: we should support multi value parameters
@@ -276,7 +274,7 @@ namespace MiniWebServer.Mvc
 
                 if (!parameterFound && (parameterSources & ParameterSources.Header) == ParameterSources.Header)
                 {
-                    if (requestHeadersContainer().Headers.TryGetValue(parameterName, out var header)) // a parameter found in Request.Query
+                    if (requestHeadersContainer().Headers.TryGetValue(parameter.Name, out var header)) // a parameter found in Request.Query
                     {
                         if (header != null)
                         {
@@ -292,7 +290,7 @@ namespace MiniWebServer.Mvc
 
                     if (form != null)
                     {
-                        if (form.TryGetValue(parameterName, out var values))
+                        if (form.TryGetValue(parameter.Name, out var values))
                         {
                             requestParameterValue = values.FirstOrDefault(); // TODO: we should support multi value parameters
                             parameterFound = true;
@@ -302,7 +300,7 @@ namespace MiniWebServer.Mvc
 
                 if (parameterFound)
                 {
-                    if (parameterType == typeof(string)) // no conversion required
+                    if (parameter.ParameterType == typeof(string)) // no conversion required
                     {
                         return CreateParameterValueResult.Success(requestParameterValue);
                     }
@@ -310,8 +308,8 @@ namespace MiniWebServer.Mvc
                     if (requestParameterValue != null)
                     {
                         // looking for a public static bool TryParse method
-                        var tryParseMethod = parameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
-                            new Type[] { typeof(string), parameterType.MakeByRefType() },
+                        var tryParseMethod = parameter.ParameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
+                            new Type[] { typeof(string), parameter.ParameterType.MakeByRefType() },
                             null);
                         if (tryParseMethod != null && tryParseMethod.ReturnType == typeof(bool))
                         {
@@ -326,7 +324,7 @@ namespace MiniWebServer.Mvc
                         }
                         else
                         {
-                            var converter = TypeDescriptor.GetConverter(parameterType);
+                            var converter = TypeDescriptor.GetConverter(parameter.ParameterType);
                             if (converter != null) // if we can find a TypeConverter then we use it
                             {
                                 if (converter.IsValid(requestParameterValue))
@@ -346,14 +344,24 @@ namespace MiniWebServer.Mvc
             }
 
             // if parameter not found, then we try to get a compatible value from DI
-            var valueFromDI = localServiceProvider.GetService(parameterType);
+            var valueFromDI = localServiceProvider.GetService(parameter.ParameterType);
             if (valueFromDI != null)
             {
                 return CreateParameterValueResult.Success(valueFromDI);
             }
 
-            var underlyingType = Nullable.GetUnderlyingType(parameterType);
+            if (parameter.HasDefaultValue)
+            {
+                return CreateParameterValueResult.Success(parameter.DefaultValue);
+            }
+
+            var underlyingType = Nullable.GetUnderlyingType(parameter.ParameterType);
             if (underlyingType != null) // this is a nullable type
+            {
+                return CreateParameterValueResult.Success(null);
+            }
+
+            if (parameter.ParameterType == typeof(string))
             {
                 return CreateParameterValueResult.Success(null);
             }

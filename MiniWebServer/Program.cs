@@ -213,6 +213,7 @@ namespace MiniWebServer
             services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
 
+            services.AddMvcService();
             services.AddSessionService();
         }
     }

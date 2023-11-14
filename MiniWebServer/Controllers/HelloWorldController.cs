@@ -19,7 +19,7 @@ namespace MiniWebServer.Controllers
         {
             return x + y;
         }
-        public IActionResult Profile(string? name, int? yob)
+        public IActionResult Profile(string name, int? yob)
         {
             return View(new ProfileModel() { Name = name ?? string.Empty, YearOfBirth = yob ?? 2000});
         }

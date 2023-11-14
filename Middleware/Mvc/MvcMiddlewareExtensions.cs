@@ -14,7 +14,7 @@ namespace MiniWebServer.Session
 {
     public static class MvcMiddlewareExtensions
     {
-        public static void UseMvc(this IMiniAppBuilder appBuilder, Action<MvcOptions>? configureOptions = default)
+        public static void AddMvcService(this IServiceCollection services, Action<MvcOptions>? configureOptions = default)
         {
             var registry = ScanLocalControllers();
             var routeMatcher = new StringEqualsRouteMatcher();
@@ -25,21 +25,24 @@ namespace MiniWebServer.Session
 
             configureOptions?.Invoke(options);
 
-            appBuilder.Services.AddTransient<IViewEngine>(
+            services.AddTransient<IViewEngine>(
                 services => new MiniRazorViewEngine(
                                     new MiniRazorViewEngineOptions(),
-                                    appBuilder.Services.BuildServiceProvider().GetRequiredService<ILogger<MiniRazorViewEngine>>(), // todo: don't build service provider using this ugly way :|
+                                    services.GetRequiredService<ILogger<MiniRazorViewEngine>>(),
                                     new RazorLightTemplateParser()
                                     )
                 );
 
-            appBuilder.Services.AddTransient(services => new MvcMiddleware(
+            services.AddTransient(services => new MvcMiddleware(
                 options,
                 services.GetRequiredService<IViewEngine>(),
                 services.GetRequiredService<ILoggerFactory>(),
-                appBuilder.Services
+                services
                 ));
+        }
 
+        public static void UseMvc(this IMiniAppBuilder appBuilder, Action<MvcOptions>? configureOptions = default)
+        {
             appBuilder.UseMiddleware<MvcMiddleware>();
         }
 
