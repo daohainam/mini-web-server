@@ -215,6 +215,8 @@ namespace MiniWebServer
 
             services.AddMvcService();
             services.AddSessionService();
+
+            services.AddSingleton<ISumCalculator>(services => new SumCalculator());
         }
     }
 }
