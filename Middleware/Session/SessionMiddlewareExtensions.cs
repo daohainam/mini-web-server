@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.MiniApp.Builders;
 using System;
@@ -12,14 +13,14 @@ namespace MiniWebServer.Session
 {
     public static class SessionMiddlewareExtensions
     {
-        public static void UseSession(this IMiniAppBuilder appBuilder, Action<SessionOptions>? action = default)
+        public static void AddSession(this IServiceCollection services, Action<SessionOptions>? action = default)
         {
             var options = new SessionOptions();
             action?.Invoke(options);
 
-            appBuilder.Services.AddTransient<ISessionIdGenerator>(services => new SessionIdGenerator());
+            services.TryAddTransient<ISessionIdGenerator>(services => new SessionIdGenerator());
 
-            appBuilder.Services.AddTransient(services => new SessionMiddleware(
+            services.TryAddTransient(services => new SessionMiddleware(
                 options,
                 services.GetService<ISessionIdGenerator>(),
                 services.GetService<ISessionStore>() ?? new DistributedCacheSessionStore( // if no ISessionStore registered, we will use DistributedCacheSessionStore
@@ -28,7 +29,10 @@ namespace MiniWebServer.Session
                     new DistributedCacheSessionStoreOptions()
                     )
                 ));
+        }
 
+        public static void UseSession(this IMiniAppBuilder appBuilder)
+        {
             appBuilder.UseMiddleware<SessionMiddleware>();
         }
     }

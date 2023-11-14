@@ -8,7 +8,7 @@ namespace MiniWebServer.Session
         private readonly ISessionIdGenerator sessionIdGenerator;
         private readonly ISessionStore sessionStore;
 
-        public SessionMiddleware(SessionOptions? options, ISessionIdGenerator? sessionIdGenerator, ISessionStore? sessionStore)
+        public SessionMiddleware(SessionOptions options, ISessionIdGenerator? sessionIdGenerator, ISessionStore? sessionStore)
         {
             ArgumentNullException.ThrowIfNull(options);
 
