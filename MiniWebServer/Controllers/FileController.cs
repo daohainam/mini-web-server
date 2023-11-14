@@ -5,14 +5,12 @@ namespace MiniWebServer.Controllers
     public class FileController : Controller
     {
         [Route("/file")]
-        public async Task<IActionResult> Content(string fileName)
+        public IActionResult Content(string fileName)
         {
             var path = Path.Combine("wwwroot", "sample-texts", fileName);
-            if (File.Exists(path))
+            if (System.IO.File.Exists(path))
             {
-                var content = await File.ReadAllTextAsync(path);
-
-                return Ok(content);
+                return File(new FileInfo(path));
             }
             else
             {

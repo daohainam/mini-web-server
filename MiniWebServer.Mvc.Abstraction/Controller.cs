@@ -39,6 +39,10 @@ namespace MiniWebServer.Mvc.Abstraction
         {
             return new BadRequestActionResult(content);
         }
+        protected virtual IActionResult File(FileInfo file)
+        {
+            return new FileActionResult(file);
+        }
         protected virtual IActionResult Json(object content)
         {
             return new JsonActionResult(content, null);
