@@ -23,6 +23,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using MiniWebServer.MiniWebServer.MimeMapping;
+using System.Reflection.PortableExecutable;
 
 namespace MiniWebServer
 {
@@ -211,6 +212,8 @@ namespace MiniWebServer
             services.AddTransient<IHttpComponentParser, ByteSequenceHttpParser>();
             services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
+
+            services.AddSessionService();
         }
     }
 }

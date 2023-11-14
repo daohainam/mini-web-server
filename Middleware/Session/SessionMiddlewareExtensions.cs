@@ -13,7 +13,7 @@ namespace MiniWebServer.Session
 {
     public static class SessionMiddlewareExtensions
     {
-        public static void AddSession(this IServiceCollection services, Action<SessionOptions>? action = default)
+        public static void AddSessionService(this IServiceCollection services, Action<SessionOptions>? action = default)
         {
             var options = new SessionOptions();
             action?.Invoke(options);
