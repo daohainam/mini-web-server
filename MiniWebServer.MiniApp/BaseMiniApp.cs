@@ -1,9 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp
 {
@@ -71,7 +66,7 @@ namespace MiniWebServer.MiniApp
             return Task.CompletedTask;
         }
 
-        private class MiddlewareWrapper: ICallable
+        private class MiddlewareWrapper : ICallable
         {
             public MiddlewareWrapper(IMiddleware middleware, ICallable next)
             {

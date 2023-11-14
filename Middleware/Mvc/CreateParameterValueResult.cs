@@ -16,19 +16,21 @@
                 return successEmptyResult;
             }
 
-            return new CreateParameterValueResult { 
-                Value = value, IsCreated = true
+            return new CreateParameterValueResult
+            {
+                Value = value,
+                IsCreated = true
             };
         }
 
         public static CreateParameterValueResult Fail()
         {
-            return failResult; 
+            return failResult;
         }
 
 
         // we have some singleton values here to prevent alloc/free memory blocks
-        private static readonly CreateParameterValueResult failResult = new() 
+        private static readonly CreateParameterValueResult failResult = new()
         {
             Value = null,
             IsCreated = false

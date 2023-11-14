@@ -1,20 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Security.Policy;
-using System.Text;
-using System.Text.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Quote
 {
     public class ZenquotesService : IQuoteService
     {
         private readonly HttpClient httpClient = new();
-        
+
 
         public async Task<string> GetRandomAsync()
         {
@@ -33,7 +25,8 @@ namespace MiniWebServer.Quote
                     var quote = quotes.First();
                     return $"\"{quote.Quote}\" - {quote.Author} (From https://zenquotes.io)" ?? "Quote record error";
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return ex.Message;
             }

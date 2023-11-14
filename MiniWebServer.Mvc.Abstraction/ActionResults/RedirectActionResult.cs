@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Mvc.Abstraction.ActionResults
+﻿namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
     public class RedirectActionResult : IActionResult
     {
         private readonly string url;
         private readonly bool permanent;
 
-        public RedirectActionResult(string url, bool permanent) { 
+        public RedirectActionResult(string url, bool permanent)
+        {
             this.url = url;
             this.permanent = permanent;
         }

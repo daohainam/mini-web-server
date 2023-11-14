@@ -6,24 +6,20 @@ using Microsoft.IdentityModel.Tokens;
 using MiniWebServer.Authentication;
 using MiniWebServer.Authorization;
 using MiniWebServer.Configuration;
-using MiniWebServer.HttpsRedirection;
 using MiniWebServer.HttpParser.Http11;
+using MiniWebServer.HttpsRedirection;
 using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Authorization;
 using MiniWebServer.MiniApp.Builders;
+using MiniWebServer.MiniWebServer.MimeMapping;
 using MiniWebServer.Quote;
 using MiniWebServer.Server;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Session;
 using MiniWebServer.StaticFiles;
-using System;
-using System.Net;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using MiniWebServer.MiniWebServer.MimeMapping;
-using System.Reflection.PortableExecutable;
 
 namespace MiniWebServer
 {
@@ -80,7 +76,8 @@ namespace MiniWebServer
 
             if (httpsPort > 0)
             {
-                appBuilder.UseHttpsRedirection((options) => { 
+                appBuilder.UseHttpsRedirection((options) =>
+                {
                     options.HttpsPort = httpsPort;
                 });
             }
@@ -148,7 +145,8 @@ namespace MiniWebServer
                 {
                     context.Response.Content = new MiniApp.Content.StringContent($"Service status: ERROR {DateTime.Now} ({ex.Message})");
                 }
-            }).AddFilter((context, cancellationToken) => {
+            }).AddFilter((context, cancellationToken) =>
+            {
                 context.Response.Headers.Add("Filtered", "true");
 
                 return true;

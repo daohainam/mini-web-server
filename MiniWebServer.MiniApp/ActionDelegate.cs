@@ -1,13 +1,6 @@
-﻿using MiniWebServer.Abstractions.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.MiniApp
+﻿namespace MiniWebServer.MiniApp
 {
-    internal class ActionDelegate: ICallableBuilder
+    internal class ActionDelegate : ICallableBuilder
     {
         public ActionDelegate(string route, ICallable requestDelegate, params Abstractions.Http.HttpMethod[] httpMethods)
         {
@@ -17,7 +10,7 @@ namespace MiniWebServer.MiniApp
         }
 
         public string Route { get; }
-        public ICallable RequestDelegate { get; private set;  }
+        public ICallable RequestDelegate { get; private set; }
         public Abstractions.Http.HttpMethod[] HttpMethods { get; }
 
         public ICallableBuilder AddFilter(ICallableFilter filter)

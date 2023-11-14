@@ -1,12 +1,4 @@
-﻿using MiniWebServer.Abstractions.Http.Header;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
+﻿using System.Collections;
 
 namespace MiniWebServer.Abstractions.Http
 {
@@ -243,9 +235,10 @@ namespace MiniWebServer.Abstractions.Http
                 header = h;
                 return true;
             }
-            else {
+            else
+            {
                 header = null;
-                return false; 
+                return false;
             }
         }
 

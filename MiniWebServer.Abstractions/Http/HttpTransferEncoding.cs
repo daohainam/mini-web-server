@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Abstractions.Http
+﻿namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpTransferEncoding: IEquatable<HttpTransferEncoding>
+    public class HttpTransferEncoding : IEquatable<HttpTransferEncoding>
     {
         private readonly string encoding;
 
@@ -16,7 +9,8 @@ namespace MiniWebServer.Abstractions.Http
             this.encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
         }
 
-        public static HttpTransferEncoding GetEncoding(string encoding) {
+        public static HttpTransferEncoding GetEncoding(string encoding)
+        {
             return encoding switch
             {
                 "encoding" => Deflate,

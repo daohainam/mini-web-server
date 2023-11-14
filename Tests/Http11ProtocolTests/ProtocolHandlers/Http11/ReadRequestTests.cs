@@ -1,19 +1,10 @@
 ﻿using Http11ProtocolTests;
 using Http11ProtocolTests.ProtocolHandlers.Http11;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Cookie;
 using MiniWebServer.Server.Http;
-using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.IO.Pipelines;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using HttpMethod = global::MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11.Tests

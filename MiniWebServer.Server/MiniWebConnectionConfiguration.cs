@@ -1,11 +1,5 @@
-﻿using MiniWebServer.Abstractions;
-using MiniWebServer.Server.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using MiniWebServer.Server.Abstractions;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Server
 {
@@ -13,16 +7,16 @@ namespace MiniWebServer.Server
     {
 
         public MiniWebConnectionConfiguration(
-            ulong id, 
-            TcpClient tcpClient, 
+            ulong id,
+            TcpClient tcpClient,
             Stream clientStream,
             bool isHttps,
-            IProtocolHandler protocolHandler, 
+            IProtocolHandler protocolHandler,
             IDictionary<string, Host.Host> hostContainers,
             IRequestIdManager requestIdManager,
             TimeSpan readRequestTimeout,
             TimeSpan sendResponseTimeout,
-            TimeSpan executeTimeout, 
+            TimeSpan executeTimeout,
             int readRequestBufferSize
             )
         {

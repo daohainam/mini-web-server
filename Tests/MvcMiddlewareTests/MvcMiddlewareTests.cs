@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MiniWebServer.Abstractions.Http;
 using MvcMiddlewareTests;
-using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Mvc.Tests
 {
@@ -18,11 +17,11 @@ namespace MiniWebServer.Mvc.Tests
             var service = serviceCollection.BuildServiceProvider();
 
             var r = await MvcMiddleware.TryCreateValueAsync(
-                parameterName, 
-                typeof(string), 
+                parameterName,
+                typeof(string),
                 false,
                 null,
-                false, source, service, 
+                false, source, service,
                 () => new ParametersContainer()
                 {
                     QueryParameters = new HttpParameters(new HttpParameter(parameterName, parameterValue))
@@ -59,7 +58,7 @@ namespace MiniWebServer.Mvc.Tests
                 typeof(string),
                 false,
                 null,
-                false, 
+                false,
                 source, service,
                 () => new ParametersContainer()
                 {

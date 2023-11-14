@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.MiniApp
+﻿namespace MiniWebServer.MiniApp
 {
-    public interface IMiniApp: ICallableService, ICallable
+    public interface IMiniApp : ICallableService, ICallable
     {
         ICallableBuilder Map(string route, ICallable action, params Abstractions.Http.HttpMethod[] methods);
     }

@@ -1,6 +1,4 @@
-﻿using MiniWebServer.MiniApp;
-
-namespace MiniWebServer.MiniApp.Authorization
+﻿namespace MiniWebServer.MiniApp.Authorization
 {
     public interface IPolicy
     {

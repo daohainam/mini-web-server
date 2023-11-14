@@ -1,13 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions.Http.Form;
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Linq;
-using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
@@ -19,15 +14,15 @@ namespace MiniWebServer.Abstractions.Http
             HttpMethod method,
             string host,
             int port,
-            string url, 
-            HttpRequestHeaders headers, 
-            string queryString, 
-            string hash, 
-            HttpParameters queryParameters, 
-            string[] segments, 
-            HttpCookies cookies, 
-            Pipe bodyPipeline, 
-            long contentLength, 
+            string url,
+            HttpRequestHeaders headers,
+            string queryString,
+            string hash,
+            HttpParameters queryParameters,
+            string[] segments,
+            HttpCookies cookies,
+            Pipe bodyPipeline,
+            long contentLength,
             string contentType,
             bool isHttps)
         {
@@ -78,10 +73,12 @@ namespace MiniWebServer.Abstractions.Http
 
         private IRequestForm? form; // a cache object for lazy loading 
 
-        public bool KeepAliveRequested { get 
+        public bool KeepAliveRequested
+        {
+            get
             {
                 return !"close".Equals(Headers.Connection, StringComparison.InvariantCultureIgnoreCase); // it is keep-alive by default
-            } 
+            }
         }
 
         public IRequestBodyManager BodyManager { get; }
@@ -106,7 +103,7 @@ namespace MiniWebServer.Abstractions.Http
 
                 var formReader = formReaderFactory.CreateFormReader(ContentType, ContentLength) ?? throw new InvalidHttpStreamException("Not supported content type");
                 var readform = await formReader.ReadAsync(reader, cancellationToken);
-                form =  readform ?? throw new InvalidHttpStreamException("Error reading form data");
+                form = readform ?? throw new InvalidHttpStreamException("Error reading form data");
 
                 return form;
             }

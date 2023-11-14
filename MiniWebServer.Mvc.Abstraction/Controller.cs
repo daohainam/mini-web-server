@@ -1,26 +1,17 @@
 ﻿using MiniWebServer.Abstractions;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction.ActionResults;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Net.Mime;
-using System.Reflection;
-using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Mvc.Abstraction
 {
-    public abstract class Controller: IController
+    public abstract class Controller : IController
     {
         private ControllerContext? controllerContext = null;
-        public ControllerContext ControllerContext { 
+        public ControllerContext ControllerContext
+        {
             get
             {
                 if (controllerContext == null)
@@ -35,7 +26,7 @@ namespace MiniWebServer.Mvc.Abstraction
                 ArgumentNullException.ThrowIfNull(nameof(value));
 
                 controllerContext = value;
-            } 
+            }
         }
 
         public IMiniAppContext Context => ControllerContext.Context;

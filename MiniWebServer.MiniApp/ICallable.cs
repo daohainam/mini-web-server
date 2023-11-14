@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.MiniApp
+﻿namespace MiniWebServer.MiniApp
 {
     /// <summary>
     /// a ICallable is a resource which you can call and make a response based on that, we don't care what it is, it is just an abstract thing

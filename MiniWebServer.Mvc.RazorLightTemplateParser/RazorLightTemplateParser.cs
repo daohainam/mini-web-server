@@ -1,23 +1,20 @@
 ﻿using MiniWebServer.Mvc.MiniRazorEngine.Parser;
 using RazorLight;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Mvc.RazorLightTemplateParser
 {
     public class RazorLightTemplateParser : ITemplateParser
     {
         private readonly RazorLightTemplateParserOptions options;
-        private static readonly string[] DefaultNamespaces = { 
+        private static readonly string[] DefaultNamespaces = {
             "System",
             "System.Text"
         };
 
-        public RazorLightTemplateParser(RazorLightTemplateParserOptions? options = null) { 
-            this.options = options ?? new RazorLightTemplateParserOptions() { 
+        public RazorLightTemplateParser(RazorLightTemplateParserOptions? options = null)
+        {
+            this.options = options ?? new RazorLightTemplateParserOptions()
+            {
                 DefaultNamespaces = DefaultNamespaces
             };
         }
@@ -31,7 +28,8 @@ namespace MiniWebServer.Mvc.RazorLightTemplateParser
                 var sourceCode = await engine.CompileRenderStringAsync(viewName, template, model);
 
                 return new ParseResult(true, sourceCode);
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return new ParseResult(false, ex);
             }

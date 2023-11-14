@@ -2,11 +2,6 @@
 using Microsoft.Extensions.Logging;
 using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.Server.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.StaticFiles
 {

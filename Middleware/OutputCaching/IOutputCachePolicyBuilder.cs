@@ -1,5 +1,4 @@
 ﻿using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.Http;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.OutputCaching

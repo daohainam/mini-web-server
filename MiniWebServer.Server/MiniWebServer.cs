@@ -185,7 +185,8 @@ namespace MiniWebServer.Server
             try
             {
                 Task.WaitAll(clientConnectionListeningProcs.ToArray(), stoppingToken);
-            } catch (OperationCanceledException)
+            }
+            catch (OperationCanceledException)
             {
                 // do nothing
             }

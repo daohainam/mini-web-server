@@ -3,11 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.MiniApp.Builders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Session
 {
@@ -24,8 +19,8 @@ namespace MiniWebServer.Session
                 options,
                 services.GetService<ISessionIdGenerator>(),
                 services.GetService<ISessionStore>() ?? new DistributedCacheSessionStore( // if no ISessionStore registered, we will use DistributedCacheSessionStore
-                    services.GetService<IDistributedCache>(), 
-                    services.GetService<ILoggerFactory>(), 
+                    services.GetService<IDistributedCache>(),
+                    services.GetService<ILoggerFactory>(),
                     new DistributedCacheSessionStoreOptions()
                     )
                 ));

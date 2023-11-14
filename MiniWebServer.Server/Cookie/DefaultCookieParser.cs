@@ -1,12 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Parsers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.Cookie
 {

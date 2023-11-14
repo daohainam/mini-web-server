@@ -1,10 +1,4 @@
-﻿using MiniWebServer.Abstractions;
-using MiniWebServer.Server.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MiniWebServer.Server.Abstractions;
 
 namespace MiniWebServer.Server.MimeType
 {

@@ -1,15 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO.Compression;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 
 namespace MiniWebServer.MiniApp.Content
@@ -29,7 +24,8 @@ namespace MiniWebServer.MiniApp.Content
 
         public CompressedStreamContent(Stream stream, IMiniAppContext? context = null, int compressionQuality = 5, bool autoCloseStream = true)
         {
-            if (compressionQuality < 0 || compressionQuality > 11) {
+            if (compressionQuality < 0 || compressionQuality > 11)
+            {
                 throw new ArgumentOutOfRangeException(nameof(compressionQuality), "compressionQuality must be from 0 (no compression) to 11 (max compression)");
             }
 

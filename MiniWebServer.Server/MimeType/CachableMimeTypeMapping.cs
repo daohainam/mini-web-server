@@ -1,11 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
-using MiniWebServer.Abstractions;
 using MiniWebServer.Server.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.MimeType
 {
@@ -34,7 +29,8 @@ namespace MiniWebServer.Server.MimeType
             if (item == null)
             {
                 item = parent.GetMimeMapping(fileExt);
-                cache.SetString(key, item, new DistributedCacheEntryOptions() { 
+                cache.SetString(key, item, new DistributedCacheEntryOptions()
+                {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(365), // cache it in 1 year :D
                 });
             }

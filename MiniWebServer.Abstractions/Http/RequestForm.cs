@@ -1,11 +1,5 @@
 ﻿using Microsoft.Extensions.Primitives;
-using MiniWebServer.Abstractions;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {

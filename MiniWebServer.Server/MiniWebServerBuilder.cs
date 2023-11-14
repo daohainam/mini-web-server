@@ -1,11 +1,9 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using MiniWebServer.Configuration;
 using MiniWebServer.MiniApp;
 using MiniWebServer.MiniWebServer.MimeMapping;
 using MiniWebServer.Server.Abstractions;
 using System.Net;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -13,7 +11,7 @@ namespace MiniWebServer.Server
 {
     public class MiniWebServerBuilder : IServerBuilder
     {
-        private List<MiniWebServerBindingConfiguration> bindings = new();
+        private readonly List<MiniWebServerBindingConfiguration> bindings = new();
         private readonly Dictionary<string, HostConfiguration> hosts = new();
         private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
         private int connectionTimeout;
@@ -177,15 +175,15 @@ namespace MiniWebServer.Server
             }
 
             var server = new MiniWebServer(new MiniWebServerConfiguration()
-                {
-                    Bindings = bindings,
-                    Hosts = hosts.Values.ToList(),
-                    MaxRequestBodySize = maxRequestBodySize,
-                    ConnectionTimeout = connectionTimeout,
-                    ReadBufferSize = readBufferSize,
-                    ReadRequestTimeout = readRequestTimeout,
-                    SendResponseTimeout = sendResponseTimeout,
-                },
+            {
+                Bindings = bindings,
+                Hosts = hosts.Values.ToList(),
+                MaxRequestBodySize = maxRequestBodySize,
+                ConnectionTimeout = connectionTimeout,
+                ReadBufferSize = readBufferSize,
+                ReadRequestTimeout = readRequestTimeout,
+                SendResponseTimeout = sendResponseTimeout,
+            },
                 serviceProvider,
                 serviceProvider.GetService<IProtocolHandlerFactory>(),
                 hostContainers

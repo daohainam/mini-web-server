@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Abstractions.Http
+﻿namespace MiniWebServer.Abstractions.Http
 {
     public class HttpParameters : Dictionary<string, HttpParameter>
     {
@@ -39,7 +33,7 @@ namespace MiniWebServer.Abstractions.Http
         }
 
 
-        public HttpParameters(IEnumerable<HttpParameter> collection) 
+        public HttpParameters(IEnumerable<HttpParameter> collection)
         {
             foreach (var item in collection)
             {

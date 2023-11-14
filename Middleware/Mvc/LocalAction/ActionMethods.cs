@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Mvc.LocalAction
+﻿namespace MiniWebServer.Mvc.LocalAction
 {
     [Flags]
     internal enum ActionMethods // there is no support for Connect method since it is proxy-related

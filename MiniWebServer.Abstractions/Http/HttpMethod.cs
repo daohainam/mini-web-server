@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Abstractions.Http
+﻿namespace MiniWebServer.Abstractions.Http
 {
-    public sealed record HttpMethod: IEquatable<HttpMethod>
+    public sealed record HttpMethod : IEquatable<HttpMethod>
     {
         // https://datatracker.ietf.org/doc/html/rfc9110#name-method-definitions
 

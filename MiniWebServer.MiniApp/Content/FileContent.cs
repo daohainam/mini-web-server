@@ -1,12 +1,5 @@
-﻿using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.Http;
-using System;
+﻿using MiniWebServer.Abstractions.Http;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp.Content
 {
@@ -97,7 +90,8 @@ namespace MiniWebServer.MiniApp.Content
 
                 fs.Close();
                 return file.Length;
-            } catch (Exception)
+            }
+            catch (Exception)
             {
                 return 0;
             }

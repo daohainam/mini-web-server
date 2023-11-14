@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.MiniApp;
-using MiniWebServer.MiniApp.Content;
 
 namespace MiniWebServer.HttpsRedirection
 {

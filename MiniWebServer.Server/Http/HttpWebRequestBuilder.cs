@@ -1,12 +1,6 @@
 ﻿using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Http;
-using System;
-using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.Http
@@ -55,19 +49,19 @@ namespace MiniWebServer.Server.Http
             }
 
             var request = new HttpRequest(
-                requestId, 
-                httpMethod, 
+                requestId,
+                httpMethod,
                 host,
                 port,
-                url, 
-                headers, 
-                queryString, 
-                hash, 
-                parameters, 
-                segments, 
-                new HttpCookies(cookies), 
-                bodyPipeline ?? new Pipe(), 
-                contentLength, 
+                url,
+                headers,
+                queryString,
+                hash,
+                parameters,
+                segments,
+                new HttpCookies(cookies),
+                bodyPipeline ?? new Pipe(),
+                contentLength,
                 contentType,
                 isHttps
                 );

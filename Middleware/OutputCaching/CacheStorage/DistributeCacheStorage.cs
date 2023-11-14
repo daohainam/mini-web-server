@@ -1,9 +1,4 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.OutputCaching.CacheStorage
 {
@@ -11,7 +6,8 @@ namespace MiniWebServer.OutputCaching.CacheStorage
     {
         private readonly IDistributedCache cache;
 
-        public DistributeCacheStorage(IDistributedCache cache) { 
+        public DistributeCacheStorage(IDistributedCache cache)
+        {
             ArgumentNullException.ThrowIfNull(cache);
 
             this.cache = cache;

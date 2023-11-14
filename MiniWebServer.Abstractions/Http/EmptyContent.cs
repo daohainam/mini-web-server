@@ -1,12 +1,4 @@
-﻿using MiniWebServer.Abstractions;
-using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Abstractions.Http
+﻿namespace MiniWebServer.Abstractions.Http
 {
     public class EmptyContent : IHttpContent
     {

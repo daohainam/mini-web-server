@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using MiniWebServer.MiniApp;
-using MiniWebServer.MiniApp.Content;
+﻿using MiniWebServer.MiniApp;
 using System.Text;
 
 namespace MiniWebServer.HstsMiddleware

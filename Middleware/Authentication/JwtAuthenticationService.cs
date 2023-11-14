@@ -1,19 +1,12 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.IdentityModel.Logging;
+using Microsoft.IdentityModel.Tokens;
 using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Authentication;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
-using System.Net.Http.Headers;
-using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Security.Principal;
-using Microsoft.IdentityModel.Logging;
 
 namespace MiniWebServer.Authentication
 {
@@ -77,7 +70,8 @@ namespace MiniWebServer.Authentication
                         }
                     }
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 logger.LogError(ex, "Error authenticating");
             }
@@ -102,7 +96,7 @@ namespace MiniWebServer.Authentication
             if (tokenValidationParameters == null)
                 return new TokenValidationResult() { IsValid = false };
 
-            
+
             var result = await handler.ValidateTokenAsync(token, tokenValidationParameters);
 
             if (!result.IsValid)

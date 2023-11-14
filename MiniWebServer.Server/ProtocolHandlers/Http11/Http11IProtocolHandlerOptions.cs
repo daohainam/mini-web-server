@@ -5,9 +5,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
     public class Http11IProtocolHandlerOptions
     {
         public Http11IProtocolHandlerOptions(
-            IHttpComponentParser http11Parser, 
-            int readBufferSize, 
-            int writeBufferSize, 
+            IHttpComponentParser http11Parser,
+            int readBufferSize,
+            int writeBufferSize,
             int textBufferSize)
         {
             Http11Parser = http11Parser ?? throw new ArgumentNullException(nameof(http11Parser));

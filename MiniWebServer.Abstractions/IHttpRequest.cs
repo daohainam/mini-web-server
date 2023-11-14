@@ -1,15 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
-using MiniWebServer.Abstractions.Http;
-using System;
-using System.Collections.Generic;
+﻿using MiniWebServer.Abstractions.Http;
 using System.IO.Pipelines;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions
 {
-    public interface IHttpRequest: IParametersContainer, IRequestHeadersContainer, IFormContainer, IRequestBodyReader
+    public interface IHttpRequest : IParametersContainer, IRequestHeadersContainer, IFormContainer, IRequestBodyReader
     {
         Http.HttpMethod Method { get; }
         string Host { get; }

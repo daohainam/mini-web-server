@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Mvc.MiniRazorEngine.Parser
+﻿namespace MiniWebServer.Mvc.MiniRazorEngine.Parser
 {
     public class ParseResult
     {
@@ -12,7 +6,7 @@ namespace MiniWebServer.Mvc.MiniRazorEngine.Parser
         {
             Compiled = compiled;
             CompiledContent = compiledContent ?? throw new ArgumentNullException(nameof(compiledContent));
-            Exception = exception;  
+            Exception = exception;
         }
 
         public ParseResult(bool compiled, string compiledContent) : this(compiled, compiledContent, null) { }

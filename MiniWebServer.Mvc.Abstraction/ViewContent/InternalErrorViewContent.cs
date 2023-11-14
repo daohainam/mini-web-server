@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Mvc.Abstraction.ViewContent
+﻿namespace MiniWebServer.Mvc.Abstraction.ViewContent
 {
     public class InternalErrorViewContent : IViewContent
     {

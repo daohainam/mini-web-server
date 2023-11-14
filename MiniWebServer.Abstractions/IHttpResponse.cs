@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO.Pipelines;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using MiniWebServer.Abstractions.Http;
+﻿using MiniWebServer.Abstractions.Http;
 
 namespace MiniWebServer.Abstractions
 {

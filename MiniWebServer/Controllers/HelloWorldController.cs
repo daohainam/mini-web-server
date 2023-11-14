@@ -1,24 +1,20 @@
 ﻿using MiniWebServer.Models;
 using MiniWebServer.Mvc.Abstraction;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Controllers
 {
-    public class HelloWorldController: Controller
+    public class HelloWorldController : Controller
     {
         private readonly ISumCalculator sumCalculator;
-        public HelloWorldController(ISumCalculator sumCalculator) {
+        public HelloWorldController(ISumCalculator sumCalculator)
+        {
             this.sumCalculator = sumCalculator;
         }
 
         public string Index(string? name)
         {
             return "Hello world! " + (name ?? string.Empty);
-        } 
+        }
 
         public async Task<int> SumAsync(int x, int y)
         {

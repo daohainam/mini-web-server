@@ -1,11 +1,5 @@
-﻿using Microsoft.Win32;
-using MiniWebServer.MiniApp;
+﻿using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Mvc.LocalAction
@@ -15,7 +9,8 @@ namespace MiniWebServer.Mvc.LocalAction
         private readonly LocalActionRegistry registry;
         private readonly IRouteMatcher routeMatcher;
 
-        public LocalActionFinder(LocalActionRegistry registry, IRouteMatcher routeMatcher) { 
+        public LocalActionFinder(LocalActionRegistry registry, IRouteMatcher routeMatcher)
+        {
             this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
             this.routeMatcher = routeMatcher ?? throw new ArgumentNullException(nameof(routeMatcher));
         }

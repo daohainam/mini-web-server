@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Abstractions.Http
+﻿namespace MiniWebServer.Abstractions.Http
 {
     public class HttpCookies : Dictionary<string, HttpCookie>
     {
@@ -14,7 +6,7 @@ namespace MiniWebServer.Abstractions.Http
         {
         }
 
-        public HttpCookies(IDictionary<string, HttpCookie> cookies): base(cookies) 
+        public HttpCookies(IDictionary<string, HttpCookie> cookies) : base(cookies)
         {
         }
 

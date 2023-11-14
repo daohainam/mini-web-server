@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Mvc.Abstraction.ActionResults
+﻿namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
     public class OkActionResult : IActionResult
     {
         private readonly object? value;
-        public OkActionResult(object? value) { 
+        public OkActionResult(object? value)
+        {
             this.value = value;
         }
 
         public Task ExecuteResultAsync(ActionResultContext context)
         {
-            context.Response.StatusCode = Abstractions.HttpResponseCodes.OK; 
+            context.Response.StatusCode = Abstractions.HttpResponseCodes.OK;
 
             if (value != null)
             {

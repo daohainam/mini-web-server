@@ -1,11 +1,4 @@
-﻿using MiniWebServer.MiniApp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Mvc.Abstraction.ActionResults
+﻿namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
     public class ViewActionResult : IActionResult
     {
@@ -23,7 +16,7 @@ namespace MiniWebServer.Mvc.Abstraction.ActionResults
             this.model = model;
             this.contentType = contentType ?? "text/html";
             this.viewData = viewData ?? new Dictionary<string, object>();
-            this.viewEngine = viewEngine ?? throw new ArgumentNullException(nameof (viewEngine));
+            this.viewEngine = viewEngine ?? throw new ArgumentNullException(nameof(viewEngine));
         }
 
         public async Task ExecuteResultAsync(ActionResultContext context)

@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Authorization
+﻿namespace MiniWebServer.Authorization
 {
     public static class RouteDictionaryExtensions
     {
@@ -16,14 +9,14 @@ namespace MiniWebServer.Authorization
                 value
             };
 
-            if (values != null )
+            if (values != null)
             {
                 foreach (string v in values)
                 {
                     strings.Add(v);
                 }
             }
-            dictionary[key] = strings.ToArray(); 
+            dictionary[key] = strings.ToArray();
         }
     }
 }

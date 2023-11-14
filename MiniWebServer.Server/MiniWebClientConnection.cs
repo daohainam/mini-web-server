@@ -85,14 +85,14 @@ namespace MiniWebServer.Server
                                 .SetRequestId(requestId)
                                 .SetHttps(config.IsHttps)
                                 .SetPort(localEndPoint.Port);
-                                var request = requestBuilder.Build();
+                            var request = requestBuilder.Build();
 
                             isKeepAlive = request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later
 
                             var app = FindApp(request); // should we reuse apps???
 
                             var response = new HttpResponse(HttpResponseCodes.NotFound, config.ClientStream);
-                            
+
                             if (app != null)
                             {
                                 cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
@@ -120,9 +120,10 @@ namespace MiniWebServer.Server
                             logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
                             await SendResponseAsync(response, cancellationToken);
                         }
-                    } catch (OperationCanceledException)
+                    }
+                    catch (OperationCanceledException)
                     {
-                        isKeepAlive = false; 
+                        isKeepAlive = false;
                     }
                 }
             }
@@ -130,7 +131,8 @@ namespace MiniWebServer.Server
             {
                 logger.LogError(ex, "[{cid}] - Error processing request", ConnectionId);
             }
-            finally {
+            finally
+            {
                 CloseConnection();
             }
         }
@@ -185,9 +187,10 @@ namespace MiniWebServer.Server
                 }
                 config.TcpClient.Close();
             }
-            catch (Exception ex) { 
+            catch (Exception ex)
+            {
                 logger.LogError(ex, "Failed to close connection");
-            }   
+            }
         }
 
         private async Task CallByMethod(MiniAppConnectionContext connectionContext, IMiniApp app, HttpRequest request, IHttpResponse response, CancellationToken cancellationToken)
@@ -203,7 +206,8 @@ namespace MiniWebServer.Server
                     try
                     {
                         await action.InvokeAsync(context, cancellationToken);
-                    } catch (Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         logger.LogError(ex, "[{cid}] - Error executing action handler", ConnectionId);
                         response.StatusCode = HttpResponseCodes.InternalServerError;

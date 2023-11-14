@@ -1,12 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MiniWebServer.Abstractions.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Abstractions.Http.Tests
+﻿namespace MiniWebServer.Abstractions.Http.Tests
 {
     [TestClass()]
     public class HttpCookieTests

@@ -1,12 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MiniWebServer.Abstractions.Http.Header;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Abstractions.Http.Header.Tests
+﻿namespace MiniWebServer.Abstractions.Http.Header.Tests
 {
     [TestClass()]
     public class RangeHeaderHeaderTests
@@ -22,7 +14,7 @@ namespace MiniWebServer.Abstractions.Http.Header.Tests
             Assert.AreEqual(result, b);
 
             if (result)
-            { 
+            {
                 Assert.IsNotNull(header);
                 Assert.AreEqual(rangeUnit, header.Unit);
                 Assert.AreEqual(start, header.Parts[0].Start);

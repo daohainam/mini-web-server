@@ -1,9 +1,4 @@
 ﻿using MiniWebServer.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.OutputCaching
 {
@@ -53,7 +48,7 @@ namespace MiniWebServer.OutputCaching
         {
             var policy = new OutputCachePolicy(
                 pathMatching ?? (path => false),
-                methods.Any() ? methods: null, // null to use default values
+                methods.Any() ? methods : null, // null to use default values
                 httpResponseCodes.Any() ? httpResponseCodes : null,
                 expire
                 );

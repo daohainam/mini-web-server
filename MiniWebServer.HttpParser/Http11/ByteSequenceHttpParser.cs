@@ -2,20 +2,14 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Web;
-using System.Xml.Linq;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.HttpParser.Http11
 {
     // we will migrate code to this, working on RegEx is much slower and also hard to keep it safe (because we cannot control what clients send to us)
-    public class ByteSequenceHttpParser: IHttpComponentParser
+    public class ByteSequenceHttpParser : IHttpComponentParser
     {
         private readonly ILogger<ByteSequenceHttpParser> logger;
         private static readonly Dictionary<HttpMethod, byte[]> supportedMethodBytes = new() {
@@ -56,7 +50,8 @@ namespace MiniWebServer.HttpParser.Http11
         private static readonly byte[] HTTP1_1_CR_Bytes = Encoding.ASCII.GetBytes("HTTP/1.1\r");
         private readonly int maxUrlPartLength;
 
-        public ByteSequenceHttpParser(ILoggerFactory? loggerFactory = default, int maxUrlPartLength = -1) {
+        public ByteSequenceHttpParser(ILoggerFactory? loggerFactory = default, int maxUrlPartLength = -1)
+        {
             // note that maxUrlPartLength includes all url parts (url, hash, query string)
             if (loggerFactory != null)
             {
@@ -66,12 +61,12 @@ namespace MiniWebServer.HttpParser.Http11
             {
                 logger = new NullLogger<ByteSequenceHttpParser>();
             }
-            
+
             this.maxUrlPartLength = maxUrlPartLength <= 0 ? 8192 : maxUrlPartLength; // 8192 = 8KB
         }
 
         // in any case, if this function returns null, server should return a 400 Bad Request
-        public virtual HttpRequestLine? ParseRequestLine(ReadOnlySequence<byte> buffer) 
+        public virtual HttpRequestLine? ParseRequestLine(ReadOnlySequence<byte> buffer)
         {
             SequencePosition? pos = buffer.PositionOf((byte)' '); // there are 2 SPs in a request line
 
@@ -91,7 +86,8 @@ namespace MiniWebServer.HttpParser.Http11
                 }
 
                 var span = methodBytes.FirstSpan;
-                foreach (var supportedHeader in supportedMethodBytes) { 
+                foreach (var supportedHeader in supportedMethodBytes)
+                {
                     if (span.SequenceCompareTo(supportedHeader.Value) == 0)
                     {
                         httpMethod = supportedHeader.Key;
@@ -203,7 +199,7 @@ namespace MiniWebServer.HttpParser.Http11
                 return false;
             }
 
-            url =  uri.AbsolutePath;
+            url = uri.AbsolutePath;
             hash = uri.Fragment;
             queryString = Uri.UnescapeDataString(uri.Query);
             segments = uri.Segments;

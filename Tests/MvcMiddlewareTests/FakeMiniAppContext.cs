@@ -1,11 +1,6 @@
 ﻿using MiniWebServer.Abstractions;
 using MiniWebServer.MiniApp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MvcMiddlewareTests
 {
@@ -13,7 +8,8 @@ namespace MvcMiddlewareTests
     {
         private readonly IHttpRequest request;
 
-        public FakeMiniAppContext(Func<IHttpRequest> request) { 
+        public FakeMiniAppContext(Func<IHttpRequest> request)
+        {
             this.request = request();
         }
 

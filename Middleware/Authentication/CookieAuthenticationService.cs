@@ -4,12 +4,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Authentication;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Authentication
 {
@@ -105,7 +99,7 @@ namespace MiniWebServer.Authentication
 
         public Task SignOutAsync(IMiniAppContext context)
         {
-            var principal = context.User; 
+            var principal = context.User;
             if (principal == null)
                 return Task.CompletedTask;
 

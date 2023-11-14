@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 
 namespace MiniWebServer.Abstractions.Http.Header.Parsers
 {
-    internal partial class RangeHeaderParser: IHeaderParser
+    internal partial class RangeHeaderParser : IHeaderParser
     {
         public static bool TryParse(string s, out RangeHeader? rangeHeader)
         {

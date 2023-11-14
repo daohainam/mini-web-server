@@ -1,21 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MiniWebServer.Abstractions;
 using MiniWebServer.HttpParser.Http11;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Parsers;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Server.Cookie;
 using MiniWebServer.Server.ProtocolHandlers.Http11;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Server
 {
-    public class ProtocolHandlerFactory: IProtocolHandlerFactory
+    public class ProtocolHandlerFactory : IProtocolHandlerFactory
     {
         public const int HTTP11 = 101;
         private readonly ILoggerFactory loggerFactory;
@@ -33,8 +27,8 @@ namespace MiniWebServer.Server
             {
                 // in reality we often use the default parsers
 
-                return new Http11IProtocolHandler(config, loggerFactory, 
-                    services.GetService<IHttpComponentParser>() ?? new ByteSequenceHttpParser(loggerFactory), 
+                return new Http11IProtocolHandler(config, loggerFactory,
+                    services.GetService<IHttpComponentParser>() ?? new ByteSequenceHttpParser(loggerFactory),
                     services.GetService<ICookieValueParser>() ?? new DefaultCookieParser(loggerFactory)
                     );
             }

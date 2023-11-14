@@ -6,7 +6,7 @@ using MiniWebServer.Mvc.MiniRazorEngine.Parser;
 
 namespace MiniWebServer.Mvc.RazorEngine
 {
-    public class MiniRazorViewEngine: IViewEngine
+    public class MiniRazorViewEngine : IViewEngine
     {
         public const string DefaultViewFolder = "Views";
 

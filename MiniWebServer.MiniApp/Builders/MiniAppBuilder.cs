@@ -1,18 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Resources;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.MiniApp.Builders
 {
     public class MiniAppBuilder : IMiniAppBuilder
     {
         public IServiceCollection Services { get; }
-        
+
         private readonly List<Type> middlewareTypes = new();
 
         public MiniAppBuilder(IServiceCollection? services = default)
@@ -36,7 +29,8 @@ namespace MiniWebServer.MiniApp.Builders
             {
                 var middlewareFactory = services.GetService<IMiddlewareFactory>();
 
-                foreach (var type in middlewareTypes) {
+                foreach (var type in middlewareTypes)
+                {
                     IMiddleware? middleware = null;
 
                     if (middlewareFactory != null)

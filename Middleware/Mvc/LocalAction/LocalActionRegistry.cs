@@ -1,12 +1,4 @@
-﻿using MiniWebServer.MiniApp;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
-
-namespace MiniWebServer.Mvc.LocalAction
+﻿namespace MiniWebServer.Mvc.LocalAction
 {
     // this class contains a list of local actions, the list is fulfilled by scanning action methods from Controller classes
     internal class LocalActionRegistry : IActionRegistry

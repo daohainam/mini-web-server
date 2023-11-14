@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.MiniApp;
 
 namespace MiniWebServer.OutputCaching
@@ -30,7 +29,7 @@ namespace MiniWebServer.OutputCaching
 
             IOutputCachePolicy? policy = null;
 
-            foreach (var p in options.Policies)  
+            foreach (var p in options.Policies)
             {
                 try
                 {
@@ -43,7 +42,8 @@ namespace MiniWebServer.OutputCaching
                         break;
                     }
 
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     logger.LogError(ex, "Error matching: {url}", url);
                 }

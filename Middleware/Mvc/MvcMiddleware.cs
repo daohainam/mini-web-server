@@ -1,16 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.Abstractions;
 using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction;
-using System;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
-using System.Threading.Tasks;
-using static System.Collections.Specialized.BitVector32;
 
 namespace MiniWebServer.Mvc
 {
@@ -65,13 +61,14 @@ namespace MiniWebServer.Mvc
                         context.Response.StatusCode = HttpResponseCodes.InternalServerError;
 
                         return;
-                    } 
+                    }
                 }
                 else
                 {
                     await next.InvokeAsync(context, cancellationToken);
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 logger.LogError(ex, "Unhandled error while processing request");
                 context.Response.StatusCode = HttpResponseCodes.InternalServerError;
@@ -258,8 +255,8 @@ namespace MiniWebServer.Mvc
             bool hasDefaultValue,
             object? defaultValue,
             bool readFromForm,
-            ParameterSources parameterSources, 
-            IServiceProvider localServiceProvider, 
+            ParameterSources parameterSources,
+            IServiceProvider localServiceProvider,
             Func<IParametersContainer> parametersContainer,
             Func<IRequestHeadersContainer> requestHeadersContainer,
             Func<IRequestBodyReader> requestBodyReader,
@@ -288,7 +285,8 @@ namespace MiniWebServer.Mvc
                     var value = JsonSerializer.Deserialize(body, parameterType);
 
                     return CreateParameterValueResult.Success(value);
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     logger?.LogError(ex, "Error deserializing body to parameter: {p}", parameterName);
 

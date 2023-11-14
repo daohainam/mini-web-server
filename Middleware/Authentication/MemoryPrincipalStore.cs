@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Concurrent;
 using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Authentication
 {
@@ -14,8 +9,9 @@ namespace MiniWebServer.Authentication
 
         public ClaimsPrincipal? GetPrincipal(string key)
         {
-            if (principals.TryGetValue(key, out ClaimsPrincipal? principal)) { 
-                return principal; 
+            if (principals.TryGetValue(key, out ClaimsPrincipal? principal))
+            {
+                return principal;
             }
 
             return null;

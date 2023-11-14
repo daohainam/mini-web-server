@@ -1,10 +1,4 @@
-﻿using MiniWebServer.Abstractions;
-using MiniWebServer.Server.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MiniWebServer.Server.Http;
 
 namespace Http11ProtocolTests.ProtocolHandlers.Http11
 {
@@ -16,7 +10,7 @@ namespace Http11ProtocolTests.ProtocolHandlers.Http11
             HttpWebRequestBuilder = httpWebRequestBuilder;
         }
 
-        public bool Success { get; set; } 
+        public bool Success { get; set; }
         public HttpWebRequestBuilder HttpWebRequestBuilder { get; set; }
     }
 }

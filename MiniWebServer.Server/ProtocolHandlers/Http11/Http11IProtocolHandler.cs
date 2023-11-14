@@ -1,20 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
-using System.Net;
-using System.Text;
-using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
-using System;
-using System.Buffers;
-using System.IO.Pipelines;
-using System.Threading;
-using System.Xml.Linq;
-using System.Net.Http;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
-using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Server.Abstractions.Parsers;
-using System.Reflection.PortableExecutable;
-using MiniWebServer.Server.ProtocolHandlers.Http11.ContentWriter;
+using MiniWebServer.Server.Abstractions.Parsers.Http11;
+using System.Buffers;
+using System.IO.Pipelines;
+using System.Text;
+using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {

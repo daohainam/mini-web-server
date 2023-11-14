@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Abstractions.Http
+﻿namespace MiniWebServer.Abstractions.Http
 {
-    public class HttpResponseHeaders: HttpHeaders
+    public class HttpResponseHeaders : HttpHeaders
     {
-        public HttpResponseHeaders() { 
+        public HttpResponseHeaders()
+        {
             ContentLength = 0;
         }
         public long ContentLength

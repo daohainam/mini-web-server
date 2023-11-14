@@ -8,7 +8,6 @@ using MiniWebServer.Mvc.RazorEngine;
 using MiniWebServer.Mvc.RazorLightTemplateParser;
 using MiniWebServer.Mvc.RouteMatchers;
 using System.Reflection;
-using System.Xml.Linq;
 
 namespace MiniWebServer.Session
 {

@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MiniWebServer.Server
+﻿namespace MiniWebServer.Server
 {
-    internal class RequestIdManager: IRequestIdManager
+    internal class RequestIdManager : IRequestIdManager
     {
         private ulong currentId = 1;
         public ulong GetNext()

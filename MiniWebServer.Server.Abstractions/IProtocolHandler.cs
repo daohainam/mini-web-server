@@ -1,7 +1,5 @@
 ﻿using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Http;
-using System.Buffers;
 using System.IO.Pipelines;
 
 namespace MiniWebServer.Server.Abstractions

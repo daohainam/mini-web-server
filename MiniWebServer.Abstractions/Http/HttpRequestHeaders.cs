@@ -1,31 +1,27 @@
 ﻿using MiniWebServer.Abstractions.Http.Header;
 using MiniWebServer.Abstractions.Http.Header.Parsers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http
 {
     // here is the this of standard request headers defined in 
-    public class HttpRequestHeaders: HttpHeaders
+    public class HttpRequestHeaders : HttpHeaders
     {
         private readonly Dictionary<string, IHeaderParser> headerParsers = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, object> parsedValues = new(StringComparer.OrdinalIgnoreCase);
-        public HttpRequestHeaders() {
+        public HttpRequestHeaders()
+        {
             headerParsers.Add(HttpHeaderNames.Range, new RangeHeaderParser());
 
             HeaderAdded += HttpRequestHeaders_AddedOrModified;
             HeaderChanged += HttpRequestHeaders_AddedOrModified;
             HeaderRemoved += HttpRequestHeaders_HeaderRemoved;
         }
-        public HttpRequestHeaders(string name, string value): this()
+        public HttpRequestHeaders(string name, string value) : this()
         {
             Add(name, value);
         }
 
-        public HttpRequestHeaders(params HttpHeader[] headers): this()
+        public HttpRequestHeaders(params HttpHeader[] headers) : this()
         {
             foreach (var header in headers)
             {
@@ -135,16 +131,17 @@ namespace MiniWebServer.Abstractions.Http
             }
         }
 
-        public RangeHeader? Range { 
-            get 
-            { 
+        public RangeHeader? Range
+        {
+            get
+            {
                 if (parsedValues.TryGetValue(HttpHeaderNames.Range, out var range))
                 {
                     return range as RangeHeader;
                 }
 
                 return null;
-            } 
+            }
         }
 
         private string TryGetValueAsString(string name, string defaultValue = "")

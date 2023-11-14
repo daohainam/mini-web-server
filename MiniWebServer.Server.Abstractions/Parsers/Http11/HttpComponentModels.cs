@@ -1,9 +1,4 @@
 ﻿using MiniWebServer.Abstractions.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.Abstractions.Parsers.Http11
