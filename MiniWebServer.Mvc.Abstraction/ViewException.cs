@@ -15,9 +15,5 @@ namespace MiniWebServer.Mvc.Abstraction
         public ViewException(string? message, Exception? innerException) : base(message, innerException)
         {
         }
-
-        protected ViewException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }
