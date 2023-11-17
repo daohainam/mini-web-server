@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<PreserveCompilationContext>true</PreserveCompilationContext>
-		<PublishAot>true</PublishAot>
+		<PublishAot>false</PublishAot>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
