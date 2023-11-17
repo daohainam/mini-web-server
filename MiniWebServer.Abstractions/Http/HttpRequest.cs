@@ -77,7 +77,7 @@ namespace MiniWebServer.Abstractions.Http
         {
             get
             {
-                return !"close".Equals(Headers.Connection, StringComparison.InvariantCultureIgnoreCase); // it is keep-alive by default
+                return !"close".Equals(Headers.Connection, StringComparison.OrdinalIgnoreCase); // it is keep-alive by default
             }
         }
 

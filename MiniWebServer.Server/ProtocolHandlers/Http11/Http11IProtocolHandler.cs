@@ -134,7 +134,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                             requestBuilder.AddHeader(headerLine.Name, headerLine.Value);
 
                             // here we have some checks for important headers
-                            if ("Host".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            if ("Host".Equals(headerLine.Name, StringComparison.OrdinalIgnoreCase))
                             {
                                 var host = headerLine.Value;
                                 int idx = host.IndexOf(':');
@@ -145,7 +145,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                                 requestBuilder.SetHost(host);
                             }
-                            else if ("Content-Length".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            else if ("Content-Length".Equals(headerLine.Name, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (long.TryParse(headerLine.Value, out long length) && length >= 0)
                                 {
@@ -157,12 +157,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                                     return false;
                                 }
                             }
-                            else if ("Content-Type".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            else if ("Content-Type".Equals(headerLine.Name, StringComparison.OrdinalIgnoreCase))
                             {
                                 contentType = headerLine.Value;
                                 requestBuilder.SetContentType(contentType);
                             }
-                            else if ("Cookie".Equals(headerLine.Name, StringComparison.InvariantCultureIgnoreCase))
+                            else if ("Cookie".Equals(headerLine.Name, StringComparison.OrdinalIgnoreCase))
                             {
                                 var cookies = cookieValueParser.ParseCookieHeader(headerLine.Value);
                                 if (cookies == null)

@@ -6,7 +6,7 @@
         {
             // we will replace with RegEx later
 
-            return string.Compare(routeUrl, url, StringComparison.InvariantCultureIgnoreCase) == 0;
+            return string.Compare(routeUrl, url, StringComparison.OrdinalIgnoreCase) == 0;
         }
     }
 }

@@ -144,6 +144,36 @@ namespace MiniWebServer.Abstractions.Http
             }
         }
 
+        public string SecWebSocketKey
+        {
+            get
+            {
+                return TryGetValueAsString("Sec-WebSocket-Key");
+            }
+        }
+        public string SecWebSocketProtocol
+        {
+            get
+            {
+                return TryGetValueAsString("Sec-WebSocket-Protocol");
+            }
+        }
+        public string SecWebSocketVersion
+        {
+            get
+            {
+                return TryGetValueAsString("Sec-WebSocket-Version");
+            }
+        }
+
+        public string Upgrade
+        {
+            get
+            {
+                return TryGetValueAsString("Upgrade");
+            }
+        }
+
         private string TryGetValueAsString(string name, string defaultValue = "")
         {
             if (TryGetValue(name, out var value))

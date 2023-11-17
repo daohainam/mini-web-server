@@ -2,6 +2,7 @@
 {
     public enum HttpResponseCodes
     {
+        SwitchingProtocols = 101,
         OK = 200,
         PartialContent = 206,
         TemporaryRedirect = 307,

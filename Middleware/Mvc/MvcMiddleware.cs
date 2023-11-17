@@ -302,7 +302,7 @@ namespace MiniWebServer.Mvc
 
                 if ((parameterSources & ParameterSources.Query) == ParameterSources.Query)
                 {
-                    var requestParameter = parametersContainer().QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase)).Select(p => p.Value).FirstOrDefault();
+                    var requestParameter = parametersContainer().QueryParameters.Where(p => p.Key.Equals(parameterName, StringComparison.OrdinalIgnoreCase)).Select(p => p.Value).FirstOrDefault();
                     if (requestParameter != null) // a parameter found in Request.Query
                     {
                         requestParameterValue = requestParameter.Values.FirstOrDefault(); // TODO: we should support multi value parameters
