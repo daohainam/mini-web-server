@@ -12,7 +12,7 @@
     <PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
     <PackageIcon>Resources\icon-128x128.png</PackageIcon>
     <PackageTags>webserver;mini-web-server</PackageTags>
-    <Version>0.3.2</Version>
+    <Version>0.3.3</Version>
     <Description>Output caching middleware for Mini-Web-Server.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
