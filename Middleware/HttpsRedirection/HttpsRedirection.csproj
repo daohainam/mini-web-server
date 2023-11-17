@@ -1,37 +1,34 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<AssemblyName>MiniWebServer.$(MSBuildProjectName)</AssemblyName>
-		<RootNamespace>MiniWebServer.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Title>Mini-Web-Server Https Redirection</Title>
-		<Authors>Dao Hai Nam</Authors>
-		<RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
-		<PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
-		<PackageIcon>Resources\icon-128x128.png</PackageIcon>
-		<PackageTags>webserver;mini-web-server</PackageTags>
-		<Version>0.3.1</Version>
-		<Description>Https redirection middleware for Mini-Web-Server.</Description>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Resources\icon-128x128.png">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Update="README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-	</ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>MiniWebServer.$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace>MiniWebServer.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Mini-Web-Server Https Redirection</Title>
+    <Authors>Dao Hai Nam</Authors>
+    <RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
+    <PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
+    <PackageIcon>Resources\icon-128x128.png</PackageIcon>
+    <PackageTags>webserver;mini-web-server</PackageTags>
+    <Version>0.3.3</Version>
+    <Description>Https redirection middleware for Mini-Web-Server.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Resources\icon-128x128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 </Project>

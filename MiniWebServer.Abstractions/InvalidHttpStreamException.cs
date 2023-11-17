@@ -15,9 +15,5 @@ namespace MiniWebServer.Abstractions
         public InvalidHttpStreamException(string? message, Exception? innerException) : base(message, innerException)
         {
         }
-
-        protected InvalidHttpStreamException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }

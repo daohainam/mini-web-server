@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33530.505
@@ -60,7 +60,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpsRedirection", "Middlew
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MimeMapping", "MiniWebServer.MimeMapping\MiniWebServer.MimeMapping.csproj", "{560D19BE-F248-4DA8-9187-0D3F6397DB81}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HstsMiddleware", "Middleware\HstsMiddleware\HstsMiddleware.csproj", "{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HstsMiddleware", "Middleware\HstsMiddleware\HstsMiddleware.csproj", "{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

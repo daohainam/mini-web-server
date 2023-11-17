@@ -1,45 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Title>Mini-Web-Server</Title>
-		<Authors>Dao Hai Nam</Authors>
-		<RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
-		<PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
-		<PackageIcon>Resources\icon-128x128.png</PackageIcon>
-		<PackageTags>webserver;mini-web-server</PackageTags>
-		<Version>0.3.2</Version>
-		<Description>Abstraction layer for Mini-Web-Server</Description>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<PackageReference Include="HttpMultipartParser" Version="8.2.0" />
-		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
-		<PackageReference Include="System.IO.Pipelines" Version="7.0.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\MiniWebServer.Configuration\MiniWebServer.Configuration.csproj" />
-		<ProjectReference Include="..\MiniWebServer.Helpers\MiniWebServer.Helpers.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Resources\icon-128x128.png">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Update="README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-	</ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Mini-Web-Server</Title>
+    <Authors>Dao Hai Nam</Authors>
+    <RepositoryUrl>https://github.com/daohainam/mini-web-server</RepositoryUrl>
+    <PackageProjectUrl>https://www.mini-web-server.com/</PackageProjectUrl>
+    <PackageIcon>Resources\icon-128x128.png</PackageIcon>
+    <PackageTags>webserver;mini-web-server</PackageTags>
+    <Version>0.3.3</Version>
+    <Description>Abstraction layer for Mini-Web-Server</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="HttpMultipartParser" Version="8.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MiniWebServer.Configuration\MiniWebServer.Configuration.csproj" />
+    <ProjectReference Include="..\MiniWebServer.Helpers\MiniWebServer.Helpers.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Resources\icon-128x128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 </Project>
