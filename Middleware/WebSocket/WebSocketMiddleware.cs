@@ -7,35 +7,35 @@ using System.Text;
 namespace MiniWebServer.WebSocket
 {
     // https://datatracker.ietf.org/doc/html/rfc6455
-    public class WebSocketMiddleware: IMiddleware
+    public class WebSocketMiddleware(WebSocketOptions options, ILogger<WebSocketMiddleware> logger) : IMiddleware
     {
-        private WebSocketOptions options;
-        private readonly ILogger<WebSocketMiddleware> logger;
-
-        public WebSocketMiddleware(WebSocketOptions options, ILogger<WebSocketMiddleware> logger)
-        {
-            this.options = options ?? throw new ArgumentNullException(nameof(options));
-            this.logger = logger ?? NullLogger<WebSocketMiddleware>.Instance;
-        }
+        private readonly WebSocketOptions options = options ?? throw new ArgumentNullException(nameof(options));
+        private readonly ILogger<WebSocketMiddleware> logger = logger ?? NullLogger<WebSocketMiddleware>.Instance;
 
         public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
         {
-            try
+            if (options.RequestMatcher(context))
             {
-                if (IsUpgradeRequest(context, out string? originalNonce) && originalNonce != null)
+                try
                 {
-                    // now we are ready to upgrade the connection to websocket
+                    if (IsUpgradeRequest(context, out string? originalNonce) && originalNonce != null)
+                    {
+                        // now we are ready to upgrade the connection to websocket
+                        logger.LogInformation("Connection ready to upgrade to WebSocket");
 
-                    context.Response.StatusCode = Abstractions.HttpResponseCodes.SwitchingProtocols;
-                    context.Response.Headers.Connection = "Upgrade";
-                    context.Response.Headers.SecWebSocketAccept = WebSocketHandshakeHelpers.BuildSecWebSocketAccept(originalNonce);
+                        context.Response.StatusCode = Abstractions.HttpResponseCodes.SwitchingProtocols;
+                        context.Response.Headers.Connection = "Upgrade";
+                        context.Response.Headers.SecWebSocketAccept = WebSocketHandshakeHelpers.BuildSecWebSocketAccept(originalNonce);
+                    }
                 }
-            } catch (Exception ex) {
-                logger.LogError(ex, "Error checking WebSocket request");
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error checking WebSocket request");
 
-                // it is actually not necessary to send Bad Request, according to RFC6455 we can keep the connection open and continue serving HTTP requests
-                context.Response.StatusCode = Abstractions.HttpResponseCodes.BadRequest; 
-                return;
+                    // it is actually not necessary to send Bad Request, according to RFC6455 we can keep the connection open and continue serving HTTP requests
+                    context.Response.StatusCode = Abstractions.HttpResponseCodes.BadRequest;
+                    return;
+                }
             }
 
             await next.InvokeAsync(context, cancellationToken);
@@ -70,13 +70,13 @@ namespace MiniWebServer.WebSocket
                             {
                                 throw new FormatException("Sec-WebSocket-Key original value length must be 16");
                             }
-                            foreach (var b in bytes)
-                            {
-                                if (b < 32 || b > 127)
-                                {
-                                    throw new FormatException("Sec-WebSocket-Key contains invalid characters");
-                                }
-                            }
+                            //foreach (var b in bytes)
+                            //{
+                            //    if (b < 32 || b > 127)
+                            //    {
+                            //        throw new FormatException("Sec-WebSocket-Key contains invalid characters");
+                            //    }
+                            //}
                             originalNonce = Encoding.UTF8.GetString(bytes);
                         }
                         catch {

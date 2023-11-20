@@ -7,21 +7,24 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.WebSocket
 {
-    internal class WebSocketHandshakeHelpers
+    internal static class WebSocketHandshakeHelpers
     {
-        private const string SecSocketKeyMagic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"; // server uses this 'magic' id to build Sec-WebSocket-Accept response header
+        private static ReadOnlySpan<byte> SecSocketKeyMagic => "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"u8; // server uses this 'magic' id to build Sec-WebSocket-Accept response header
 
         public static string BuildSecWebSocketAccept(string clientNonce)
         {
-            StringBuilder sb = new();
-
-            sb.Append(clientNonce);
-            sb.Append(SecSocketKeyMagic);
-
-            var bytes = Encoding.UTF8.GetBytes(sb.ToString());
-            var sha1 = SHA1.HashData(bytes);
-
-            return Convert.ToBase64String(sha1);
+            Span<byte> mergedBytes = stackalloc byte[60]; // strlen(clientNonce) + strlen(SecSocketKeyMagic) 
+            Encoding.UTF8.GetBytes(clientNonce, mergedBytes);
+            SecSocketKeyMagic.CopyTo(mergedBytes[24..]);
+            Span<byte> sha1 = stackalloc byte[20];
+            if (SHA1.HashData(mergedBytes, sha1) == 20)
+            {
+                throw new InvalidOperationException("Could not hash data for Sec-WebSocket-Accept header value");
+            }
+            else
+            {
+                return Convert.ToBase64String(sha1);
+            }
         }
     }
 }

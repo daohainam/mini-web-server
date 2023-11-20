@@ -61,7 +61,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.MimeMapping",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HstsMiddleware", "Middleware\HstsMiddleware\HstsMiddleware.csproj", "{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocket", "Middleware\WebSocket\WebSocket.csproj", "{4A5ED635-0A28-40F8-94A1-8CD00543AB70}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebSocket", "Middleware\WebSocket\WebSocket.csproj", "{4A5ED635-0A28-40F8-94A1-8CD00543AB70}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.WebSocket.Abstractions", "MiniWebServer.WebSocket.Abstractions\MiniWebServer.WebSocket.Abstractions.csproj", "{87CCD997-C4C9-4E2F-B773-70C67DDEFC65}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -177,6 +179,10 @@ Global
 		{4A5ED635-0A28-40F8-94A1-8CD00543AB70}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A5ED635-0A28-40F8-94A1-8CD00543AB70}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A5ED635-0A28-40F8-94A1-8CD00543AB70}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87CCD997-C4C9-4E2F-B773-70C67DDEFC65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87CCD997-C4C9-4E2F-B773-70C67DDEFC65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87CCD997-C4C9-4E2F-B773-70C67DDEFC65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87CCD997-C4C9-4E2F-B773-70C67DDEFC65}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

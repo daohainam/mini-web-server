@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.WebSockets;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -120,6 +121,7 @@ namespace MiniWebServer
             appBuilder.UseSession();
             appBuilder.UseStaticFiles("wwwroot", defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days
             appBuilder.UseMvc();
+            appBuilder.UseWebSockets();
 
             return appBuilder.Build();
         }
@@ -198,6 +200,13 @@ namespace MiniWebServer
                 context.Response.Content = new MiniApp.Content.StringContent("Received as text: " + text);
             });
 
+            //websocket
+            app.Map("/chatwsserver", async (context, cancellationToken) => {
+
+            },
+            Abstractions.Http.HttpMethod.Get, Abstractions.Http.HttpMethod.Options // OPTIONS method is used in HTTP/2
+            );
+
             return app;
         }
 
@@ -213,6 +222,7 @@ namespace MiniWebServer
 
             services.AddMvcService();
             services.AddSessionService();
+            services.AddWebSocketService();
 
             services.AddSingleton<ISumCalculator>(services => new SumCalculator());
         }

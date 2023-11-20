@@ -61,10 +61,10 @@ namespace MiniWebServer.Server
 
                     SslServerAuthenticationOptions options = new()
                     {
-                        ApplicationProtocols = new()
-                        {
+                        ApplicationProtocols =
+                        [
                             SslApplicationProtocol.Http11
-                        },
+                        ],
                         ServerCertificate = binding.Certificate,
                         EnabledSslProtocols = SslProtocols.None, // use the system default version
                         ClientCertificateRequired = false,
@@ -72,7 +72,7 @@ namespace MiniWebServer.Server
                         RemoteCertificateValidationCallback = ValidateClientCertificate
                     };
 
-                    sslStream.AuthenticateAsServer(options);
+                    await sslStream.AuthenticateAsServerAsync(options);
 
                     stream = sslStream;
                     isHttps = true;

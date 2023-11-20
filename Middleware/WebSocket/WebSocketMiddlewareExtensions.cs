@@ -7,7 +7,7 @@ namespace MiniWebServer.Session
 {
     public static class WebSocketMiddlewareExtensions
     {
-        public static void UseWebSocket(this IServiceCollection services, Action<WebSocketOptions>? configureOptions = default)
+        public static void AddWebSocketService(this IServiceCollection services, Action<WebSocketOptions>? configureOptions = default)
         {
             ArgumentNullException.ThrowIfNull(services, nameof(services));
 
@@ -18,6 +18,13 @@ namespace MiniWebServer.Session
                 options,
                 services.GetRequiredService<ILogger<WebSocketMiddleware>>()
                 ));
+        }
+
+        public static void UseWebSockets(this IMiniAppBuilder appBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(appBuilder, nameof(appBuilder));
+
+            appBuilder.UseMiddleware<WebSocketMiddleware>();
         }
     }
 }
