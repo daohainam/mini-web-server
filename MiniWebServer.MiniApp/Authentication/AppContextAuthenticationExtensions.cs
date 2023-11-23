@@ -5,7 +5,7 @@ namespace MiniWebServer.MiniApp.Authentication
 {
     public static class AppContextAuthenticationExtensions
     {
-        public static async Task SignInAsync(this IMiniAppContext context, ClaimsPrincipal principal)
+        public static async Task SignInAsync(this IMiniAppRequestContext context, ClaimsPrincipal principal)
         {
             context.User = principal;
 
@@ -20,7 +20,7 @@ namespace MiniWebServer.MiniApp.Authentication
 
         }
 
-        public static async Task SignOutAsync(this IMiniAppContext context)
+        public static async Task SignOutAsync(this IMiniAppRequestContext context)
         {
             context.User = null;
 

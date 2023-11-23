@@ -2,6 +2,6 @@
 {
     public interface ICallableService
     {
-        ICallable? Find(IMiniAppContext request);
+        ICallable? Find(IMiniAppRequestContext request);
     }
 }

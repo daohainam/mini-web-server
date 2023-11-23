@@ -2,14 +2,14 @@
 {
     internal class RequestDelegateAsyncCallableFilter : ICallableFilter
     {
-        private readonly Func<IMiniAppContext, CancellationToken, Task<bool>> filter;
+        private readonly Func<IMiniAppRequestContext, CancellationToken, Task<bool>> filter;
 
-        public RequestDelegateAsyncCallableFilter(Func<IMiniAppContext, CancellationToken, Task<bool>> filter)
+        public RequestDelegateAsyncCallableFilter(Func<IMiniAppRequestContext, CancellationToken, Task<bool>> filter)
         {
             this.filter = filter;
         }
 
-        public async Task<bool> InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken)
+        public async Task<bool> InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 

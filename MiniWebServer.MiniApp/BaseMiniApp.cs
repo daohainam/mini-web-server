@@ -8,7 +8,7 @@ namespace MiniWebServer.MiniApp
         // (update after checking https://github.com/microsoft/referencesource/blob/master/mscorlib/system/collections/generic/dictionary.cs#L297)
         // Dictionary is based on checksum and it is good enough to use here, we just need to partition by method (or may be by request segments also?)
 
-        private readonly IDictionary<string, ActionDelegate> endpoints = new Dictionary<string, ActionDelegate>();
+        private readonly IDictionary<string, CallableActionDelegate> callableEndpoints = new Dictionary<string, CallableActionDelegate>();
         private readonly ServiceProvider services;
         private readonly IEnumerable<IMiddleware> middlewareChain;
 
@@ -25,22 +25,21 @@ namespace MiniWebServer.MiniApp
                 throw new ArgumentException("Methods required", nameof(methods));
             }
 
-            var r = new ActionDelegate(route, action, methods);
+            var r = new CallableActionDelegate(route, action, methods);
 
-            if (endpoints.ContainsKey(route))
-                endpoints[route] = r;
+            if (callableEndpoints.ContainsKey(route))
+                callableEndpoints[route] = r;
             else
-                endpoints.Add(route, r);
+                callableEndpoints.Add(route, r);
 
             return r;
         }
 
-
-        public virtual ICallable? Find(IMiniAppContext context)
+        public virtual ICallable? Find(IMiniAppRequestContext context)
         {
             ICallable callable = this;
 
-            foreach (var action in endpoints.Values)
+            foreach (var action in callableEndpoints.Values)
             {
                 if (action.IsMatched(context.Request.Url, context.Request.Method))
                 {
@@ -49,17 +48,20 @@ namespace MiniWebServer.MiniApp
                 }
             }
 
-            foreach (var middleware in middlewareChain)
+            if (!context.WebSockets.IsUpgradeRequest)
             {
-                var callWrapper = new MiddlewareWrapper(middleware, callable);
+                foreach (var middleware in middlewareChain)
+                {
+                    var callWrapper = new MiddlewareWrapper(middleware, callable);
 
-                callable = callWrapper;
+                    callable = callWrapper;
+                }
             }
 
             return callable;
         }
 
-        public Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
+        public Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
         {
             context.Response.StatusCode = Abstractions.HttpResponseCodes.NotFound;
 
@@ -77,7 +79,7 @@ namespace MiniWebServer.MiniApp
             public IMiddleware Middleware { get; init; }
             public ICallable Next { get; init; }
 
-            public Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
+            public Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
             {
                 return Middleware.InvokeAsync(context, Next, cancellationToken);
             }

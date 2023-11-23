@@ -25,7 +25,7 @@ namespace MiniWebServer.Authentication
                 logger = NullLogger<JwtAuthenticationService>.Instance;
         }
 
-        public async Task<AuthenticationResult> AuthenticateAsync(IMiniAppContext context)
+        public async Task<AuthenticationResult> AuthenticateAsync(IMiniAppRequestContext context)
         {
             try
             {
@@ -79,12 +79,12 @@ namespace MiniWebServer.Authentication
             return AuthenticationResult.Failed;
         }
 
-        public Task SignInAsync(IMiniAppContext context, ClaimsPrincipal principal)
+        public Task SignInAsync(IMiniAppRequestContext context, ClaimsPrincipal principal)
         {
             return Task.CompletedTask;
         }
 
-        public Task SignOutAsync(IMiniAppContext context)
+        public Task SignOutAsync(IMiniAppRequestContext context)
         {
             return Task.CompletedTask;
         }

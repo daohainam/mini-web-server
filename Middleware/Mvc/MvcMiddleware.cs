@@ -29,7 +29,7 @@ namespace MiniWebServer.Mvc
             this.viewEngine = viewEngine ?? throw new ArgumentNullException(nameof(viewEngine));
         }
 
-        public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
+        public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -77,7 +77,7 @@ namespace MiniWebServer.Mvc
             }
         }
 
-        private async Task<bool> CallActionMethodAsync(IServiceProvider localServiceProvider, Controller controller, ActionInfo actionInfo, IMiniAppContext context, CancellationToken cancellationToken)
+        private async Task<bool> CallActionMethodAsync(IServiceProvider localServiceProvider, Controller controller, ActionInfo actionInfo, IMiniAppRequestContext context, CancellationToken cancellationToken)
         {
             /* how do we execute an action?
                - get action parameters

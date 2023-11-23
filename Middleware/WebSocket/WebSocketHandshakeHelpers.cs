@@ -14,10 +14,11 @@ namespace MiniWebServer.WebSocket
         public static string BuildSecWebSocketAccept(string clientNonce)
         {
             Span<byte> mergedBytes = stackalloc byte[60]; // strlen(clientNonce) + strlen(SecSocketKeyMagic) 
-            Encoding.UTF8.GetBytes(clientNonce, mergedBytes);
-            SecSocketKeyMagic.CopyTo(mergedBytes[24..]);
             Span<byte> sha1 = stackalloc byte[20];
-            if (SHA1.HashData(mergedBytes, sha1) == 20)
+
+            Encoding.UTF8.GetBytes(clientNonce, mergedBytes);
+            SecSocketKeyMagic.CopyTo(mergedBytes[24..]); // clientNonce is a base64 string of a 16-byte array, so it's length is always 24 (= 16 * 8 / 6)
+            if (SHA1.HashData(mergedBytes, sha1) != 20)
             {
                 throw new InvalidOperationException("Could not hash data for Sec-WebSocket-Accept header value");
             }

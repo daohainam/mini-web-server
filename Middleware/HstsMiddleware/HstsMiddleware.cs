@@ -12,7 +12,7 @@ namespace MiniWebServer.HstsMiddleware
             this.options = options;
         }
 
-        public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
+        public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             StringBuilder sb = new();
             sb.Append("max-age=");

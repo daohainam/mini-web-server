@@ -5,7 +5,7 @@ namespace MiniWebServer.Mvc.Abstraction
 {
     public class ActionResultContext
     {
-        public ActionResultContext(Controller controller, ActionInfo actionInfo, IMiniAppContext appContext)
+        public ActionResultContext(Controller controller, ActionInfo actionInfo, IMiniAppRequestContext appContext)
         {
             Controller = controller ?? throw new ArgumentNullException(nameof(controller));
             ActionInfo = actionInfo ?? throw new ArgumentNullException(nameof(actionInfo));
@@ -14,7 +14,7 @@ namespace MiniWebServer.Mvc.Abstraction
 
         public Controller Controller { get; }
         public ActionInfo ActionInfo { get; }
-        public IMiniAppContext AppContext { get; }
+        public IMiniAppRequestContext AppContext { get; }
 
         public IHttpRequest Request => AppContext.Request;
         public IHttpResponse Response => AppContext.Response;

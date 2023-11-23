@@ -1,8 +1,8 @@
 ﻿namespace MiniWebServer.MiniApp
 {
-    internal class ActionDelegate : ICallableBuilder
+    internal class CallableActionDelegate : ICallableBuilder
     {
-        public ActionDelegate(string route, ICallable requestDelegate, params Abstractions.Http.HttpMethod[] httpMethods)
+        public CallableActionDelegate(string route, ICallable requestDelegate, params Abstractions.Http.HttpMethod[] httpMethods)
         {
             Route = route ?? throw new ArgumentNullException(nameof(route));
             RequestDelegate = requestDelegate ?? throw new ArgumentNullException(nameof(requestDelegate));
@@ -20,14 +20,14 @@
             return this;
         }
 
-        public ICallableBuilder AddFilter(Func<IMiniAppContext, CancellationToken, bool> filter)
+        public ICallableBuilder AddFilter(Func<IMiniAppRequestContext, CancellationToken, bool> filter)
         {
             RequestDelegate = new FilteredRequestDelegate(RequestDelegate, new RequestDelegateCallableFilter(filter));
 
             return this;
         }
 
-        public ICallableBuilder AddFilter(Func<IMiniAppContext, CancellationToken, Task<bool>> filter)
+        public ICallableBuilder AddFilter(Func<IMiniAppRequestContext, CancellationToken, Task<bool>> filter)
         {
             RequestDelegate = new FilteredRequestDelegate(RequestDelegate, new RequestDelegateAsyncCallableFilter(filter));
 

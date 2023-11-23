@@ -8,9 +8,9 @@
     /// </summary>
     public interface ICallable
     {
-        Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default);
+        Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default);
     }
 
-    public delegate Task RequestDelegate(IMiniAppContext context, CancellationToken cancellationToken = default);
+    public delegate Task RequestDelegate(IMiniAppRequestContext context, CancellationToken cancellationToken = default);
 
 }

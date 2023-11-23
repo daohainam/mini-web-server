@@ -14,7 +14,7 @@ namespace MiniWebServer.Authorization
             this.routeMatcher = routeMatcher;
         }
 
-        public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
+        public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             var url = context.Request.Url;
             var route = options.Routes.Keys.Where(r => routeMatcher.IsMatched(r, url)).FirstOrDefault();

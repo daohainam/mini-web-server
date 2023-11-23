@@ -22,7 +22,7 @@
             return this;
         }
 
-        public bool IsValid(IMiniAppContext context)
+        public bool IsValid(IMiniAppRequestContext context)
         {
             foreach (var claim in claims)
             {

@@ -11,7 +11,7 @@
             this.filter = filter ?? throw new ArgumentNullException(nameof(filter));
         }
 
-        public async Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
+        public async Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 

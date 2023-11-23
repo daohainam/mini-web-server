@@ -18,6 +18,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\MiniWebServer.Abstractions\MiniWebServer.Abstractions.csproj" />
+    <ProjectReference Include="..\MiniWebServer.WebSocket.Abstractions\MiniWebServer.WebSocket.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Resources\icon-128x128.png">

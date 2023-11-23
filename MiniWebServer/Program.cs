@@ -19,6 +19,7 @@ using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Session;
 using MiniWebServer.StaticFiles;
+using MiniWebServer.WebSocket.Abstractions;
 using System.Security.Claims;
 using System.Text;
 
@@ -83,6 +84,12 @@ namespace MiniWebServer
                 });
             }
 
+            appBuilder.UseWebSockets().AddHandler("/chatwsserver", (IWebSocket) => {
+                
+
+                return Task.CompletedTask;
+            });
+
             appBuilder.UseAuthentication(
                 options =>
                 {
@@ -121,7 +128,6 @@ namespace MiniWebServer
             appBuilder.UseSession();
             appBuilder.UseStaticFiles("wwwroot", defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days
             appBuilder.UseMvc();
-            appBuilder.UseWebSockets();
 
             return appBuilder.Build();
         }
@@ -199,13 +205,6 @@ namespace MiniWebServer
                 var text = await context.Request.ReadAsStringAsync(cancellationToken);
                 context.Response.Content = new MiniApp.Content.StringContent("Received as text: " + text);
             });
-
-            //websocket
-            app.Map("/chatwsserver", async (context, cancellationToken) => {
-
-            },
-            Abstractions.Http.HttpMethod.Get, Abstractions.Http.HttpMethod.Options // OPTIONS method is used in HTTP/2
-            );
 
             return app;
         }

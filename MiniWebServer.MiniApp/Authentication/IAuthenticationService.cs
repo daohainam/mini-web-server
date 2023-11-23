@@ -2,8 +2,8 @@
 {
     public interface IAuthenticationService
     {
-        Task<AuthenticationResult> AuthenticateAsync(IMiniAppContext context);
-        Task SignInAsync(IMiniAppContext context, System.Security.Claims.ClaimsPrincipal principal);
-        Task SignOutAsync(IMiniAppContext context);
+        Task<AuthenticationResult> AuthenticateAsync(IMiniAppRequestContext context);
+        Task SignInAsync(IMiniAppRequestContext context, System.Security.Claims.ClaimsPrincipal principal);
+        Task SignOutAsync(IMiniAppRequestContext context);
     }
 }

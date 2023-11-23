@@ -17,7 +17,7 @@ namespace MiniWebServer.Session
             this.sessionStore = sessionStore ?? throw new ArgumentNullException(nameof(sessionStore));
         }
 
-        public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
+        public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             if (context.Request.Cookies.TryGetValue(options.SessionIdKey, out var cookie) && cookie != null)
             {

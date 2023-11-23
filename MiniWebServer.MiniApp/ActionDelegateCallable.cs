@@ -2,16 +2,16 @@
 {
     internal class ActionDelegateCallable : BaseCallable
     {
-        private readonly ActionDelegate action;
+        private readonly CallableActionDelegate action;
         private readonly ICallable? parent;
 
-        public ActionDelegateCallable(ActionDelegate action, ICallable? parent = default)
+        public ActionDelegateCallable(CallableActionDelegate action, ICallable? parent = default)
         {
             this.action = action ?? throw new ArgumentNullException(nameof(action));
             this.parent = parent;
         }
 
-        public override async Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
+        public override async Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
         {
             await action.RequestDelegate.InvokeAsync(context, cancellationToken);
 

@@ -2,6 +2,6 @@
 {
     public interface IClaimValidator
     {
-        bool Validate(IMiniAppContext context);
+        bool Validate(IMiniAppRequestContext context);
     }
 }

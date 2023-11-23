@@ -15,7 +15,7 @@ namespace MiniWebServer.HttpsRedirection
             this.logger = logger ?? NullLogger<HttpsRedirectionMiddleware>.Instance;
         }
 
-        public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
+        public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             if (context.Request.IsHttps)
             {

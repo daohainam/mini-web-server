@@ -4,6 +4,7 @@
     {
         private static readonly Dictionary<HttpResponseCodes, string> phrases = new()
         {
+            { HttpResponseCodes.SwitchingProtocols, "Switching Protocols"},
             { HttpResponseCodes.OK, "OK"},
             { HttpResponseCodes.PartialContent, "Partial Content"},
             { HttpResponseCodes.TemporaryRedirect, "Temporary Redirect"},
@@ -18,7 +19,12 @@
 
         public static string GetReasonPhrase(HttpResponseCodes code)
         {
-            return phrases[code];
+            if (phrases.TryGetValue(code, out string? v))
+            {
+                return v;
+            }
+
+            return code.ToString();
         }
     }
 }

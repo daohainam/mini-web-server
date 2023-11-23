@@ -29,7 +29,7 @@ namespace MiniWebServer.Mvc.Abstraction
             }
         }
 
-        public IMiniAppContext Context => ControllerContext.Context;
+        public IMiniAppRequestContext Context => ControllerContext.Context;
         public IHttpRequest Request => ControllerContext.Context.Request;
         public IHttpResponse Response => ControllerContext.Context.Response;
         public ISession Session => ControllerContext.Context.Session;

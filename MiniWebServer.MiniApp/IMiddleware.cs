@@ -2,6 +2,6 @@
 {
     public interface IMiddleware
     {
-        Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default);
+        Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default);
     }
 }

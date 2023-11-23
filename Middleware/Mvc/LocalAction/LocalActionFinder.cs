@@ -14,7 +14,7 @@ namespace MiniWebServer.Mvc.LocalAction
             this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
             this.routeMatcher = routeMatcher ?? throw new ArgumentNullException(nameof(routeMatcher));
         }
-        public ActionInfo? Find(IMiniAppContext context)
+        public ActionInfo? Find(IMiniAppRequestContext context)
         {
             var key = registry.Actions.Keys.Where(k => routeMatcher.IsMatched(context.Request.Url, k)).FirstOrDefault();
             if (key != null)

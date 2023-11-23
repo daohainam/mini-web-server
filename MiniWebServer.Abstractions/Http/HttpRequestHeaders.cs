@@ -4,6 +4,7 @@ using MiniWebServer.Abstractions.Http.Header.Parsers;
 namespace MiniWebServer.Abstractions.Http
 {
     // here is the this of standard request headers defined in 
+    // TODO: using TryGetValueAsString is not a good practice, we should have a better/faster way to store headers (cache to separate fields)
     public class HttpRequestHeaders : HttpHeaders
     {
         private readonly Dictionary<string, IHeaderParser> headerParsers = new(StringComparer.OrdinalIgnoreCase);
@@ -106,6 +107,13 @@ namespace MiniWebServer.Abstractions.Http
             get
             {
                 return TryGetValueAsString("Host");
+            }
+        }
+        public string Origin
+        {
+            get
+            {
+                return TryGetValueAsString("Origin");
             }
         }
         public string TransferEncoding

@@ -2,6 +2,6 @@
 {
     public interface ICallableFilter
     {
-        Task<bool> InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken);
+        Task<bool> InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken);
     }
 }

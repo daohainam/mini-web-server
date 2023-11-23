@@ -121,7 +121,7 @@ namespace MiniWebServer.MiniApp
                 this.action = action ?? throw new ArgumentNullException(nameof(action));
             }
 
-            public Task InvokeAsync(IMiniAppContext context, CancellationToken cancellationToken = default)
+            public Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
             {
                 context.Response.StatusCode = HttpResponseCodes.OK;
                 return action(context, cancellationToken);
