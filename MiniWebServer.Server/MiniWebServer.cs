@@ -15,7 +15,7 @@ namespace MiniWebServer.Server
     {
         private readonly MiniWebServerConfiguration config;
         private readonly ServiceProvider serviceProvider;
-        private readonly IProtocolHandlerFactory protocolHandlerFactory;
+        private readonly IHttpManagerFactory protocolHandlerFactory;
         private readonly IDictionary<string, Host.Host> hostContainers;
         private readonly ILogger<MiniWebServer> logger;
         private bool running;
@@ -30,7 +30,7 @@ namespace MiniWebServer.Server
         public MiniWebServer(
             MiniWebServerConfiguration config,
             ServiceProvider serviceProvider,
-            IProtocolHandlerFactory? protocolHandlerFactory,
+            IHttpManagerFactory? protocolHandlerFactory,
             IDictionary<string, Host.Host>? hostContainers
             )
         {

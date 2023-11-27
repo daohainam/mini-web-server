@@ -4,7 +4,7 @@ using System.IO.Pipelines;
 
 namespace MiniWebServer.Server.Abstractions
 {
-    public interface IProtocolHandler
+    public interface IHttpManager
     {
         int ProtocolVersion { get; }
         /// <summary>

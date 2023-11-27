@@ -216,7 +216,7 @@ namespace MiniWebServer
 
             // todo: we should be able to safely remove the following registrations to use the defaults
             services.AddTransient<IHttpComponentParser, ByteSequenceHttpParser>();
-            services.AddTransient<IProtocolHandlerFactory, ProtocolHandlerFactory>();
+            services.AddTransient<IHttpManagerFactory, ProtocolHandlerFactory>();
             services.AddSingleton<IMimeTypeMapping>(StaticMimeMapping.Instance);
 
             services.AddMvcService();
