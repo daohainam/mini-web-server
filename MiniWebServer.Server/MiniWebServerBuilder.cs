@@ -185,7 +185,7 @@ namespace MiniWebServer.Server
                 SendResponseTimeout = sendResponseTimeout,
             },
                 serviceProvider,
-                serviceProvider.GetService<IHttpManagerFactory>(),
+                serviceProvider.GetService<IProtocolHandlerFactory>(),
                 hostContainers
             );
 

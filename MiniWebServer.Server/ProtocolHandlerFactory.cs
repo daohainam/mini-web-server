@@ -9,7 +9,7 @@ using MiniWebServer.Server.ProtocolHandlers.Http11;
 
 namespace MiniWebServer.Server
 {
-    public class ProtocolHandlerFactory : IHttpManagerFactory
+    public class ProtocolHandlerFactory : IProtocolHandlerFactory
     {
         public const int HTTP11 = 101;
         private readonly ILoggerFactory loggerFactory;
@@ -21,7 +21,7 @@ namespace MiniWebServer.Server
             this.services = services ?? throw new ArgumentNullException(nameof(services));
         }
 
-        public IHttpManager Create(ProtocolHandlerConfiguration config)
+        public IProtocolHandler Create(ProtocolHandlerConfiguration config)
         {
             if (config.ProtocolVersion == HTTP11)
             {

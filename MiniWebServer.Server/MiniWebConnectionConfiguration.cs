@@ -11,7 +11,7 @@ namespace MiniWebServer.Server
             TcpClient tcpClient,
             Stream clientStream,
             bool isHttps,
-            IHttpManager protocolHandler,
+            IProtocolHandler protocolHandler,
             IDictionary<string, Host.Host> hostContainers,
             IRequestIdManager requestIdManager,
             TimeSpan readRequestTimeout,
@@ -37,7 +37,7 @@ namespace MiniWebServer.Server
         public TcpClient TcpClient { get; }
         public Stream ClientStream { get; }
         public bool IsHttps { get; }
-        public IHttpManager ProtocolHandler { get; }
+        public IProtocolHandler ProtocolHandler { get; }
         public IDictionary<string, Host.Host> HostContainers { get; }
         public IRequestIdManager RequestIdManager { get; }
         public TimeSpan ReadRequestTimeout { get; }
