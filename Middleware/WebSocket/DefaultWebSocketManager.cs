@@ -44,6 +44,7 @@ namespace MiniWebServer.WebSocket
                 SubProtocol = options.SubProtocol,
                 DangerousDeflateOptions = new WebSocketDeflateOptions() // TODO: this property is relatively complicated so I use a hard-coded (default) value for now, but we should parse it in order to work properly
                 {
+                    
                 }
             });
             var serverWebSocket = new ServerWebSocket(webSocket, context);

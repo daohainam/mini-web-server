@@ -20,6 +20,7 @@ using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Session;
 using MiniWebServer.StaticFiles;
 using MiniWebServer.WebSocket.Abstractions;
+using System.Net.WebSockets;
 using System.Security.Claims;
 using System.Text;
 
@@ -206,9 +207,30 @@ namespace MiniWebServer
             {
                 if (context.WebSockets.IsUpgradeRequest)
                 {
-                    var wsocket = await context.WebSockets.AcceptAsync(cancellationToken);
-                    await wsocket.SendAsync(Encoding.UTF8.GetBytes("Hello WebSocket world!"), System.Net.WebSockets.WebSocketMessageType.Text, true, cancellationToken);
-                    await wsocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, cancellationToken);
+                    var webSocket = await context.WebSockets.AcceptAsync(cancellationToken);
+
+                    //await wsocket.SendAsync(Encoding.UTF8.GetBytes("Hello WebSocket world!"), System.Net.WebSockets.WebSocketMessageType.Text, true, cancellationToken);
+                    //await wsocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, cancellationToken);
+                    var buffer = new byte[1024 * 4];
+                    var receiveResult = await webSocket.ReceiveAsync(
+                        new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                    while (!receiveResult.CloseStatus.HasValue)
+                    {
+                        await webSocket.SendAsync(
+                            new ArraySegment<byte>(buffer, 0, receiveResult.Count),
+                            receiveResult.MessageType,
+                            receiveResult.EndOfMessage,
+                        CancellationToken.None);
+
+                        receiveResult = await webSocket.ReceiveAsync(
+                            new ArraySegment<byte>(buffer), CancellationToken.None);
+                    }
+
+                    await webSocket.CloseAsync(
+                        receiveResult.CloseStatus.Value,
+                        receiveResult.CloseStatusDescription,
+                        CancellationToken.None);
                 }
                 else
                 {
