@@ -56,7 +56,7 @@ namespace MiniWebServer.WebSocket
             {
                 isUpgradeRequest = false;
 
-                if (WebSocketHandshakeHelpers.IsUpgradeRequest(context, out var originalNonce, logger))
+                if (WebSocketHandshakeHelpers.IsUpgradeRequest(context, out originalNonce, logger))
                 {
                     isUpgradeRequest = true;
                 }
