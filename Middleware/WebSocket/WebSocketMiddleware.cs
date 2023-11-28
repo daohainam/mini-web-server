@@ -20,6 +20,8 @@ namespace MiniWebServer.WebSocket
                 try
                 {
                     context.WebSockets = new DefaultWebSocketManager(options, context, logger);
+
+                    await next.InvokeAsync(context, cancellationToken);
                 }
                 catch (Exception ex)
                 {

@@ -202,6 +202,21 @@ namespace MiniWebServer
                 context.Response.Content = new MiniApp.Content.StringContent("Received as text: " + text);
             });
 
+            app.MapGet("/chatserver", async (context, cancellationToken) =>
+            {
+                if (context.WebSockets.IsUpgradeRequest)
+                {
+                    var wsocket = await context.WebSockets.AcceptAsync(cancellationToken);
+                    await wsocket.SendAsync(Encoding.UTF8.GetBytes("Hello WebSocket world!"), System.Net.WebSockets.WebSocketMessageType.Text, true, cancellationToken);
+                    await wsocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, cancellationToken);
+                }
+                else
+                {
+                    context.Response.StatusCode = Abstractions.HttpResponseCodes.BadRequest;
+                }
+            });
+
+
             return app;
         }
 

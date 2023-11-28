@@ -10,7 +10,7 @@ namespace MiniWebServer.Server.MiniApp
         {
             Services = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             LoggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-            WebSockets = serviceProvider.GetRequiredService<IWebSocketManager>() ?? NullWebSocketManager.Instance;
+            WebSockets = serviceProvider.GetService<IWebSocketManager>() ?? NullWebSocketManager.Instance;
         }
 
         public IServiceProvider Services { get; }

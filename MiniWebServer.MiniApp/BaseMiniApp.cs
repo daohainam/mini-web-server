@@ -48,14 +48,11 @@ namespace MiniWebServer.MiniApp
                 }
             }
 
-            if (!context.WebSockets.IsUpgradeRequest)
+            foreach (var middleware in middlewareChain)
             {
-                foreach (var middleware in middlewareChain)
-                {
-                    var callWrapper = new MiddlewareWrapper(middleware, callable);
+                var callWrapper = new MiddlewareWrapper(middleware, callable);
 
-                    callable = callWrapper;
-                }
+                callable = callWrapper;
             }
 
             return callable;
