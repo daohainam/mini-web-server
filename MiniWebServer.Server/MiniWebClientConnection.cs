@@ -122,35 +122,35 @@ namespace MiniWebServer.Server
                             logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
                             await SendResponseAsync(response, cancellationToken);
 
-                            if (connectionContext.WebSockets.IsUpgradeRequest && app != null) // if this is an upgrade request, we switch to websocket mode and continue processing
-                            {
-                                isKeepAlive = false; // we will always close the connection when this websocket operation ends
+                            //if (connectionContext.WebSockets.IsUpgradeRequest && app != null) // if this is an upgrade request, we switch to websocket mode and continue processing
+                            //{
+                            //    isKeepAlive = false; // we will always close the connection when this websocket operation ends
 
-                                var webSocketFactory = connectionContext.Services.GetService<IWebSocketFactory>();
-                                if (webSocketFactory == null)
-                                {
-                                    logger.LogWarning("[{cid}][{rid}] - No websocket factory registered, closing connection", ConnectionId, requestId);
-                                }
-                                else if (connectionContext.WebSockets.Handler != null)
-                                {
-                                    logger.LogInformation("[{cid}][{rid}] - Connection upgraded, transfering control to websocket handler", ConnectionId, requestId);
-                                    try
-                                    {
-                                        var webSocket = webSocketFactory.CreateWebSocket(config.ClientStream, config.ClientStream);
+                            //    var webSocketFactory = connectionContext.Services.GetService<IWebSocketFactory>();
+                            //    if (webSocketFactory == null)
+                            //    {
+                            //        logger.LogWarning("[{cid}][{rid}] - No websocket factory registered, closing connection", ConnectionId, requestId);
+                            //    }
+                            //    else if (connectionContext.WebSockets.Handler != null)
+                            //    {
+                            //        logger.LogInformation("[{cid}][{rid}] - Connection upgraded, transfering control to websocket handler", ConnectionId, requestId);
+                            //        try
+                            //        {
+                            //            var webSocket = webSocketFactory.CreateWebSocket(config.ClientStream, config.ClientStream);
 
-                                        await connectionContext.WebSockets.Handler(webSocket);
+                            //            await connectionContext.WebSockets.Handler(webSocket);
 
-                                        await webSocket.CloseAsync(cancellationToken); // CloseAsync should silently skip if it is already in Close state
-                                    } catch (Exception ex)
-                                    {
-                                        logger.LogError(ex, "[{cid}][{rid}] - Error calling websocket handler", ConnectionId, requestId);
-                                    }
-                                }
-                                else
-                                {
-                                    logger.LogWarning("[{cid}][{rid}] - No websocket handler defined, closing connection", ConnectionId, requestId);
-                                }
-                            }
+                            //            await webSocket.CloseAsync(cancellationToken); // CloseAsync should silently skip if it is already in Close state
+                            //        } catch (Exception ex)
+                            //        {
+                            //            logger.LogError(ex, "[{cid}][{rid}] - Error calling websocket handler", ConnectionId, requestId);
+                            //        }
+                            //    }
+                            //    else
+                            //    {
+                            //        logger.LogWarning("[{cid}][{rid}] - No websocket handler defined, closing connection", ConnectionId, requestId);
+                            //    }
+                            //}
                         }
                     }
                     catch (OperationCanceledException)
@@ -182,7 +182,7 @@ namespace MiniWebServer.Server
         {
             await config.ProtocolHandler.WriteResponseAsync(response, cancellationToken);
 
-            await response.Body.FlushAsync(cancellationToken);
+            await response.Stream.FlushAsync(cancellationToken);
         }
 
         private IMiniApp? FindApp(HttpRequest request)

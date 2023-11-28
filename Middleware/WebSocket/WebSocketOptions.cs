@@ -14,6 +14,7 @@ namespace MiniWebServer.WebSocket
         public Func<string, bool> OriginValidator { get; set; } = DefaultOriginValidator; // return true to accept the Origin header value
 
         public TimeSpan KeepAliveInterval { get; set; } = TimeSpan.FromMinutes(2);
+        public string? SubProtocol { get; set; }
         public IList<string> AllowedOrigins { get; } = new List<string>();
 
         private static bool DefaultRequestMatcher(IMiniAppRequestContext appContext)

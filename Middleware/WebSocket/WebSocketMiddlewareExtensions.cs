@@ -4,6 +4,7 @@ using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.WebSocket;
 using MiniWebServer.WebSocket.Abstractions;
+using System.Runtime.CompilerServices;
 
 namespace MiniWebServer.Session
 {
@@ -16,26 +17,19 @@ namespace MiniWebServer.Session
             var options = new WebSocketOptions();
             configureOptions?.Invoke(options);
 
-            services.AddTransient<IWebSocketManager>(services => new DefaultWebSocketManager());
-            services.AddTransient<IWebSocketFactory>(services => new DefaultWebSocketFactory());
-
             services.AddTransient(services => new WebSocketMiddleware(
                 options,
-                services.GetRequiredService<ILogger<WebSocketMiddleware>>(),
-                services.GetRequiredService<DefaultWebSocketAppBuilder>()
+                services.GetRequiredService<ILogger<WebSocketMiddleware>>()
                 ));
         }
 
-        public static IWebSocketAppBuilder UseWebSockets(this IMiniAppBuilder appBuilder)
+        public static IMiniAppBuilder UseWebSockets(this IMiniAppBuilder appBuilder)
         {
             ArgumentNullException.ThrowIfNull(appBuilder, nameof(appBuilder));
 
-            var wsappBuilder = new DefaultWebSocketAppBuilder();
-
-            appBuilder.Services.AddTransient(services => wsappBuilder);
             appBuilder.UseMiddleware<WebSocketMiddleware>();
 
-            return wsappBuilder;
+            return appBuilder;
         }
     }
 }

@@ -8,7 +8,7 @@ namespace MiniWebServer.WebSocket.Abstractions
 {
     public interface IWebSocketManager
     {
-        bool IsUpgradeRequest { get; set; }
-        Func<IWebSocket, Task>? Handler { get; set; }
+        bool IsUpgradeRequest { get; }
+        Task<System.Net.WebSockets.WebSocket> AcceptAsync(CancellationToken cancellationToken = default);
     }
 }

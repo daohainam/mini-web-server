@@ -340,7 +340,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         public async Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
         {
-            var stream = response.Body ?? throw new InvalidOperationException("response.Body should not be null");
+            var stream = response.Stream ?? throw new InvalidOperationException("response.Body should not be null");
             Write(stream, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");
 
             foreach (var header in response.Content.Headers)

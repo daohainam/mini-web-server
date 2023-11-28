@@ -4,11 +4,11 @@
     {
         private HttpResponseCodes statusCode;
 
-        public HttpResponse(HttpResponseCodes statusCode, Stream body,
+        public HttpResponse(HttpResponseCodes statusCode, Stream stream,
             string? reasonPhrase = null, HttpResponseHeaders? headers = null, HttpCookies? cookies = null, IHttpContent? content = null)
         {
             StatusCode = statusCode;
-            Body = body;
+            Stream = stream;
 
             ReasonPhrase = reasonPhrase ?? HttpResponseReasonPhrases.GetReasonPhrase(statusCode);
             Headers = headers ?? new HttpResponseHeaders();
@@ -32,6 +32,6 @@
         public HttpResponseHeaders Headers { get; }
         public IHttpContent Content { get; set; }
         public HttpCookies Cookies { get; }
-        public Stream Body { get; set; }
+        public Stream Stream { get; set; }
     }
 }

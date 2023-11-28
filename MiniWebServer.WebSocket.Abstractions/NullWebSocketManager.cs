@@ -10,6 +10,10 @@ namespace MiniWebServer.WebSocket.Abstractions
     {
         public bool IsUpgradeRequest { get => false; set => throw new InvalidOperationException(); }
         public static NullWebSocketManager Instance { get; } = new NullWebSocketManager();
-        Func<IWebSocket, Task>? IWebSocketManager.Handler { get => null; set => throw new InvalidOperationException(); }
+
+        public Task<System.Net.WebSockets.WebSocket> AcceptAsync(CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException();
+        }
     }
 }

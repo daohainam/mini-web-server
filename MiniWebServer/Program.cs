@@ -84,11 +84,7 @@ namespace MiniWebServer
                 });
             }
 
-            appBuilder.UseWebSockets().AddHandler("/chatwsserver", async (socket) => {
-                // socket.SendAsync(Encoding.UTF8.GetBytes("Hello from WebSocket"));
-
-                await socket.CloseAsync();
-            });
+            appBuilder.UseWebSockets();
 
             appBuilder.UseAuthentication(
                 options =>
