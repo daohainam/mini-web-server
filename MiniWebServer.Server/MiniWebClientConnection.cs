@@ -111,16 +111,25 @@ namespace MiniWebServer.Server
                                 logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
                             }
 
-                            var connectionHeader = response.Headers.Connection;
-                            if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader)
-                                 && !"Upgrade".Equals(connectionHeader)) // we return Connection: Upgrade to WebSocket handshakes
+                            if (connectionContext.WebSockets.IsUpgradeRequest)
                             {
-                                response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
+                                // if this is a websocket request, then we always close the connection when it's done
+                                // we don't send the response because in WebSocket middleware we have sent back an 'Upgrade' response, and 
+                                // the connection is now a websocket connection (even if we have done nothing in websocket handler)
+                                isKeepAlive = false;
                             }
+                            else
+                            {
+                                var connectionHeader = response.Headers.Connection;
+                                if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
+                                {
+                                    response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
+                                }
 
-                            cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
-                            logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
-                            await SendResponseAsync(response, cancellationToken);
+                                cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+                                logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
+                                await SendResponseAsync(response, cancellationToken);
+                            }
 
                             //if (connectionContext.WebSockets.IsUpgradeRequest && app != null) // if this is an upgrade request, we switch to websocket mode and continue processing
                             //{

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace MiniWebServer.MiniApp
 {
@@ -43,7 +44,7 @@ namespace MiniWebServer.MiniApp
             {
                 if (action.IsMatched(context.Request.Url, context.Request.Method))
                 {
-                    callable = new ActionDelegateCallable(action, callable);
+                    callable = new ActionDelegateCallable(action, services.GetRequiredService<ILogger<ActionDelegateCallable>>(), callable);
                     break; // we need only one endpoint
                 }
             }

@@ -207,30 +207,42 @@ namespace MiniWebServer
             {
                 if (context.WebSockets.IsUpgradeRequest)
                 {
-                    var webSocket = await context.WebSockets.AcceptAsync(cancellationToken);
+                    var logger = context.Services.GetRequiredService<ILogger<Program>>();
 
-                    //await wsocket.SendAsync(Encoding.UTF8.GetBytes("Hello WebSocket world!"), System.Net.WebSockets.WebSocketMessageType.Text, true, cancellationToken);
-                    //await wsocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, cancellationToken);
-                    var buffer = new byte[1024 * 4];
-                    var receiveResult = await webSocket.ReceiveAsync(
-                        new ArraySegment<byte>(buffer), CancellationToken.None);
-
-                    while (!receiveResult.CloseStatus.HasValue)
+                    try
                     {
-                        await webSocket.SendAsync(
-                            new ArraySegment<byte>(buffer, 0, receiveResult.Count),
-                            receiveResult.MessageType,
-                            receiveResult.EndOfMessage,
-                        CancellationToken.None);
+                        var webSocket = await context.WebSockets.AcceptAsync(cancellationToken);
 
-                        receiveResult = await webSocket.ReceiveAsync(
-                            new ArraySegment<byte>(buffer), CancellationToken.None);
+                        //await wsocket.SendAsync(Encoding.UTF8.GetBytes("Hello WebSocket world!"), System.Net.WebSockets.WebSocketMessageType.Text, true, cancellationToken);
+                        //await wsocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, cancellationToken);
+                        var buffer = new byte[1024 * 4];
+                        var receiveResult = await webSocket.ReceiveAsync(
+                            new ArraySegment<byte>(buffer), cancellationToken);
+
+                        while (!receiveResult.CloseStatus.HasValue)
+                        {
+                            var receivedText = Encoding.UTF8.GetString(buffer[..receiveResult.Count]);
+                            logger.LogDebug("Received: {m}", receivedText);
+
+                            await webSocket.SendAsync(
+                                Encoding.UTF8.GetBytes("Thanks, we have received: " + receivedText),
+                                WebSocketMessageType.Text,
+                                receiveResult.EndOfMessage,
+                            cancellationToken);
+
+                            receiveResult = await webSocket.ReceiveAsync(
+                                new ArraySegment<byte>(buffer), cancellationToken);
+                        }
+
+                        await webSocket.CloseAsync(
+                            receiveResult.CloseStatus.Value,
+                            receiveResult.CloseStatusDescription,
+                            cancellationToken);
+                    } catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error handling websocket");
+                        context.Response.StatusCode = Abstractions.HttpResponseCodes.BadRequest;
                     }
-
-                    await webSocket.CloseAsync(
-                        receiveResult.CloseStatus.Value,
-                        receiveResult.CloseStatusDescription,
-                        CancellationToken.None);
                 }
                 else
                 {

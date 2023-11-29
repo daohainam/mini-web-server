@@ -20,7 +20,7 @@ namespace MiniWebServer.WebSocket
             } 
         }
 
-        public async Task<System.Net.WebSockets.WebSocket> AcceptAsync(CancellationToken cancellationToken = default)
+        public async Task<System.Net.WebSockets.WebSocket> AcceptAsync(WebSocketAcceptOptions? acceptOptions = default, CancellationToken cancellationToken = default)
         {
             if (!GetIsUpgradeRequest())
             {
@@ -42,9 +42,8 @@ namespace MiniWebServer.WebSocket
                 IsServer = true,
                 KeepAliveInterval = options.KeepAliveInterval,
                 SubProtocol = options.SubProtocol,
-                DangerousDeflateOptions = new WebSocketDeflateOptions() // TODO: this property is relatively complicated so I use a hard-coded (default) value for now, but we should parse it in order to work properly
+                DangerousDeflateOptions = acceptOptions?.WebSocketDeflateOptions ?? new WebSocketDeflateOptions() // TODO: this property is relatively complicated so I use a hard-coded (default) value for now, but we should parse it in order to work properly
                 {
-                    
                 }
             });
             var serverWebSocket = new ServerWebSocket(webSocket, context);
