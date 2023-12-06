@@ -8,6 +8,7 @@ using System.Text;
 namespace MiniWebServer.WebSocket
 {
     // https://datatracker.ietf.org/doc/html/rfc6455
+    // we should also have a look at https://datatracker.ietf.org/doc/html/rfc7692 (Compression Extensions for WebSocket)
     public class WebSocketMiddleware(WebSocketOptions options, ILogger<WebSocketMiddleware> logger) : IMiddleware
     {
         private readonly WebSocketOptions options = options ?? throw new ArgumentNullException(nameof(options));

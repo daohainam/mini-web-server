@@ -36,15 +36,18 @@ namespace MiniWebServer.WebSocket
             logger.LogDebug("Sending Switching Protocols protocol: {r}", upgradeResponse);
 
             await context.Response.Stream.WriteAsync(Encoding.UTF8.GetBytes(upgradeResponse), cancellationToken);
+            await context.Response.Stream.FlushAsync(cancellationToken);
 
             var webSocket = System.Net.WebSockets.WebSocket.CreateFromStream(context.Response.Stream, new WebSocketCreationOptions()
             {
                 IsServer = true,
                 KeepAliveInterval = options.KeepAliveInterval,
                 SubProtocol = options.SubProtocol,
-                DangerousDeflateOptions = acceptOptions?.WebSocketDeflateOptions ?? new WebSocketDeflateOptions() // TODO: this property is relatively complicated so I use a hard-coded (default) value for now, but we should parse it in order to work properly
-                {
-                }
+                // TODO: we disable Compression for now, will re-enable when we handle Sec-WebSocket-Extensions
+                //DangerousDeflateOptions = acceptOptions?.WebSocketDeflateOptions ?? new WebSocketDeflateOptions() // TODO: this property is relatively complicated so I use a hard-coded (default) value for now, but we should parse it in order to work properly
+                //{
+                //    ServerContextTakeover = false,
+                //}
             });
             var serverWebSocket = new ServerWebSocket(webSocket, context);
             return serverWebSocket;

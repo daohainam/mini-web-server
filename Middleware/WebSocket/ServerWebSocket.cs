@@ -47,14 +47,14 @@ namespace MiniWebServer.WebSocket
             webSocket.Dispose();
         }
 
-        public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
+        public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
-            return webSocket.ReceiveAsync(buffer, cancellationToken);
+            return await webSocket.ReceiveAsync(buffer, cancellationToken);
         }
 
-        public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public override async Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
-            return webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
+            await webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
     }
 }

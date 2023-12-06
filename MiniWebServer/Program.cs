@@ -211,7 +211,12 @@ namespace MiniWebServer
 
                     try
                     {
-                        var webSocket = await context.WebSockets.AcceptAsync(cancellationToken);
+                        var webSocket = await context.WebSockets.AcceptAsync(cancellationToken: cancellationToken);
+
+                        // Send a welcome message
+                        var welcomeMessage = $"Welcome to Mini-Web-Server WebSocket demo! (Server Time: {DateTime.Now})";
+                        var welcomeBytes = Encoding.UTF8.GetBytes(welcomeMessage);
+                        await webSocket.SendAsync(welcomeBytes, WebSocketMessageType.Text, true, cancellationToken);
 
                         //await wsocket.SendAsync(Encoding.UTF8.GetBytes("Hello WebSocket world!"), System.Net.WebSockets.WebSocketMessageType.Text, true, cancellationToken);
                         //await wsocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, cancellationToken);
@@ -227,7 +232,7 @@ namespace MiniWebServer
                             await webSocket.SendAsync(
                                 Encoding.UTF8.GetBytes("Thanks, we have received: " + receivedText),
                                 WebSocketMessageType.Text,
-                                receiveResult.EndOfMessage,
+                                true,
                             cancellationToken);
 
                             receiveResult = await webSocket.ReceiveAsync(

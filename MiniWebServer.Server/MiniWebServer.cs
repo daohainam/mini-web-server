@@ -138,6 +138,8 @@ namespace MiniWebServer.Server
 
                     var connectionId = Interlocked.Increment(ref nextClientId); // this function can be called concurrently (or not?) so we cannot use ++
 
+                    logger.LogDebug("New client connected! ClientID = {cid}", connectionId);
+
                     Task t = HandleNewClientConnectionAsync(connectionId, binding, client);
 
                     if (!clientTasks.TryAdd(connectionId, t))
