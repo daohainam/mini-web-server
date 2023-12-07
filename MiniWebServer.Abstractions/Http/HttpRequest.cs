@@ -26,15 +26,9 @@ namespace MiniWebServer.Abstractions.Http
             string contentType,
             bool isHttps)
         {
-            if (queryParameters is null)
-            {
-                throw new ArgumentNullException(nameof(queryParameters));
-            }
+            ArgumentNullException.ThrowIfNull(queryParameters);
 
-            if (port <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(port);
 
             RequestId = requestId;
             Method = method ?? throw new ArgumentNullException(nameof(method));

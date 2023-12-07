@@ -7,17 +7,15 @@
         public HttpParameter(string name, string value)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            values = new List<string>() { value };
+            values = [value];
         }
 
         public HttpParameter(string name, IEnumerable<string> values)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
+            ArgumentNullException.ThrowIfNull(values);
 
             this.values = new List<string>(values);
         }

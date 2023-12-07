@@ -2,7 +2,7 @@
 {
     public class Policy : IPolicy
     {
-        private readonly List<IClaimValidator> claims = new();
+        private readonly List<IClaimValidator> claims = [];
 
         public IPolicy RequireClaim(string claim)
         {

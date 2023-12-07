@@ -1,14 +1,9 @@
 ﻿namespace MiniWebServer.Session
 {
-    public class SessionOptions
+    public class SessionOptions(string? sessionIdKey = default)
     {
         public const string DefaultSessionIdKey = ".miniWeb.SID";
 
-        public SessionOptions(string? sessionIdKey = default)
-        {
-            SessionIdKey = sessionIdKey ?? DefaultSessionIdKey;
-        }
-
-        public string SessionIdKey { get; } = DefaultSessionIdKey;
+        public string SessionIdKey { get; } = sessionIdKey ?? DefaultSessionIdKey;
     }
 }

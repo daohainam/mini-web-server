@@ -1,16 +1,7 @@
 ﻿namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
-    public class RedirectActionResult : IActionResult
+    public class RedirectActionResult(string url, bool permanent) : IActionResult
     {
-        private readonly string url;
-        private readonly bool permanent;
-
-        public RedirectActionResult(string url, bool permanent)
-        {
-            this.url = url;
-            this.permanent = permanent;
-        }
-
         public Task ExecuteResultAsync(ActionResultContext context)
         {
             context.Response.StatusCode = permanent ? Abstractions.HttpResponseCodes.PermanentRedirect : Abstractions.HttpResponseCodes.TemporaryRedirect;

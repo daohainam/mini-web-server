@@ -3,14 +3,9 @@ using MiniWebServer.Mvc.MiniRazorEngine.Parser;
 
 namespace MiniWebServer.Mvc.MiniRazorEngine
 {
-    public class DefaultViewFinder : IViewFinder
+    public class DefaultViewFinder(string viewDirectory) : IViewFinder
     {
-        private readonly string viewDirectory;
-
-        public DefaultViewFinder(string viewDirectory)
-        {
-            this.viewDirectory = viewDirectory ?? throw new ArgumentNullException(nameof(viewDirectory));
-        }
+        private readonly string viewDirectory = viewDirectory ?? throw new ArgumentNullException(nameof(viewDirectory));
 
         public string? Find(ActionResultContext context, string viewName)
         {

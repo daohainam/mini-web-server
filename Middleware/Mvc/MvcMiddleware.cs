@@ -139,7 +139,7 @@ namespace MiniWebServer.Mvc
                 }
             }
 
-            var actionResult = actionInfo.MethodInfo.Invoke(controller, actionParameterValues.ToArray());
+            var actionResult = actionInfo.MethodInfo.Invoke(controller, [.. actionParameterValues]);
             if (actionResult != null)
             {
                 // if this is an async function then we will call it asyncly
@@ -347,7 +347,7 @@ namespace MiniWebServer.Mvc
                     {
                         // looking for a public static bool TryParse method
                         var tryParseMethod = parameterType.GetMethod("TryParse", BindingFlags.Public | BindingFlags.Static, null,
-                            new Type[] { typeof(string), parameterType.MakeByRefType() },
+                            [typeof(string), parameterType.MakeByRefType()],
                             null);
                         if (tryParseMethod != null && tryParseMethod.ReturnType == typeof(bool))
                         {

@@ -3,16 +3,9 @@ using MiniWebServer.MiniApp.Authorization;
 
 namespace MiniWebServer.Authorization
 {
-    public class AuthorizationMiddleware : IMiddleware
+    public class AuthorizationMiddleware(AuthorizationOptions options, IRouteMatcher routeMatcher) : IMiddleware
     {
-        private readonly AuthorizationOptions options;
-        private readonly IRouteMatcher routeMatcher;
-
-        public AuthorizationMiddleware(AuthorizationOptions options, IRouteMatcher routeMatcher)
-        {
-            this.options = options ?? new();
-            this.routeMatcher = routeMatcher;
-        }
+        private readonly AuthorizationOptions options = options ?? new();
 
         public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {

@@ -7,14 +7,8 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
-    public class FileActionResult : IActionResult
+    public class FileActionResult(FileInfo file) : IActionResult
     {
-        private readonly FileInfo file;
-        public FileActionResult(FileInfo file)
-        {
-            this.file = file;
-        }
-
         public Task ExecuteResultAsync(ActionResultContext context)
         {
             if (file.Exists)

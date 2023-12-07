@@ -131,7 +131,7 @@ namespace MiniWebServer.Abstractions.Http
                 var value = TryGetValueAsString("Accept-Encoding");
                 if (string.IsNullOrEmpty(value))
                 {
-                    return Array.Empty<string>();
+                    return [];
                 }
                 // todo: need to support something like: br;q=1.0, gzip;q=0.8, *;q=0.1
                 var values = value.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

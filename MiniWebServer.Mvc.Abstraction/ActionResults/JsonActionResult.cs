@@ -2,15 +2,9 @@
 
 namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
-    public class JsonActionResult : IActionResult
+    public class JsonActionResult(object value, JsonSerializerOptions? jsonSerializerOptions) : IActionResult
     {
-        private readonly object value;
-        private readonly JsonSerializerOptions jsonSerializerOptions;
-        public JsonActionResult(object value, JsonSerializerOptions? jsonSerializerOptions)
-        {
-            this.value = value;
-            this.jsonSerializerOptions = jsonSerializerOptions ?? JsonSerializerOptions.Default;
-        }
+        private readonly JsonSerializerOptions jsonSerializerOptions = jsonSerializerOptions ?? JsonSerializerOptions.Default;
 
         public Task ExecuteResultAsync(ActionResultContext context)
         {

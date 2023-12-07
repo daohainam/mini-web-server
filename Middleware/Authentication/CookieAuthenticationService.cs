@@ -122,7 +122,7 @@ namespace MiniWebServer.Authentication
             return Task.CompletedTask;
         }
 
-        protected Task<bool> IsValidAuthenticationCookieAsync(string cookieValue)
+        protected static Task<bool> IsValidAuthenticationCookieAsync(string cookieValue)
         {
             // todo: validate authentication cookie
             return Task.FromResult(false);

@@ -3,8 +3,8 @@
     public class MiniWebServerConfiguration
     {
 
-        public List<MiniWebServerBindingConfiguration> Bindings = new();
-        public List<HostConfiguration> Hosts = new();
+        public List<MiniWebServerBindingConfiguration> Bindings = [];
+        public List<HostConfiguration> Hosts = [];
 
         // advanced settings
         public int ReadBufferSize { get; init; } = 1024 * 8;

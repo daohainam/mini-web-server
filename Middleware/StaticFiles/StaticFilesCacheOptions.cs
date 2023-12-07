@@ -1,12 +1,7 @@
 ﻿namespace MiniWebServer.StaticFiles
 {
-    public class StaticFilesCacheOptions
+    public class StaticFilesCacheOptions(long maxAge)
     {
-        public StaticFilesCacheOptions(long maxAge)
-        {
-            MaxAge = maxAge;
-        }
-
-        public long MaxAge { get; }
+        public long MaxAge { get; } = maxAge;
     }
 }

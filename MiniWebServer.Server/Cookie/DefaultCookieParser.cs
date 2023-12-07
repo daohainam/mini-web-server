@@ -8,15 +8,8 @@ namespace MiniWebServer.Server.Cookie
     /// <summary>
     /// Parse a cookie value sent by client (https://datatracker.ietf.org/doc/html/rfc6265)
     /// </summary>
-    public partial class DefaultCookieParser : ICookieValueParser
+    public partial class DefaultCookieParser() : ICookieValueParser
     {
-        private readonly ILoggerFactory loggerFactory;
-
-        public DefaultCookieParser(ILoggerFactory loggerFactory)
-        {
-            this.loggerFactory = loggerFactory;
-        }
-
         public virtual IEnumerable<HttpCookie>? ParseCookieHeader(string text)
         {
             var httpRegex = HttpCookieValueRegex(); // todo: I don't like using RegEx since it is sometimes slow and error-prone

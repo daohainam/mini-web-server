@@ -1,13 +1,7 @@
 ﻿namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
-    public class NotFoundActionResult : IActionResult
+    public class NotFoundActionResult(object? value) : IActionResult
     {
-        private readonly object? value;
-        public NotFoundActionResult(object? value)
-        {
-            this.value = value;
-        }
-
         public Task ExecuteResultAsync(ActionResultContext context)
         {
             context.Response.StatusCode = Abstractions.HttpResponseCodes.NotFound;

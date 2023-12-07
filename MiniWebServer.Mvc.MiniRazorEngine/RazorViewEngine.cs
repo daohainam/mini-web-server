@@ -6,22 +6,13 @@ using MiniWebServer.Mvc.MiniRazorEngine.Parser;
 
 namespace MiniWebServer.Mvc.RazorEngine
 {
-    public class MiniRazorViewEngine : IViewEngine
+    public class MiniRazorViewEngine(MiniRazorViewEngineOptions options, ILogger<MiniRazorViewEngine> logger, ITemplateParser templateParser, IViewFinder? viewFinder = default) : IViewEngine
     {
         public const string DefaultViewFolder = "Views";
 
-        private readonly MiniRazorViewEngineOptions options;
-        private readonly ILogger<MiniRazorViewEngine> logger;
-        private readonly IViewFinder viewFinder;
-        private readonly ITemplateParser templateParser;
-
-        public MiniRazorViewEngine(MiniRazorViewEngineOptions options, ILogger<MiniRazorViewEngine> logger, ITemplateParser templateParser, IViewFinder? viewFinder = default)
-        {
-            this.options = options ?? throw new ArgumentNullException(nameof(options));
-            this.templateParser = templateParser ?? throw new ArgumentNullException(nameof(templateParser));
-            this.logger = logger;
-            this.viewFinder = viewFinder ?? new DefaultViewFinder(DefaultViewFolder);
-        }
+        private readonly MiniRazorViewEngineOptions options = options ?? throw new ArgumentNullException(nameof(options));
+        private readonly IViewFinder viewFinder = viewFinder ?? new DefaultViewFinder(DefaultViewFolder);
+        private readonly ITemplateParser templateParser = templateParser ?? throw new ArgumentNullException(nameof(templateParser));
 
         public async Task<IViewContent?> RenderAsync(ActionResultContext context, string viewName, object? model, IDictionary<string, object> viewData)
         {

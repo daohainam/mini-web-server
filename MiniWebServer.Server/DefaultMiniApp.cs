@@ -3,10 +3,7 @@ using MiniWebServer.MiniApp;
 
 namespace MiniWebServer.Server
 {
-    internal class DefaultMiniApp : BaseMiniApp
+    internal class DefaultMiniApp(ServiceProvider services) : BaseMiniApp(services, Array.Empty<IMiddleware>())
     {
-        public DefaultMiniApp(ServiceProvider services) : base(services, Array.Empty<IMiddleware>())
-        {
-        }
     }
 }

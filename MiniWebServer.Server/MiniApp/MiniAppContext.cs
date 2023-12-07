@@ -5,26 +5,16 @@ using System.Security.Claims;
 
 namespace MiniWebServer.Server.MiniApp
 {
-    public class MiniAppContext : IMiniAppRequestContext
+    public class MiniAppContext(MiniAppConnectionContext connectionContext, IMiniApp app, IHttpRequest request, IHttpResponse response, ISession session, ClaimsPrincipal? user) : IMiniAppRequestContext
     {
-        public MiniAppContext(MiniAppConnectionContext connectionContext, IMiniApp app, IHttpRequest request, IHttpResponse response, ISession session, ClaimsPrincipal? user)
-        {
-            ConnectionContext = connectionContext ?? throw new ArgumentNullException(nameof(connectionContext));
-            App = app ?? throw new ArgumentNullException(nameof(app));
-            Request = request ?? throw new ArgumentNullException(nameof(request));
-            Response = response ?? throw new ArgumentNullException(nameof(response));
-            Session = session;
-            User = user;
-        }
+        private MiniAppConnectionContext ConnectionContext { get; } = connectionContext ?? throw new ArgumentNullException(nameof(connectionContext));
 
-        private MiniAppConnectionContext ConnectionContext { get; }
-
-        public IMiniApp App { get; }
-        public IHttpRequest Request { get; }
-        public IHttpResponse Response { get; }
-        public ISession Session { get; set; } // session can be changed by session middleware
+        public IMiniApp App { get; } = app ?? throw new ArgumentNullException(nameof(app));
+        public IHttpRequest Request { get; } = request ?? throw new ArgumentNullException(nameof(request));
+        public IHttpResponse Response { get; } = response ?? throw new ArgumentNullException(nameof(response));
+        public ISession Session { get; set; } = session;
         public IServiceProvider Services => ConnectionContext.Services;
-        public ClaimsPrincipal? User { get; set; }
+        public ClaimsPrincipal? User { get; set; } = user;
         public IWebSocketManager WebSockets
         {
             get

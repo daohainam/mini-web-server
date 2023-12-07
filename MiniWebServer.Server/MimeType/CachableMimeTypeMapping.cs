@@ -9,16 +9,10 @@ namespace MiniWebServer.Server.MimeType
     /// since mime type 'database' rarely (or never) changes, we created this class only to demonstrate how to use a cache 
     /// this class uses Decorator pattern
     /// </summary>
-    public class CachableMimeTypeMapping : IMimeTypeMapping
+    public class CachableMimeTypeMapping(IMimeTypeMapping parent, IDistributedCache cache) : IMimeTypeMapping
     {
-        private readonly IMimeTypeMapping parent;
-        private readonly IDistributedCache cache;
-
-        public CachableMimeTypeMapping(IMimeTypeMapping parent, IDistributedCache cache)
-        {
-            this.parent = parent ?? throw new ArgumentNullException(nameof(parent));
-            this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        }
+        private readonly IMimeTypeMapping parent = parent ?? throw new ArgumentNullException(nameof(parent));
+        private readonly IDistributedCache cache = cache ?? throw new ArgumentNullException(nameof(cache));
 
         public string GetMimeMapping(string fileExt)
         {

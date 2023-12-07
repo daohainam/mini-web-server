@@ -130,8 +130,8 @@ namespace MiniWebServer.HttpParser.Http11
                             hash ?? string.Empty,
                             queryString ?? string.Empty,
                             new HttpProtocolVersion("1", "1"),
-                            segments ?? Array.Empty<string>(),
-                            parameters ?? new HttpParameters()
+                            segments ?? [],
+                            parameters ?? []
                             );
 
                         return requestLine;
@@ -225,7 +225,7 @@ namespace MiniWebServer.HttpParser.Http11
             if (!query.IsEmpty && query.Span[0] == '?') // remove first ?
                 query = query[1..];
 
-            parameters = new HttpParameters();
+            parameters = [];
 
             while (!query.IsEmpty)
             {

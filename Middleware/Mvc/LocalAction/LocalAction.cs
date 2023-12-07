@@ -2,17 +2,10 @@
 
 namespace MiniWebServer.Mvc.LocalAction
 {
-    internal class LocalAction
+    internal class LocalAction(string route, ActionInfo actionInfo, ActionMethods actionMethods = ActionMethods.All)
     {
-        public LocalAction(string route, ActionInfo actionInfo, ActionMethods actionMethods = ActionMethods.All)
-        {
-            Route = route ?? throw new ArgumentNullException(nameof(route));
-            ActionInfo = actionInfo ?? throw new ArgumentNullException(nameof(actionInfo));
-            ActionMethods = actionMethods;
-        }
-
-        public string Route { get; }
-        public ActionInfo ActionInfo { get; }
-        public ActionMethods ActionMethods { get; }
+        public string Route { get; } = route ?? throw new ArgumentNullException(nameof(route));
+        public ActionInfo ActionInfo { get; } = actionInfo ?? throw new ArgumentNullException(nameof(actionInfo));
+        public ActionMethods ActionMethods { get; } = actionMethods;
     }
 }

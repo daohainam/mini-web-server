@@ -4,16 +4,11 @@ using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Mvc.LocalAction
 {
-    internal class LocalActionFinder : IActionFinder
+    internal class LocalActionFinder(LocalActionRegistry registry, IRouteMatcher routeMatcher) : IActionFinder
     {
-        private readonly LocalActionRegistry registry;
-        private readonly IRouteMatcher routeMatcher;
+        private readonly LocalActionRegistry registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        private readonly IRouteMatcher routeMatcher = routeMatcher ?? throw new ArgumentNullException(nameof(routeMatcher));
 
-        public LocalActionFinder(LocalActionRegistry registry, IRouteMatcher routeMatcher)
-        {
-            this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
-            this.routeMatcher = routeMatcher ?? throw new ArgumentNullException(nameof(routeMatcher));
-        }
         public ActionInfo? Find(IMiniAppRequestContext context)
         {
             var key = registry.Actions.Keys.Where(k => routeMatcher.IsMatched(context.Request.Url, k)).FirstOrDefault();

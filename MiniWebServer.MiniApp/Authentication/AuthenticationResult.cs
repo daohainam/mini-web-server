@@ -2,16 +2,10 @@
 
 namespace MiniWebServer.MiniApp.Authentication
 {
-    public class AuthenticationResult
+    public class AuthenticationResult(bool succeeded, ClaimsPrincipal? principal)
     {
-        public AuthenticationResult(bool succeeded, ClaimsPrincipal? principal)
-        {
-            IsSucceeded = succeeded;
-            Principal = principal;
-        }
-
-        public bool IsSucceeded { get; }
-        public ClaimsPrincipal? Principal { get; }
+        public bool IsSucceeded { get; } = succeeded;
+        public ClaimsPrincipal? Principal { get; } = principal;
 
         public static readonly AuthenticationResult Failed = new(false, null);
     }

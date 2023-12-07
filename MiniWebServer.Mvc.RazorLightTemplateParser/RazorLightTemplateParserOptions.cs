@@ -2,6 +2,6 @@
 {
     public class RazorLightTemplateParserOptions
     {
-        public string[] DefaultNamespaces { get; set; } = Array.Empty<string>();
+        public string[] DefaultNamespaces { get; set; } = [];
     }
 }

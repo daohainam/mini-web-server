@@ -16,7 +16,7 @@ namespace MiniWebServer.Abstractions.Http.Header.Parsers
                 if (match.Groups["unit"].Value != "bytes")
                     return false;
 
-                List<RangePart> parts = new();
+                List<RangePart> parts = [];
 
                 var startGroup = match.Groups["start"];
                 var endGroup = match.Groups["end"];
@@ -42,7 +42,7 @@ namespace MiniWebServer.Abstractions.Http.Header.Parsers
 
                 rangeHeader = new RangeHeader(
                     RangeUnits.Bytes,
-                    parts.ToArray()
+                    [.. parts]
                     );
                 return true;
             }

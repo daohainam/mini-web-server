@@ -33,10 +33,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
             logger = loggerFactory.CreateLogger<Http11IProtocolHandler>();
 
-            headerValidators = new List<IHeaderValidator>() {
+            headerValidators = [
                 new Http11StandardHeaderValidators.ContentLengthHeaderValidator(config.MaxRequestBodySize, loggerFactory),
                 new Http11StandardHeaderValidators.TransferEncodingHeaderValidator(loggerFactory),
-            }.ToArray();
+            ];
         }
 
         public int ProtocolVersion => 101;
@@ -44,7 +44,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         public async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
         {
             long contentLength = 0;
-            var httpMethod = HttpMethod.Get;
             string contentType = string.Empty;
 
             try
@@ -55,6 +54,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
                 requestBuilder.SetBodyPipeline(new Pipe());
 
+                var httpMethod = HttpMethod.Get;
                 // read request line
                 if (TryReadLine(ref buffer, out ReadOnlySequence<byte> line))
                 {

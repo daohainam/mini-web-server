@@ -16,12 +16,12 @@ namespace MiniWebServer.Abstractions.Features
             {
                 throw new ArgumentOutOfRangeException(nameof(compressionQuality), "compressionQuality must be from 0 (no compression) to 11 (max compression)");
             }
-            FileCompressionMimeTypes = fileCompressionMimeTypes ?? new string[] {
+            FileCompressionMimeTypes = fileCompressionMimeTypes ?? [
                 "text/plain",
                 "text/html",
                 "text/css",
                 "text/javascript"
-            };
+            ];
         }
         
         public long MinimumFileSizeToCompress { get; }

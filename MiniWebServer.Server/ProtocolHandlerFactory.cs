@@ -9,17 +9,11 @@ using MiniWebServer.Server.ProtocolHandlers.Http11;
 
 namespace MiniWebServer.Server
 {
-    public class ProtocolHandlerFactory : IProtocolHandlerFactory
+    public class ProtocolHandlerFactory(ILoggerFactory loggerFactory, IServiceProvider services) : IProtocolHandlerFactory
     {
         public const int HTTP11 = 101;
-        private readonly ILoggerFactory loggerFactory;
-        private readonly IServiceProvider services;
-
-        public ProtocolHandlerFactory(ILoggerFactory loggerFactory, IServiceProvider services)
-        {
-            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this.services = services ?? throw new ArgumentNullException(nameof(services));
-        }
+        private readonly ILoggerFactory loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        private readonly IServiceProvider services = services ?? throw new ArgumentNullException(nameof(services));
 
         public IProtocolHandler Create(ProtocolHandlerConfiguration config)
         {
@@ -29,7 +23,7 @@ namespace MiniWebServer.Server
 
                 return new Http11IProtocolHandler(config, loggerFactory,
                     services.GetService<IHttpComponentParser>() ?? new ByteSequenceHttpParser(loggerFactory),
-                    services.GetService<ICookieValueParser>() ?? new DefaultCookieParser(loggerFactory)
+                    services.GetService<ICookieValueParser>() ?? new DefaultCookieParser()
                     );
             }
 

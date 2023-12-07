@@ -2,15 +2,9 @@
 
 namespace Http11ProtocolTests.ProtocolHandlers.Http11
 {
-    internal class ReadRequestTestResult
+    internal class ReadRequestTestResult(bool success, HttpWebRequestBuilder httpWebRequestBuilder)
     {
-        public ReadRequestTestResult(bool success, HttpWebRequestBuilder httpWebRequestBuilder)
-        {
-            Success = success;
-            HttpWebRequestBuilder = httpWebRequestBuilder;
-        }
-
-        public bool Success { get; set; }
-        public HttpWebRequestBuilder HttpWebRequestBuilder { get; set; }
+        public bool Success { get; set; } = success;
+        public HttpWebRequestBuilder HttpWebRequestBuilder { get; set; } = httpWebRequestBuilder;
     }
 }

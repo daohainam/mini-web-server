@@ -1,12 +1,7 @@
 ﻿namespace MiniWebServer.Mvc
 {
-    public class MvcOptions
+    public class MvcOptions(IActionFinder actionFinder)
     {
-        public MvcOptions(IActionFinder actionFinder)
-        {
-            ActionFinder = actionFinder ?? throw new ArgumentNullException(nameof(actionFinder));
-        }
-
-        public IActionFinder ActionFinder { get; }
+        public IActionFinder ActionFinder { get; } = actionFinder ?? throw new ArgumentNullException(nameof(actionFinder));
     }
 }

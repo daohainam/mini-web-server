@@ -2,14 +2,9 @@
 
 namespace MvcMiddlewareTests
 {
-    internal class RequestBodyReader : IRequestBodyReader
+    internal class RequestBodyReader(string body) : IRequestBodyReader
     {
-        private readonly string body;
-
-        public RequestBodyReader(string body)
-        {
-            this.body = body ?? string.Empty;
-        }
+        private readonly string body = body ?? string.Empty;
 
         public Task<string> ReadAsStringAsync(CancellationToken cancellationToken = default)
         {

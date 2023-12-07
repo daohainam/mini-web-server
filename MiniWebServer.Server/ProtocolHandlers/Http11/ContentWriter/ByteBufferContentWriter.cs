@@ -3,14 +3,9 @@ using System.Buffers;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11.ContentWriter
 {
-    internal class ByteBufferContentWriter : IContentWriter
+    internal class ByteBufferContentWriter(IBufferWriter<byte> buffer) : IContentWriter
     {
-        private readonly IBufferWriter<byte> buffer;
-
-        public ByteBufferContentWriter(IBufferWriter<byte> buffer)
-        {
-            this.buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
-        }
+        private readonly IBufferWriter<byte> buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
 
         public void Complete()
         {

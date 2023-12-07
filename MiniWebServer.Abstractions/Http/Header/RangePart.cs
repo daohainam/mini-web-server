@@ -4,8 +4,7 @@
     {
         public RangePart(long start, long? end)
         {
-            if (start < 0)
-                throw new ArgumentOutOfRangeException(nameof(start));
+            ArgumentOutOfRangeException.ThrowIfNegative(start);
             if (end < 0)
                 throw new ArgumentOutOfRangeException(nameof(end));
             if (end < start)

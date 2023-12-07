@@ -5,15 +5,8 @@ using System.Text;
 
 namespace MiniWebServer.Abstractions.Http.Form
 {
-    public class XWwwFormUrlencodedFormReader : IFormReader
+    public class XWwwFormUrlencodedFormReader(long contentLength) : IFormReader
     {
-        private readonly long contentLength;
-
-        public XWwwFormUrlencodedFormReader(long contentLength)
-        {
-            this.contentLength = contentLength;
-        }
-
         public async Task<IRequestForm?> ReadAsync(PipeReader pipeReader, CancellationToken cancellationToken = default)
         {
             StringBuilder stringBuilder = new();
@@ -41,7 +34,7 @@ namespace MiniWebServer.Abstractions.Http.Form
             var form = new RequestForm();
 
             // now we have read the content, it's time to decode
-            string[] strings = UrlHelpers.UrlDecode(stringBuilder.ToString()).Split(new char[] { '&' });
+            string[] strings = UrlHelpers.UrlDecode(stringBuilder.ToString()).Split(['&']);
             foreach (string s in strings)
             {
                 int idx = s.IndexOf('=');

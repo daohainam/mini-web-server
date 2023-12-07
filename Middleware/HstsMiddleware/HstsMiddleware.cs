@@ -3,15 +3,8 @@ using System.Text;
 
 namespace MiniWebServer.HstsMiddleware
 {
-    public class HstsMiddleware : IMiddleware
+    public class HstsMiddleware(HstsOptions options) : IMiddleware
     {
-        private readonly HstsOptions options;
-
-        public HstsMiddleware(HstsOptions options)
-        {
-            this.options = options;
-        }
-
         public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             StringBuilder sb = new();

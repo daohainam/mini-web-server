@@ -11,9 +11,9 @@ namespace MiniWebServer.Server
 {
     public class MiniWebServerBuilder : IServerBuilder
     {
-        private readonly List<MiniWebServerBindingConfiguration> bindings = new();
-        private readonly Dictionary<string, HostConfiguration> hosts = new();
-        private readonly List<IMimeTypeMapping> mimeTypeMappings = new();
+        private readonly List<MiniWebServerBindingConfiguration> bindings = [];
+        private readonly Dictionary<string, HostConfiguration> hosts = [];
+        private readonly List<IMimeTypeMapping> mimeTypeMappings = [];
         private int connectionTimeout;
         private int readBufferSize;
         private long maxRequestBodySize;
@@ -29,12 +29,9 @@ namespace MiniWebServer.Server
 
         public IServerBuilder UseOptions(ServerOptions serverOptions)
         {
-            if (serverOptions == null)
-            {
-                throw new ArgumentNullException(nameof(serverOptions));
-            }
+            ArgumentNullException.ThrowIfNull(serverOptions);
 
-            if (serverOptions.BindingOptions.Any())
+            if (serverOptions.BindingOptions.Length != 0)
             {
                 foreach (var bindingOptions in serverOptions.BindingOptions)
                 {
@@ -168,7 +165,7 @@ namespace MiniWebServer.Server
             Validate();
             AddDefaultValuesIfRequired(serviceProvider);
 
-            Dictionary<string, Host.Host> hostContainers = new();
+            Dictionary<string, Host.Host> hostContainers = [];
             foreach (var host in hosts.Values)
             {
                 hostContainers.Add(host.HostName, new Host.Host(host.HostName, host.App));
@@ -177,7 +174,7 @@ namespace MiniWebServer.Server
             var server = new MiniWebServer(new MiniWebServerConfiguration()
             {
                 Bindings = bindings,
-                Hosts = hosts.Values.ToList(),
+                Hosts = [.. hosts.Values],
                 MaxRequestBodySize = maxRequestBodySize,
                 ConnectionTimeout = connectionTimeout,
                 ReadBufferSize = readBufferSize,
@@ -194,12 +191,12 @@ namespace MiniWebServer.Server
 
         private void AddDefaultValuesIfRequired(ServiceProvider serviceProvider)
         {
-            if (!hosts.Any())
+            if (hosts.Count == 0)
             {
                 hosts.Add(string.Empty, new HostConfiguration(string.Empty, new DefaultMiniApp(serviceProvider)));
             }
 
-            if (!mimeTypeMappings.Any()) // we always need a mime type mapping
+            if (mimeTypeMappings.Count == 0) // we always need a mime type mapping
             {
                 mimeTypeMappings.Add(StaticMimeMapping.Instance);
             }
@@ -207,7 +204,7 @@ namespace MiniWebServer.Server
 
         private void Validate() // move validating routines here so we can make Build function cleaner 
         {
-            if (!bindings.Any())
+            if (bindings.Count == 0)
             {
                 throw new InvalidOperationException("No bindings found");
             }

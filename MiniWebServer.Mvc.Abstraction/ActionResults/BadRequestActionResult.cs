@@ -1,13 +1,7 @@
 ﻿namespace MiniWebServer.Mvc.Abstraction.ActionResults
 {
-    public class BadRequestActionResult : IActionResult
+    public class BadRequestActionResult(object? value) : IActionResult
     {
-        private readonly object? value;
-        public BadRequestActionResult(object? value)
-        {
-            this.value = value;
-        }
-
         public Task ExecuteResultAsync(ActionResultContext context)
         {
             context.Response.StatusCode = Abstractions.HttpResponseCodes.OK;

@@ -4,16 +4,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
     public class Http11StandardHeaderValidators
     {
-        public class ContentLengthHeaderValidator : IHeaderValidator
+        public class ContentLengthHeaderValidator(long maxLength, ILoggerFactory loggerFactory) : IHeaderValidator
         {
-            private readonly long maxLength;
-            private readonly ILogger<ContentLengthHeaderValidator> logger;
-
-            public ContentLengthHeaderValidator(long maxLength, ILoggerFactory loggerFactory)
-            {
-                this.maxLength = maxLength;
-                logger = loggerFactory.CreateLogger<ContentLengthHeaderValidator>();
-            }
+            private readonly ILogger<ContentLengthHeaderValidator> logger = loggerFactory.CreateLogger<ContentLengthHeaderValidator>();
 
             public bool Validate(string name, string value)
             {
@@ -37,14 +30,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             }
         }
 
-        public class TransferEncodingHeaderValidator : IHeaderValidator
+        public class TransferEncodingHeaderValidator(ILoggerFactory loggerFactory) : IHeaderValidator
         {
-            private readonly ILogger logger;
-
-            public TransferEncodingHeaderValidator(ILoggerFactory loggerFactory)
-            {
-                logger = loggerFactory.CreateLogger(typeof(TransferEncodingHeaderValidator));
-            }
+            private readonly ILogger logger = loggerFactory.CreateLogger(typeof(TransferEncodingHeaderValidator));
 
             protected virtual bool IsSupportedEncoding(string encoding)
             {

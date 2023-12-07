@@ -2,14 +2,9 @@
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11.ContentWriter
 {
-    internal class StreamContentWriter : IContentWriter
+    internal class StreamContentWriter(Stream stream) : IContentWriter
     {
-        private readonly Stream stream;
-
-        public StreamContentWriter(Stream stream)
-        {
-            this.stream = stream ?? throw new ArgumentNullException(nameof(stream));
-        }
+        private readonly Stream stream = stream ?? throw new ArgumentNullException(nameof(stream));
 
         public void Complete()
         {

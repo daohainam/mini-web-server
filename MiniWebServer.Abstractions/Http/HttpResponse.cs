@@ -11,8 +11,8 @@
             Stream = stream;
 
             ReasonPhrase = reasonPhrase ?? HttpResponseReasonPhrases.GetReasonPhrase(statusCode);
-            Headers = headers ?? new HttpResponseHeaders();
-            Cookies = cookies ?? new HttpCookies();
+            Headers = headers ?? [];
+            Cookies = cookies ?? [];
             Content = content ?? EmptyContent.Instance;
         }
 

@@ -5,14 +5,9 @@ using System.Security.Claims;
 
 namespace MvcMiddlewareTests
 {
-    internal class FakeMiniAppContext : IMiniAppRequestContext
+    internal class FakeMiniAppContext(Func<IHttpRequest> request) : IMiniAppRequestContext
     {
-        private readonly IHttpRequest request;
-
-        public FakeMiniAppContext(Func<IHttpRequest> request)
-        {
-            this.request = request();
-        }
+        private readonly IHttpRequest request = request();
 
         public IHttpRequest Request => request;
 

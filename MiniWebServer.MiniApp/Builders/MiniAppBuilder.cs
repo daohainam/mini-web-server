@@ -6,7 +6,7 @@ namespace MiniWebServer.MiniApp.Builders
     {
         public IServiceCollection Services { get; }
 
-        private readonly List<Type> middlewareTypes = new();
+        private readonly List<Type> middlewareTypes = [];
 
         public MiniAppBuilder(IServiceCollection? services = default)
         {
@@ -25,7 +25,7 @@ namespace MiniWebServer.MiniApp.Builders
             var services = Services.BuildServiceProvider();
             var middlewares = new List<IMiddleware>();
 
-            if (middlewareTypes.Any())
+            if (middlewareTypes.Count != 0)
             {
                 var middlewareFactory = services.GetService<IMiddlewareFactory>();
 

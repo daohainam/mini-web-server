@@ -3,16 +3,10 @@ using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.Abstractions.Parsers.Http11
 {
-    public class HttpProtocolVersion
+    public class HttpProtocolVersion(string major, string minor)
     {
-        public HttpProtocolVersion(string major, string minor)
-        {
-            Major = major ?? throw new ArgumentNullException(nameof(major));
-            Minor = minor ?? throw new ArgumentNullException(nameof(minor));
-        }
-
-        public string Major { get; }
-        public string Minor { get; }
+        public string Major { get; } = major ?? throw new ArgumentNullException(nameof(major));
+        public string Minor { get; } = minor ?? throw new ArgumentNullException(nameof(minor));
 
         public override string ToString()
         {
@@ -36,7 +30,7 @@ namespace MiniWebServer.Server.Abstractions.Parsers.Http11
             }
             else
             {
-                Parameters = new HttpParameters();
+                Parameters = [];
             }
         }
 
@@ -54,16 +48,10 @@ namespace MiniWebServer.Server.Abstractions.Parsers.Http11
         }
     }
 
-    public class HttpHeaderLine
+    public class HttpHeaderLine(string name, string value)
     {
-        public HttpHeaderLine(string name, string value)
-        {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            Value = value ?? throw new ArgumentNullException(nameof(value));
-        }
-
-        public string Name { get; }
-        public string Value { get; }
+        public string Name { get; } = name ?? throw new ArgumentNullException(nameof(name));
+        public string Value { get; } = value ?? throw new ArgumentNullException(nameof(value));
 
         public override string ToString()
         {

@@ -1,14 +1,7 @@
 ﻿namespace MiniWebServer.MiniApp.Authorization
 {
-    internal class RequireClaimValidator : IClaimValidator
+    internal class RequireClaimValidator(string requiredClaim) : IClaimValidator
     {
-        private readonly string requiredClaim;
-
-        public RequireClaimValidator(string requiredClaim)
-        {
-            this.requiredClaim = requiredClaim;
-        }
-
         public bool Validate(IMiniAppRequestContext context)
         {
             if (context == null

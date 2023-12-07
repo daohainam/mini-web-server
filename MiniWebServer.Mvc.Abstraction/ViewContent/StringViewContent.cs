@@ -1,13 +1,8 @@
 ﻿namespace MiniWebServer.Mvc.Abstraction.ViewContent
 {
-    public class StringViewContent : IViewContent
+    public class StringViewContent(string content) : IViewContent
     {
-        private readonly string content;
-
-        public StringViewContent(string content)
-        {
-            this.content = content ?? string.Empty;
-        }
+        private readonly string content = content ?? string.Empty;
 
         public Task RenderAsync(ActionResultContext context)
         {

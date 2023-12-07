@@ -40,7 +40,7 @@ namespace MiniWebServer.Session
                 }
                 else
                 {
-                    sessionId = null;
+                    //sessionId = null;
                 }
             }
             else // session key not found, create one

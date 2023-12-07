@@ -5,8 +5,8 @@ namespace MiniWebServer.OutputCaching
     public class OutputCachePolicyBuilder : IOutputCachePolicyBuilder
     {
         private string? name;
-        private readonly List<HttpResponseCodes> httpResponseCodes = new();
-        private readonly List<Abstractions.Http.HttpMethod> methods = new();
+        private readonly List<HttpResponseCodes> httpResponseCodes = [];
+        private readonly List<Abstractions.Http.HttpMethod> methods = [];
         private TimeSpan? expire;
         private Func<string, bool>? pathMatching;
 
@@ -48,8 +48,8 @@ namespace MiniWebServer.OutputCaching
         {
             var policy = new OutputCachePolicy(
                 pathMatching ?? (path => false),
-                methods.Any() ? methods : null, // null to use default values
-                httpResponseCodes.Any() ? httpResponseCodes : null,
+                methods.Count != 0 ? methods : null, // null to use default values
+                httpResponseCodes.Count != 0 ? httpResponseCodes : null,
                 expire
                 );
 

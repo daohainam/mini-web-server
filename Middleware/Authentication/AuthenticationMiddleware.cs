@@ -4,15 +4,8 @@ using MiniWebServer.MiniApp.Authentication;
 
 namespace MiniWebServer.Authentication
 {
-    public class AuthenticationMiddleware : IMiddleware
+    public class AuthenticationMiddleware(AuthenticationOptions options) : IMiddleware
     {
-        private readonly AuthenticationOptions options;
-
-        public AuthenticationMiddleware(AuthenticationOptions options)
-        {
-            this.options = options ?? new();
-        }
-
         public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             var authenticationServices = context.Services.GetServices<IAuthenticationService>();

@@ -1,17 +1,10 @@
 ﻿namespace MiniWebServer.MiniApp
 {
-    internal class CallableActionDelegate : ICallableBuilder
+    internal class CallableActionDelegate(string route, ICallable requestDelegate, params Abstractions.Http.HttpMethod[] httpMethods) : ICallableBuilder
     {
-        public CallableActionDelegate(string route, ICallable requestDelegate, params Abstractions.Http.HttpMethod[] httpMethods)
-        {
-            Route = route ?? throw new ArgumentNullException(nameof(route));
-            RequestDelegate = requestDelegate ?? throw new ArgumentNullException(nameof(requestDelegate));
-            HttpMethods = httpMethods ?? throw new ArgumentNullException(nameof(httpMethods));
-        }
-
-        public string Route { get; }
-        public ICallable RequestDelegate { get; private set; }
-        public Abstractions.Http.HttpMethod[] HttpMethods { get; }
+        public string Route { get; } = route ?? throw new ArgumentNullException(nameof(route));
+        public ICallable RequestDelegate { get; private set; } = requestDelegate ?? throw new ArgumentNullException(nameof(requestDelegate));
+        public Abstractions.Http.HttpMethod[] HttpMethods { get; } = httpMethods ?? throw new ArgumentNullException(nameof(httpMethods));
 
         public ICallableBuilder AddFilter(ICallableFilter filter)
         {

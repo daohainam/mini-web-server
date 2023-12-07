@@ -62,7 +62,7 @@ Cache-Control:no-cache
             var loggerFactory = new LoggerFactory();
 
             var httpParser = new ByteSequenceHttpParser(loggerFactory);
-            var handler = new Http11IProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser(loggerFactory));
+            var handler = new Http11IProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser());
 
             var requestBuilder = new HttpWebRequestBuilder();
 

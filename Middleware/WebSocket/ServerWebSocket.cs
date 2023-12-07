@@ -8,17 +8,8 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.WebSocket
 {
-    internal class ServerWebSocket : System.Net.WebSockets.WebSocket
+    internal class ServerWebSocket(System.Net.WebSockets.WebSocket webSocket, IMiniAppRequestContext context) : System.Net.WebSockets.WebSocket
     {
-        private readonly IMiniAppRequestContext context;
-        private System.Net.WebSockets.WebSocket webSocket;
-
-        public ServerWebSocket(System.Net.WebSockets.WebSocket webSocket, IMiniAppRequestContext context)
-        {
-            this.webSocket = webSocket;
-            this.context = context;
-        }
-
         public override WebSocketCloseStatus? CloseStatus => webSocket.CloseStatus;
 
         public override string? CloseStatusDescription => webSocket.CloseStatusDescription;

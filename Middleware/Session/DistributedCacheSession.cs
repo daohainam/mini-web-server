@@ -11,7 +11,7 @@ namespace MiniWebServer.Session
     {
         private const string KeyPrefix = "_#M.S#_";
 
-        private readonly Dictionary<string, byte[]> localStore = new();
+        private readonly Dictionary<string, byte[]> localStore = [];
         private SpinLock spinLock = new(); // do not make it readonly, or .NET will create a new shadow instance to keep it immutable
         private readonly int waitTimeoutMs = 0;
 

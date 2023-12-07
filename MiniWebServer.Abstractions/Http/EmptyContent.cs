@@ -6,7 +6,7 @@
 
         public EmptyContent()
         {
-            headers = new();
+            headers = [];
         }
 
         public HttpHeaders Headers => headers;

@@ -2,16 +2,10 @@
 
 namespace MiniWebServer.Abstractions.Http.Form
 {
-    public class DefaultFormReaderFactory : IFormReaderFactory
+    public class DefaultFormReaderFactory(ILoggerFactory? loggerFactory) : IFormReaderFactory
     {
         private const string MultipartFormDataContentType = "multipart/form-data";
         private const string XWwwFormUrlEncodedContentType = "application/x-www-form-urlencoded";
-        private readonly ILoggerFactory? loggerFactory;
-
-        public DefaultFormReaderFactory(ILoggerFactory? loggerFactory)
-        {
-            this.loggerFactory = loggerFactory;
-        }
 
         public IFormReader? CreateFormReader(string contentType, long contentLength)
         {

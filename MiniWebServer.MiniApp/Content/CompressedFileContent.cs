@@ -107,7 +107,7 @@ namespace MiniWebServer.MiniApp.Content
                     }
                 }
 
-                Write(ref encoder, Array.Empty<byte>(), stream, ref compressedSize, true);
+                Write(ref encoder, [], stream, ref compressedSize, true);
 
                 encoder.Dispose();
 

@@ -2,16 +2,10 @@
 
 namespace MiniWebServer.Abstractions.Http.Header
 {
-    public class RangeHeader
+    public class RangeHeader(RangeUnits unit, params RangePart[] parts)
     {
-        public RangeHeader(RangeUnits unit, params RangePart[] parts)
-        {
-            Unit = unit;
-            Parts = parts ?? throw new ArgumentNullException(nameof(parts));
-        }
-
-        public RangeUnits Unit { get; }
-        public RangePart[] Parts { get; }
+        public RangeUnits Unit { get; } = unit;
+        public RangePart[] Parts { get; } = parts ?? throw new ArgumentNullException(nameof(parts));
 
         public static bool TryParse(string s, out RangeHeader? rangeHeader)
         {

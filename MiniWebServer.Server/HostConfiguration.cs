@@ -2,15 +2,9 @@
 
 namespace MiniWebServer.Server
 {
-    public class HostConfiguration
+    public class HostConfiguration(string hostName, IMiniApp app)
     {
-        public HostConfiguration(string hostName, IMiniApp app)
-        {
-            HostName = hostName;
-            App = app;
-        }
-
-        public string HostName { get; }
-        public IMiniApp App { get; }
+        public string HostName { get; } = hostName;
+        public IMiniApp App { get; } = app;
     }
 }

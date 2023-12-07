@@ -8,9 +8,9 @@ namespace MiniWebServer.Server.Http
     public class HttpWebRequestBuilder : IHttpRequestBuilder
     {
         private HttpMethod httpMethod = HttpMethod.Get;
-        private readonly HttpRequestHeaders headers = new();
-        private readonly List<HttpTransferEncoding> transferEncodings = new();
-        private readonly List<HttpCookie> cookies = new();
+        private readonly HttpRequestHeaders headers = [];
+        private readonly List<HttpTransferEncoding> transferEncodings = [];
+        private readonly List<HttpCookie> cookies = [];
         private string host = string.Empty;
         private int port = 80;
         private string url = "/";
@@ -19,10 +19,10 @@ namespace MiniWebServer.Server.Http
         private Pipe? bodyPipeline;
         private long contentLength;
         private string contentType = string.Empty;
-        private string[] segments = Array.Empty<string>();
+        private string[] segments = [];
         private ulong requestId;
         private bool isHttps = false;
-        private readonly HttpParameters parameters = new();
+        private readonly HttpParameters parameters = [];
 
         public IHttpRequestBuilder AddHeader(string name, string value)
         {
@@ -77,10 +77,7 @@ namespace MiniWebServer.Server.Http
         }
         public IHttpRequestBuilder SetPort(int port)
         {
-            if (port <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(port);
 
             this.port = port;
 

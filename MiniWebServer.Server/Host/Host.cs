@@ -2,15 +2,9 @@
 
 namespace MiniWebServer.Server.Host
 {
-    public class Host
+    public class Host(string hostName, IMiniApp app)
     {
-        public Host(string hostName, IMiniApp app)
-        {
-            HostName = hostName ?? throw new ArgumentNullException(nameof(hostName));
-            App = app ?? throw new ArgumentNullException(nameof(app));
-        }
-
-        public string HostName { get; }
-        public IMiniApp App { get; }
+        public string HostName { get; } = hostName ?? throw new ArgumentNullException(nameof(hostName));
+        public IMiniApp App { get; } = app ?? throw new ArgumentNullException(nameof(app));
     }
 }

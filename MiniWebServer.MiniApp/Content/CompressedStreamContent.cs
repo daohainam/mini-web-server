@@ -82,7 +82,7 @@ namespace MiniWebServer.MiniApp.Content
                     bytesRead = await this.stream.ReadAsync(buffer, cancellationToken);
                 }
 
-                Write(ref encoder, Array.Empty<byte>(), stream, ref compressedSize, true);
+                Write(ref encoder, [], stream, ref compressedSize, true);
 
                 encoder.Dispose();
 

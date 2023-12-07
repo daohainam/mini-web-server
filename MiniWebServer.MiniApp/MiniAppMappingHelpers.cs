@@ -112,14 +112,9 @@ namespace MiniWebServer.MiniApp
         }
 
 
-        private class CallableWrapper : ICallable
+        private class CallableWrapper(RequestDelegate action) : ICallable
         {
-            private readonly RequestDelegate action;
-
-            public CallableWrapper(RequestDelegate action)
-            {
-                this.action = action ?? throw new ArgumentNullException(nameof(action));
-            }
+            private readonly RequestDelegate action = action ?? throw new ArgumentNullException(nameof(action));
 
             public Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
             {

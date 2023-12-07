@@ -2,15 +2,9 @@
 
 namespace MiniWebServer.Mvc.Abstraction
 {
-    public class ControllerContext
+    public class ControllerContext(IMiniAppRequestContext context, IViewEngine viewEngine)
     {
-        public ControllerContext(IMiniAppRequestContext context, IViewEngine viewEngine)
-        {
-            Context = context ?? throw new ArgumentNullException(nameof(context));
-            ViewEngine = viewEngine ?? throw new ArgumentNullException(nameof(viewEngine));
-        }
-
-        public IMiniAppRequestContext Context { get; }
-        public IViewEngine ViewEngine { get; }
+        public IMiniAppRequestContext Context { get; } = context ?? throw new ArgumentNullException(nameof(context));
+        public IViewEngine ViewEngine { get; } = viewEngine ?? throw new ArgumentNullException(nameof(viewEngine));
     }
 }

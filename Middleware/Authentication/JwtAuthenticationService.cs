@@ -59,7 +59,7 @@ namespace MiniWebServer.Authentication
                                 }
                             }
 
-                            context.User = new GenericPrincipal(result.ClaimsIdentity, roles.ToArray());
+                            context.User = new GenericPrincipal(result.ClaimsIdentity, [.. roles]);
                             //context.User = new GenericPrincipal(result.ClaimsIdentity, Array.Empty<string>());
 
                             return new AuthenticationResult(true, context.User);

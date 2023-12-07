@@ -162,7 +162,7 @@ namespace MiniWebServer.Server
 
             listener.Stop();
 
-            Task.WaitAll(clientTasks.Values.ToArray(), TimeSpan.FromSeconds(30));
+            Task.WaitAll([.. clientTasks.Values], TimeSpan.FromSeconds(30));
         }
 
         private static void CloseConnection(TcpClient tcpClient)
@@ -186,7 +186,7 @@ namespace MiniWebServer.Server
 
             try
             {
-                Task.WaitAll(clientConnectionListeningProcs.ToArray(), stoppingToken);
+                Task.WaitAll([.. clientConnectionListeningProcs], stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -198,7 +198,7 @@ namespace MiniWebServer.Server
 
         public Task Start(CancellationToken? cancellationToken = null)
         {
-            if (!config.Bindings.Any())
+            if (config.Bindings.Count == 0)
             {
                 throw new InvalidOperationException("No binding settings found");
             }

@@ -3,14 +3,8 @@ using MiniWebServer.Mvc.Abstraction;
 
 namespace MiniWebServer.Controllers
 {
-    public class HelloWorldController : Controller
+    public class HelloWorldController(ISumCalculator sumCalculator) : Controller
     {
-        private readonly ISumCalculator sumCalculator;
-        public HelloWorldController(ISumCalculator sumCalculator)
-        {
-            this.sumCalculator = sumCalculator;
-        }
-
         public string Index(string? name)
         {
             return "Hello world! " + (name ?? string.Empty);

@@ -3,18 +3,11 @@ using MiniWebServer.MiniApp;
 
 namespace MiniWebServer.Mvc.Abstraction
 {
-    public class ActionResultContext
+    public class ActionResultContext(Controller controller, ActionInfo actionInfo, IMiniAppRequestContext appContext)
     {
-        public ActionResultContext(Controller controller, ActionInfo actionInfo, IMiniAppRequestContext appContext)
-        {
-            Controller = controller ?? throw new ArgumentNullException(nameof(controller));
-            ActionInfo = actionInfo ?? throw new ArgumentNullException(nameof(actionInfo));
-            AppContext = appContext ?? throw new ArgumentNullException(nameof(appContext));
-        }
-
-        public Controller Controller { get; }
-        public ActionInfo ActionInfo { get; }
-        public IMiniAppRequestContext AppContext { get; }
+        public Controller Controller { get; } = controller ?? throw new ArgumentNullException(nameof(controller));
+        public ActionInfo ActionInfo { get; } = actionInfo ?? throw new ArgumentNullException(nameof(actionInfo));
+        public IMiniAppRequestContext AppContext { get; } = appContext ?? throw new ArgumentNullException(nameof(appContext));
 
         public IHttpRequest Request => AppContext.Request;
         public IHttpResponse Response => AppContext.Response;

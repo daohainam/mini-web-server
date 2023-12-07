@@ -2,14 +2,8 @@
 
 namespace MiniWebServer.Abstractions.Http
 {
-    public class RequestBodyManager : IRequestBodyManager
+    public class RequestBodyManager(PipeReader? reader) : IRequestBodyManager
     {
-        private readonly PipeReader? reader;
-        public RequestBodyManager(PipeReader? reader)
-        {
-            this.reader = reader;
-        }
-
         public PipeReader? GetReader()
         {
             return reader;

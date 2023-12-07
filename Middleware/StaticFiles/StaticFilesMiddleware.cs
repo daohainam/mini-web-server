@@ -34,14 +34,14 @@ namespace MiniWebServer.StaticFiles
 
             if (!url.Contains("..") && directoryInfo.Exists)
             {
-                if (url.StartsWith("/"))
+                if (url.StartsWith('/'))
                 {
                     url = url[1..];
                 }
                 url = url.Replace('/', Path.DirectorySeparatorChar);
 
                 FileInfo? file = null;
-                if (string.IsNullOrEmpty(url) && options.DefaultDocuments.Any())
+                if (string.IsNullOrEmpty(url) && options.DefaultDocuments.Length != 0)
                 {
                     foreach (var document in options.DefaultDocuments)
                     {
@@ -60,7 +60,7 @@ namespace MiniWebServer.StaticFiles
                     {
                         var dir = new DirectoryInfo(file.FullName);
                         file = null;
-                        if (options.DefaultDocuments.Any() && dir.Exists)
+                        if (options.DefaultDocuments.Length != 0 && dir.Exists)
                         {
                             foreach (var document in options.DefaultDocuments)
                             {

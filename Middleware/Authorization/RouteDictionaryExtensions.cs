@@ -4,10 +4,10 @@
     {
         public static void Add(this IDictionary<string, string[]> dictionary, string key, string value, params string[]? values)
         {
-            List<string> strings = new()
-            {
+            List<string> strings =
+            [
                 value
-            };
+            ];
 
             if (values != null)
             {
@@ -16,7 +16,7 @@
                     strings.Add(v);
                 }
             }
-            dictionary[key] = strings.ToArray();
+            dictionary[key] = [.. strings];
         }
     }
 }

@@ -3,18 +3,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MiniWebServer.MiniApp
 {
-    internal class ActionDelegateCallable : BaseCallable
+    internal class ActionDelegateCallable(CallableActionDelegate action, ILogger<ActionDelegateCallable> logger, ICallable? parent = default) : BaseCallable
     {
-        private readonly CallableActionDelegate action;
-        private readonly ILogger<ActionDelegateCallable> logger;
-        private readonly ICallable? parent;
-
-        public ActionDelegateCallable(CallableActionDelegate action, ILogger<ActionDelegateCallable> logger, ICallable? parent = default)
-        {
-            this.action = action ?? throw new ArgumentNullException(nameof(action));
-            this.logger = logger ?? NullLogger<ActionDelegateCallable>.Instance;
-            this.parent = parent;
-        }
+        private readonly CallableActionDelegate action = action ?? throw new ArgumentNullException(nameof(action));
+        private readonly ILogger<ActionDelegateCallable> logger = logger ?? NullLogger<ActionDelegateCallable>.Instance;
 
         public override async Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
         {

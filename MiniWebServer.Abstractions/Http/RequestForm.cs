@@ -9,7 +9,7 @@ namespace MiniWebServer.Abstractions.Http
 
         public RequestForm()
         {
-            form = new Dictionary<string, StringValues>();
+            form = [];
         }
 
         public RequestForm(string name, string value)
@@ -30,7 +30,7 @@ namespace MiniWebServer.Abstractions.Http
 
         public RequestForm(Dictionary<string, StringValues> form)
         {
-            this.form = form ?? new Dictionary<string, StringValues>();
+            this.form = form ?? [];
         }
 
         public StringValues this[string key]

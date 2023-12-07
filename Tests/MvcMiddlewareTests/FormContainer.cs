@@ -4,14 +4,9 @@ using MiniWebServer.Abstractions.Http;
 
 namespace MvcMiddlewareTests
 {
-    internal class FormContainer : IFormContainer
+    internal class FormContainer(IRequestForm? form = default) : IFormContainer
     {
-        private readonly IRequestForm form;
-
-        public FormContainer(IRequestForm? form = default)
-        {
-            this.form = form ?? new RequestForm();
-        }
+        private readonly IRequestForm form = form ?? new RequestForm();
 
         public Task<IRequestForm> ReadFormAsync(ILoggerFactory? loggerFactory = null, CancellationToken cancellationToken = default)
         {

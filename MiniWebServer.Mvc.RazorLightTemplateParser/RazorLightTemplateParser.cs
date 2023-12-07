@@ -6,10 +6,10 @@ namespace MiniWebServer.Mvc.RazorLightTemplateParser
     public class RazorLightTemplateParser : ITemplateParser
     {
         private readonly RazorLightTemplateParserOptions options;
-        private static readonly string[] DefaultNamespaces = {
+        private static readonly string[] DefaultNamespaces = [
             "System",
             "System.Text"
-        };
+        ];
 
         public RazorLightTemplateParser(RazorLightTemplateParserOptions? options = null)
         {

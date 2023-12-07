@@ -28,7 +28,7 @@ namespace MiniWebServer.Mvc.Tests
                 },
                 () => new RequestHeadersContainer()
                 {
-                    Headers = new HttpRequestHeaders() { }
+                    Headers = []
                 },
                 () => new RequestBodyReader(string.Empty),
                 () => new FormContainer()
@@ -62,7 +62,7 @@ namespace MiniWebServer.Mvc.Tests
                 source, service,
                 () => new ParametersContainer()
                 {
-                    QueryParameters = new HttpParameters()
+                    QueryParameters = []
                 },
                 () => new RequestHeadersContainer()
                 {
@@ -100,11 +100,11 @@ namespace MiniWebServer.Mvc.Tests
                 true, source, service,
                 () => new ParametersContainer()
                 {
-                    QueryParameters = new HttpParameters()
+                    QueryParameters = []
                 },
                 () => new RequestHeadersContainer()
                 {
-                    Headers = new HttpRequestHeaders()
+                    Headers = []
                 },
                 () => new RequestBodyReader(string.Empty),
                 () => new FormContainer(new RequestForm(

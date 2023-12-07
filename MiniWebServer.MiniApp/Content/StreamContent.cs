@@ -30,7 +30,7 @@ namespace MiniWebServer.MiniApp.Content
 
             this.autoCloseStream = autoCloseStream;
 
-            headers = new();
+            headers = [];
         }
 
         public override HttpHeaders Headers => headers;

@@ -4,16 +4,9 @@ using MiniWebServer.MiniApp;
 
 namespace MiniWebServer.HttpsRedirection
 {
-    public class HttpsRedirectionMiddleware : IMiddleware
+    public class HttpsRedirectionMiddleware(HttpsRedirectionOptions options, ILogger<HttpsRedirectionMiddleware>? logger) : IMiddleware
     {
-        private readonly HttpsRedirectionOptions options;
-        private readonly ILogger<HttpsRedirectionMiddleware> logger;
-
-        public HttpsRedirectionMiddleware(HttpsRedirectionOptions options, ILogger<HttpsRedirectionMiddleware>? logger)
-        {
-            this.options = options;
-            this.logger = logger ?? NullLogger<HttpsRedirectionMiddleware>.Instance;
-        }
+        private readonly ILogger<HttpsRedirectionMiddleware> logger = logger ?? NullLogger<HttpsRedirectionMiddleware>.Instance;
 
         public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {

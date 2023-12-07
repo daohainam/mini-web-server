@@ -3,7 +3,7 @@
     internal class StaticQuoteService : IQuoteService
     {
         // this quotes are from: https://gist.github.com/robatron/a66acc0eed3835119817
-        private static readonly string[] quotes = new string[] { "If you want to achieve greatness stop asking for permission. ~Anonymous",
+        private static readonly string[] quotes = [ "If you want to achieve greatness stop asking for permission. ~Anonymous",
             "Things work out best for those who make the best of how things work out. ~John Wooden",
             "To live a creative life, we must lose our fear of being wrong. ~Anonymous",
             "If you are not willing to risk the usual you will have to settle for the ordinary. ~Jim Rohn",
@@ -102,7 +102,7 @@
             "Failure is the condiment that gives success its flavor. ~Truman Capote",
             "Don't let what you cannot do interfere with what you can do. ~John R. Wooden",
             "You may have to fight a battle more than once to win it. ~Margaret Thatcher"
-        };
+        ];
         private readonly Random random = new();
 
         public Task<string> GetRandomAsync()
