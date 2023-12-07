@@ -5,7 +5,7 @@
         // todo: we should accept a regex and match requests based on that
         public bool IsMatched(string requestUrl, string route)
         {
-            return string.Equals(requestUrl, route, StringComparison.InvariantCultureIgnoreCase);
+            return string.Equals(requestUrl, route, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

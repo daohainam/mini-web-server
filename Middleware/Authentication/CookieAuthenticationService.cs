@@ -23,7 +23,7 @@ namespace MiniWebServer.Authentication
             else
                 logger = NullLogger<CookieAuthenticationService>.Instance;
         }
-        public async Task<AuthenticationResult> AuthenticateAsync(IMiniAppContext context)
+        public async Task<AuthenticationResult> AuthenticateAsync(IMiniAppRequestContext context)
         {
             ArgumentNullException.ThrowIfNull(context, nameof(context));
 
@@ -68,7 +68,7 @@ namespace MiniWebServer.Authentication
             return new AuthenticationResult(false, null);
         }
 
-        public Task SignInAsync(IMiniAppContext context, System.Security.Claims.ClaimsPrincipal principal)
+        public Task SignInAsync(IMiniAppRequestContext context, System.Security.Claims.ClaimsPrincipal principal)
         {
             var principalStore = context.Services.GetService<IPrincipalStore>();
 
@@ -97,7 +97,7 @@ namespace MiniWebServer.Authentication
             return Task.CompletedTask;
         }
 
-        public Task SignOutAsync(IMiniAppContext context)
+        public Task SignOutAsync(IMiniAppRequestContext context)
         {
             var principal = context.User;
             if (principal == null)

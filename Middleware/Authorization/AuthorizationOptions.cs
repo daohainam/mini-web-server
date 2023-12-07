@@ -13,6 +13,6 @@ namespace MiniWebServer.Authorization
         /// <summary>
         /// return true if you want to accept no-matching urls
         /// </summary>
-        public Func<IMiniAppContext, bool> NoMatchedRoute { get; set; } = (context) => true;
+        public Func<IMiniAppRequestContext, bool> NoMatchedRoute { get; set; } = (context) => true;
     }
 }

@@ -13,7 +13,7 @@ namespace MiniWebServer.Authentication
             this.options = options ?? new();
         }
 
-        public async Task InvokeAsync(IMiniAppContext context, ICallable next, CancellationToken cancellationToken = default)
+        public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
             var authenticationServices = context.Services.GetServices<IAuthenticationService>();
             if (authenticationServices != null)

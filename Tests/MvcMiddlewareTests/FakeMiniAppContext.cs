@@ -1,10 +1,11 @@
 ﻿using MiniWebServer.Abstractions;
 using MiniWebServer.MiniApp;
+using MiniWebServer.WebSocket.Abstractions;
 using System.Security.Claims;
 
 namespace MvcMiddlewareTests
 {
-    internal class FakeMiniAppContext : IMiniAppContext
+    internal class FakeMiniAppContext : IMiniAppRequestContext
     {
         private readonly IHttpRequest request;
 
@@ -22,5 +23,7 @@ namespace MvcMiddlewareTests
         public IServiceProvider Services => throw new NotImplementedException();
 
         public ClaimsPrincipal? User { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        IWebSocketManager IMiniAppContext.WebSockets { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     }
 }

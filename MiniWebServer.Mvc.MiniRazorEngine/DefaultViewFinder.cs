@@ -15,7 +15,7 @@ namespace MiniWebServer.Mvc.MiniRazorEngine
         public string? Find(ActionResultContext context, string viewName)
         {
             var controllerName = context.Controller.GetType().Name;
-            if (controllerName.EndsWith("Controller", StringComparison.InvariantCultureIgnoreCase))
+            if (controllerName.EndsWith("Controller", StringComparison.OrdinalIgnoreCase))
             {
                 controllerName = controllerName[..^10];
             }

@@ -61,10 +61,10 @@ namespace MiniWebServer.Server
 
                     SslServerAuthenticationOptions options = new()
                     {
-                        ApplicationProtocols = new()
-                        {
+                        ApplicationProtocols =
+                        [
                             SslApplicationProtocol.Http11
-                        },
+                        ],
                         ServerCertificate = binding.Certificate,
                         EnabledSslProtocols = SslProtocols.None, // use the system default version
                         ClientCertificateRequired = false,
@@ -72,7 +72,7 @@ namespace MiniWebServer.Server
                         RemoteCertificateValidationCallback = ValidateClientCertificate
                     };
 
-                    sslStream.AuthenticateAsServer(options);
+                    await sslStream.AuthenticateAsServerAsync(options);
 
                     stream = sslStream;
                     isHttps = true;
@@ -137,6 +137,8 @@ namespace MiniWebServer.Server
                     TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);
 
                     var connectionId = Interlocked.Increment(ref nextClientId); // this function can be called concurrently (or not?) so we cannot use ++
+
+                    logger.LogDebug("New client connected! ClientID = {cid}", connectionId);
 
                     Task t = HandleNewClientConnectionAsync(connectionId, binding, client);
 

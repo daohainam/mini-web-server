@@ -5,6 +5,6 @@ namespace MiniWebServer.Mvc
 {
     public interface IActionFinder
     {
-        ActionInfo? Find(IMiniAppContext context);
+        ActionInfo? Find(IMiniAppRequestContext context);
     }
 }

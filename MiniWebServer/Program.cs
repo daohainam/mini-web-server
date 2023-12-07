@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.WebSockets;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,6 +19,8 @@ using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
 using MiniWebServer.Session;
 using MiniWebServer.StaticFiles;
+using MiniWebServer.WebSocket.Abstractions;
+using System.Net.WebSockets;
 using System.Security.Claims;
 using System.Text;
 
@@ -81,6 +84,8 @@ namespace MiniWebServer
                     options.HttpsPort = httpsPort;
                 });
             }
+
+            appBuilder.UseWebSockets();
 
             appBuilder.UseAuthentication(
                 options =>
@@ -198,6 +203,59 @@ namespace MiniWebServer
                 context.Response.Content = new MiniApp.Content.StringContent("Received as text: " + text);
             });
 
+            app.MapGet("/chatserver", async (context, cancellationToken) =>
+            {
+                if (context.WebSockets.IsUpgradeRequest)
+                {
+                    var logger = context.Services.GetRequiredService<ILogger<Program>>();
+
+                    try
+                    {
+                        var webSocket = await context.WebSockets.AcceptAsync(cancellationToken: cancellationToken);
+
+                        // Send a welcome message
+                        var welcomeMessage = $"Welcome to Mini-Web-Server WebSocket demo! (Server Time: {DateTime.Now})";
+                        var welcomeBytes = Encoding.UTF8.GetBytes(welcomeMessage);
+                        await webSocket.SendAsync(welcomeBytes, WebSocketMessageType.Text, true, cancellationToken);
+
+                        //await wsocket.SendAsync(Encoding.UTF8.GetBytes("Hello WebSocket world!"), System.Net.WebSockets.WebSocketMessageType.Text, true, cancellationToken);
+                        //await wsocket.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, null, cancellationToken);
+                        var buffer = new byte[1024 * 4];
+                        var receiveResult = await webSocket.ReceiveAsync(
+                            new ArraySegment<byte>(buffer), cancellationToken);
+
+                        while (!receiveResult.CloseStatus.HasValue)
+                        {
+                            var receivedText = Encoding.UTF8.GetString(buffer[..receiveResult.Count]);
+                            logger.LogDebug("Received: {m}", receivedText);
+
+                            await webSocket.SendAsync(
+                                Encoding.UTF8.GetBytes("Thanks, we have received: " + receivedText),
+                                WebSocketMessageType.Text,
+                                true,
+                            cancellationToken);
+
+                            receiveResult = await webSocket.ReceiveAsync(
+                                new ArraySegment<byte>(buffer), cancellationToken);
+                        }
+
+                        await webSocket.CloseAsync(
+                            receiveResult.CloseStatus.Value,
+                            receiveResult.CloseStatusDescription,
+                            cancellationToken);
+                    } catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error handling websocket");
+                        context.Response.StatusCode = Abstractions.HttpResponseCodes.BadRequest;
+                    }
+                }
+                else
+                {
+                    context.Response.StatusCode = Abstractions.HttpResponseCodes.BadRequest;
+                }
+            });
+
+
             return app;
         }
 
@@ -213,6 +271,7 @@ namespace MiniWebServer
 
             services.AddMvcService();
             services.AddSessionService();
+            services.AddWebSocketService();
 
             services.AddSingleton<ISumCalculator>(services => new SumCalculator());
         }

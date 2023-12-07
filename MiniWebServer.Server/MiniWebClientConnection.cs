@@ -7,6 +7,7 @@ using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
 using MiniWebServer.Server.Session;
+using MiniWebServer.WebSocket.Abstractions;
 using System.IO.Pipelines;
 using System.Net;
 
@@ -105,20 +106,60 @@ namespace MiniWebServer.Server
 
                                 readBodyCancellationTokenSource.Cancel();
 
-                                // todo: here we need to find a properly way to stop reading body after calling to middlewares and endpoints finished
-                                Task.WaitAll(new Task[] { readBodyTask, callMethodTask }, cancellationToken);
+                                // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
+                                Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
                                 logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
                             }
 
-                            var connectionHeader = response.Headers.Connection;
-                            if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
+                            if (connectionContext.WebSockets.IsUpgradeRequest)
                             {
-                                response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
+                                // if this is a websocket request, then we always close the connection when it's done
+                                // we don't send the response because in WebSocket middleware we have sent back an 'Upgrade' response, and 
+                                // the connection is now a websocket connection (even if we have done nothing in websocket handler)
+                                isKeepAlive = false;
+                            }
+                            else
+                            {
+                                var connectionHeader = response.Headers.Connection;
+                                if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
+                                {
+                                    response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
+                                }
+
+                                cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+                                logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
+                                await SendResponseAsync(response, cancellationToken);
                             }
 
-                            cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
-                            logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
-                            await SendResponseAsync(response, cancellationToken);
+                            //if (connectionContext.WebSockets.IsUpgradeRequest && app != null) // if this is an upgrade request, we switch to websocket mode and continue processing
+                            //{
+                            //    isKeepAlive = false; // we will always close the connection when this websocket operation ends
+
+                            //    var webSocketFactory = connectionContext.Services.GetService<IWebSocketFactory>();
+                            //    if (webSocketFactory == null)
+                            //    {
+                            //        logger.LogWarning("[{cid}][{rid}] - No websocket factory registered, closing connection", ConnectionId, requestId);
+                            //    }
+                            //    else if (connectionContext.WebSockets.Handler != null)
+                            //    {
+                            //        logger.LogInformation("[{cid}][{rid}] - Connection upgraded, transfering control to websocket handler", ConnectionId, requestId);
+                            //        try
+                            //        {
+                            //            var webSocket = webSocketFactory.CreateWebSocket(config.ClientStream, config.ClientStream);
+
+                            //            await connectionContext.WebSockets.Handler(webSocket);
+
+                            //            await webSocket.CloseAsync(cancellationToken); // CloseAsync should silently skip if it is already in Close state
+                            //        } catch (Exception ex)
+                            //        {
+                            //            logger.LogError(ex, "[{cid}][{rid}] - Error calling websocket handler", ConnectionId, requestId);
+                            //        }
+                            //    }
+                            //    else
+                            //    {
+                            //        logger.LogWarning("[{cid}][{rid}] - No websocket handler defined, closing connection", ConnectionId, requestId);
+                            //    }
+                            //}
                         }
                     }
                     catch (OperationCanceledException)
@@ -150,7 +191,7 @@ namespace MiniWebServer.Server
         {
             await config.ProtocolHandler.WriteResponseAsync(response, cancellationToken);
 
-            await response.Body.FlushAsync(cancellationToken);
+            await response.Stream.FlushAsync(cancellationToken);
         }
 
         private IMiniApp? FindApp(HttpRequest request)

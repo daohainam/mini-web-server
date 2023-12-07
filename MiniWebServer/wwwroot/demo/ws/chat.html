@@ -1,0 +1,21 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>WebSocket Chat</title>
+    <script src="../js/wschat.js"></script>
+</head>
+<body>
+    <p>This is a simple chat program for demostrating WebSockets</p>
+    <label for="user-name">User name: </label>
+    <input type="text" id="username" />
+    <input type="button" value="Connect" id="connect-button" onclick="connect();" />
+    <hr />
+    <form id="chat-form" onsubmit="onsend();">
+        <iframe style="width: 100%; height: 300px;" id="chat-content"></iframe>
+        <input type="text" id="" placeholder="Enter your message here..." />
+        <input type="submit" id="send-button" />
+    </form>
+</body>
+</html>

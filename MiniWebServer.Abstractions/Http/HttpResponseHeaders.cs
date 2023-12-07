@@ -76,6 +76,20 @@
             }
         }
 
+        public string? SecWebSocketAccept
+        {
+            get
+            {
+                return TryGetValueAsString("Sec-WebSocket-Accept");
+            }
+            set
+            {
+                ArgumentNullException.ThrowIfNull(nameof(value));
+                if (value != null)
+                    AddOrUpdate("Sec-WebSocket-Accept", value);
+            }
+        }
+
         private string? TryGetValueAsString(string name, string? defaultValue = null)
         {
             if (TryGetValue(name, out var value))

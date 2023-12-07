@@ -229,7 +229,7 @@ namespace MiniWebServer.Abstractions.Http
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            var h = headers.Where(h => name.Equals(h.Name, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault();
+            var h = headers.Where(h => name.Equals(h.Name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
             if (h != null)
             {
                 header = h;

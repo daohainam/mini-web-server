@@ -22,10 +22,10 @@ namespace MiniWebServer.MiniApp.Content
         private readonly HttpHeaders headers;
         private readonly ILogger<CompressedFileContent> logger;
 
-        public CompressedFileContent(string fileName, IMiniAppContext context, int compressionQuality, FileContentRange? fileContentRange = null) : this(new FileInfo(fileName), context, compressionQuality, fileContentRange)
+        public CompressedFileContent(string fileName, IMiniAppRequestContext context, int compressionQuality, FileContentRange? fileContentRange = null) : this(new FileInfo(fileName), context, compressionQuality, fileContentRange)
         {
         }
-        public CompressedFileContent(FileInfo file, IMiniAppContext context, int compressionQuality, FileContentRange? fileContentRange = null)
+        public CompressedFileContent(FileInfo file, IMiniAppRequestContext context, int compressionQuality, FileContentRange? fileContentRange = null)
         {
             if (compressionQuality < 0 || compressionQuality > 11)
             {

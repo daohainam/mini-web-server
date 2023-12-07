@@ -85,7 +85,7 @@ namespace MiniWebServer.Session
 
                             var routeAttribute = attributes.Where(a => a is RouteAttribute).FirstOrDefault();
                             var controllerTypeName = controllerType.Name;
-                            if (controllerTypeName.EndsWith("Controller", StringComparison.InvariantCultureIgnoreCase))
+                            if (controllerTypeName.EndsWith("Controller", StringComparison.OrdinalIgnoreCase))
                             {
                                 controllerTypeName = controllerTypeName[..^10];
                             }
@@ -99,7 +99,7 @@ namespace MiniWebServer.Session
                             {
                                 string actionName = action.Name;
                                 // is this an async function, we will remove the postfix
-                                if (actionName.EndsWith("Async", StringComparison.InvariantCultureIgnoreCase) && action.ReturnType.IsGenericType && action.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
+                                if (actionName.EndsWith("Async", StringComparison.OrdinalIgnoreCase) && action.ReturnType.IsGenericType && action.ReturnType.GetGenericTypeDefinition() == typeof(Task<>))
                                 {
                                     actionName = actionName[..^5];
                                 }

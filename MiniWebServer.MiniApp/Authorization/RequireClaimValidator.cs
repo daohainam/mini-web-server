@@ -9,7 +9,7 @@
             this.requiredClaim = requiredClaim;
         }
 
-        public bool Validate(IMiniAppContext context)
+        public bool Validate(IMiniAppRequestContext context)
         {
             if (context == null
                 || context.User == null

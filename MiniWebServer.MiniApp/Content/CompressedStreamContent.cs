@@ -22,7 +22,7 @@ namespace MiniWebServer.MiniApp.Content
         private readonly HttpHeaders headers;
         private readonly ILogger<CompressedStreamContent> logger;
 
-        public CompressedStreamContent(Stream stream, IMiniAppContext? context = null, int compressionQuality = 5, bool autoCloseStream = true)
+        public CompressedStreamContent(Stream stream, IMiniAppRequestContext? context = null, int compressionQuality = 5, bool autoCloseStream = true)
         {
             if (compressionQuality < 0 || compressionQuality > 11)
             {

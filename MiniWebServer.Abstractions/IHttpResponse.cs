@@ -9,6 +9,6 @@ namespace MiniWebServer.Abstractions
         HttpResponseHeaders Headers { get; }
         IHttpContent Content { get; set; }
         HttpCookies Cookies { get; }
-        Stream Body { get; set; }
+        Stream Stream { get; set; }
     }
 }
