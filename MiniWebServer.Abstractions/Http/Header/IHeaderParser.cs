@@ -1,7 +1,7 @@
 ﻿namespace MiniWebServer.Abstractions.Http.Header
 {
-    public interface IHeaderParser
+    public interface IHeaderParser<T>
     {
-        object? Parse(string? value);
+        bool TryParse(string? value, out T? v);
     }
 }

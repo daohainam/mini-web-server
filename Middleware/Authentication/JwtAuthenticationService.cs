@@ -32,14 +32,14 @@ namespace MiniWebServer.Authentication
                 IdentityModelEventSource.ShowPII = true;
                 var authHeader = context.Request.Headers.Authorization;
 
-                if (!string.IsNullOrEmpty(authHeader))
+                if (authHeader != null)
                 {
-                    if (authHeader.StartsWith("Bearer "))
+                    if (authHeader.Scheme == "Bearer")
                     {
                         logger.LogInformation("Validating JWT token...");
 
                         var handler = new JwtSecurityTokenHandler();
-                        var result = await ValidateAsync(authHeader[7..], handler, options.TokenValidationParameters);
+                        var result = await ValidateAsync(authHeader.Parameters, handler, options.TokenValidationParameters);
                         if (result.IsValid)
                         {
                             logger.LogInformation("Token validated");

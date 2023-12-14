@@ -2,10 +2,16 @@
 
 namespace MiniWebServer.Abstractions.Http.Header.Parsers
 {
-    internal partial class RangeHeaderParser : IHeaderParser
+    internal partial class RangeHeaderParser 
     {
-        public static bool TryParse(string s, out RangeHeader? rangeHeader)
+        public static bool TryParse(string? s, out RangeHeader? rangeHeader)
         {
+            if (s == null)
+            {
+                rangeHeader = null;
+                return false;
+            }
+
             // https://datatracker.ietf.org/doc/html/rfc7233
             rangeHeader = null;
 

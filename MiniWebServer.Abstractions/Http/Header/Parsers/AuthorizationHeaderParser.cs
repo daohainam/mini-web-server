@@ -6,28 +6,37 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Abstractions.Http.Header.Parsers
 {
-    internal class AuthorizationHeaderParser : IHeaderParser
+    internal class AuthorizationHeaderParser 
     {
-        public object? Parse(string? value)
+        public static bool TryParse(IEnumerable<string> value, out AuthorizationHeader? authorization)
         {
-            if (value == null) 
-                return null;
+            return TryParse(value.FirstOrDefault(), out authorization);
+        }
+        public static bool TryParse(string? value, out AuthorizationHeader? authorization)
+        {
+            if (value == null)
+            {
+                authorization = null;
+                return false;
+            }
 
             int idx = value.IndexOf(' ');
             if (idx < 0 )
             {
-                return new AuthorizationHeader()
+                authorization = new AuthorizationHeader()
                 {
                     Scheme = value
                 };
+                return true;
             }
             else
             {
-                return new AuthorizationHeader()
+                authorization = new AuthorizationHeader()
                 {
                     Scheme = value[..idx],
                     Parameters = value[(idx + 1)..]
                 };
+                return true;
             }
         }
     }

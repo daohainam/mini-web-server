@@ -1,5 +1,7 @@
 ﻿using MiniWebServer.Abstractions.Http.Header;
 using MiniWebServer.Abstractions.Http.Header.Parsers;
+using System.Net;
+using System.Reflection.PortableExecutable;
 
 namespace MiniWebServer.Abstractions.Http
 {
@@ -7,12 +9,34 @@ namespace MiniWebServer.Abstractions.Http
     // TODO: using TryGetValueAsString is not a good practice, we should have a better/faster way to store headers (cache to separate fields)
     public class HttpRequestHeaders : HttpHeaders
     {
-        private readonly Dictionary<string, IHeaderParser> headerParsers = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, object> parsedValues = new(StringComparer.OrdinalIgnoreCase);
+        private AuthorizationHeader? authorizationHeader;
+        private RangeHeader? rangeHeader;
+        private string connectionHeader = string.Empty;
+
+        private static readonly Dictionary<string, Action<HttpHeader, HttpRequestHeaders>> headerParsers = new(StringComparer.OrdinalIgnoreCase);
+
+        static HttpRequestHeaders()
+        {
+            headerParsers.Add(HttpHeaderNames.Connection, (header, httpRequestHeaders) => {
+                httpRequestHeaders.connectionHeader = header.Value.FirstOrDefault(string.Empty);
+            });
+            headerParsers.Add(HttpHeaderNames.Authorization, (header, httpRequestHeaders) => {
+                if (AuthorizationHeaderParser.TryParse(header.Value.FirstOrDefault(), out var authorization))
+                {
+                    httpRequestHeaders.authorizationHeader = authorization;
+                }
+            });
+            headerParsers.Add(HttpHeaderNames.Range, (header, httpRequestHeaders) => {
+                if (RangeHeaderParser.TryParse(header.Value.FirstOrDefault(), out var range))
+                {
+                    httpRequestHeaders.rangeHeader = range;
+                }
+            });
+        }
+
         public HttpRequestHeaders()
         {
-            headerParsers.Add(HttpHeaderNames.Range, new RangeHeaderParser());
-
             HeaderAdded += HttpRequestHeaders_AddedOrModified;
             HeaderChanged += HttpRequestHeaders_AddedOrModified;
             HeaderRemoved += HttpRequestHeaders_HeaderRemoved;
@@ -53,18 +77,23 @@ namespace MiniWebServer.Abstractions.Http
             //    }
             //}
 
-            if (headerParsers.TryGetValue(header.Name, out IHeaderParser? parser))
+            if (headerParsers.TryGetValue(header.Name, out var handler))
             {
-                var value = header.Value.FirstOrDefault();
-                if (value != null && RangeHeader.TryParse(value, out var parsedValue) && parsedValue != null)
-                {
-                    parsedValues.Add(header.Name, parsedValue);
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Unable to parse {header.Name} header, value: {string.Join(", ", header.Value)}");
-                }
+                handler(header, this);
             }
+
+            //if (headerParsers.TryGetValue(header.Name, out IHeaderParser? parser))
+            //{
+            //    var value = header.Value.FirstOrDefault();
+            //    if (value != null && RangeHeader.TryParse(value, out var parsedValue) && parsedValue != null)
+            //    {
+            //        parsedValues.Add(header.Name, parsedValue);
+            //    }
+            //    else
+            //    {
+            //        throw new InvalidOperationException($"Unable to parse {header.Name} header, value: {string.Join(", ", header.Value)}");
+            //    }
+            //}
         }
 
         public string AcceptLanguage
@@ -74,11 +103,11 @@ namespace MiniWebServer.Abstractions.Http
                 return TryGetValueAsString("Accept-Language");
             }
         }
-        public string Authorization
+        public AuthorizationHeader? Authorization
         {
             get
             {
-                return TryGetValueAsString("Authorization");
+                return authorizationHeader;
             }
         }
         public string CacheControl
@@ -92,7 +121,7 @@ namespace MiniWebServer.Abstractions.Http
         {
             get
             {
-                return TryGetValueAsString("Connection");
+                return connectionHeader;
             }
         }
         public string ContentType
@@ -143,12 +172,7 @@ namespace MiniWebServer.Abstractions.Http
         {
             get
             {
-                if (parsedValues.TryGetValue(HttpHeaderNames.Range, out var range))
-                {
-                    return range as RangeHeader;
-                }
-
-                return null;
+                return rangeHeader;
             }
         }
 
