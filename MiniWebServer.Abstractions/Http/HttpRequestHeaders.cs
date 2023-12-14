@@ -1,6 +1,7 @@
 ﻿using MiniWebServer.Abstractions.Http.Header;
 using MiniWebServer.Abstractions.Http.Header.Parsers;
 using System.Net;
+using System.Net.WebSockets;
 using System.Reflection.PortableExecutable;
 
 namespace MiniWebServer.Abstractions.Http
@@ -32,6 +33,9 @@ namespace MiniWebServer.Abstractions.Http
                 {
                     httpRequestHeaders.rangeHeader = range;
                 }
+            });
+            headerParsers.Add(HttpHeaderNames.SecWebSocketKey, (header, httpRequestHeaders) => {
+                httpRequestHeaders.SecWebSocketKey = header.Value.FirstOrDefault(string.Empty); 
             });
         }
 
@@ -176,13 +180,7 @@ namespace MiniWebServer.Abstractions.Http
             }
         }
 
-        public string SecWebSocketKey
-        {
-            get
-            {
-                return TryGetValueAsString("Sec-WebSocket-Key");
-            }
-        }
+        public string SecWebSocketKey { get; set; } = string.Empty;
         public string SecWebSocketProtocol
         {
             get

@@ -6,5 +6,6 @@
         public const string Authorization = "Authorization";
         public const string Connection = "Connection";
         public const string Range = "Range";
+        public const string SecWebSocketKey = "SecWebSocketKey";
     }
 }
