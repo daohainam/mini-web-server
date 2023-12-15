@@ -19,5 +19,9 @@
         {
             return Value.Any(x => x.Equals(value));
         }
+        public override string ToString()
+        {
+            return $"{Name}: {string.Join(',', Value)}";
+        }
     }
 }

@@ -53,7 +53,12 @@ namespace MiniWebServer.Server.Http
                 else
                 {
                     foreach (var cookie in cookies)
-                        httpRequestHeaders.Cookie.Add(cookie.Name, cookie);
+                    {
+                        if (!httpRequestHeaders.Cookie.TryAdd(cookie.Name, cookie))
+                        {
+                            httpRequestHeaders.Cookie[cookie.Name] = cookie;
+                        }
+                    }
                 }
             });
             headerParsers.Add(HttpHeaderNames.Connection, (header, httpRequestHeaders) => {
