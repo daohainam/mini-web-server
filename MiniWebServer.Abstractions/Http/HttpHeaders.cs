@@ -7,11 +7,8 @@ namespace MiniWebServer.Abstractions.Http
         // we have a list of header, but we use a dictionary because we will do a lot of search on this.
         // using a List might save some memories, but slower
         private readonly List<HttpHeader> headers = [];
-
         public int Count => headers.Count;
-
         public static bool IsReadOnly => false;
-
 
         public delegate void HeaderAddedHandler(HttpHeader header);
         public delegate void HeaderChangedHandler(HttpHeader header);

@@ -154,14 +154,14 @@ namespace MiniWebServer.HttpParser.Http11
             }
         }
 
-        public virtual HttpHeaderLine? ParseHeaderLine(ReadOnlySequence<byte> buffer)
+        public virtual HttpHeader? ParseHeaderLine(ReadOnlySequence<byte> buffer)
         {
             SequencePosition? pos = buffer.PositionOf((byte)':'); // there are 2 SPs in a request line
 
             if (pos.HasValue)
             {
                 var headerNameBuffer = buffer.Slice(0, pos.Value);
-                var headerValue = string.Empty;
+                string headerValue = string.Empty;
 
                 buffer = buffer.Slice(buffer.GetPosition(1, pos.Value));
                 if (!buffer.IsEmpty)
@@ -177,7 +177,7 @@ namespace MiniWebServer.HttpParser.Http11
                     headerValue = Encoding.ASCII.GetString(buffer).Replace("\r", ""); // todo: find a way to replace before GetString()
                 }
 
-                return new HttpHeaderLine(Encoding.ASCII.GetString(headerNameBuffer), headerValue);
+                return new HttpHeader(Encoding.ASCII.GetString(headerNameBuffer), headerValue);
             }
 
             return null;

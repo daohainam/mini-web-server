@@ -8,11 +8,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
         {
             private readonly ILogger<ContentLengthHeaderValidator> logger = loggerFactory.CreateLogger<ContentLengthHeaderValidator>();
 
-            public bool Validate(string name, string value)
+            public bool Validate(string name, IEnumerable<string> value)
             {
                 if ("Content-Length".Equals(name))
                 {
-                    if (long.TryParse(value, out long length))
+                    if (long.TryParse(value.FirstOrDefault(), out long length))
                     {
                         if (length > maxLength)
                         {
@@ -38,8 +38,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             {
                 return true; // we virtually support everything for now :|
             }
-            public bool Validate(string name, string value)
+            public bool Validate(string name, IEnumerable<string> values)
             {
+                string? value = values.FirstOrDefault();
+
                 if (!string.IsNullOrEmpty(value) && "Transfer-Encoding".Equals(name))
                 {
                     var encodings = value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -60,7 +62,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         public class FallbackHeadervalidator : IHeaderValidator
         {
-            public bool Validate(string name, string value)
+            public bool Validate(string name, IEnumerable<string> value)
             {
                 return true;
             }

@@ -2,6 +2,6 @@
 {
     public interface IHeaderValidator
     {
-        bool Validate(string name, string value);
+        bool Validate(string name, IEnumerable<string> value);
     }
 }

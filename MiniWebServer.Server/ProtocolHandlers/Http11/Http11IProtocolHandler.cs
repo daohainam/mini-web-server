@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Parsers;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
+using MiniWebServer.Server.Host;
+using MiniWebServer.Server.Http;
 using System.Buffers;
 using System.IO.Pipelines;
 using System.Text;
@@ -93,6 +96,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                     return false;
                 }
 
+                var headers = new List<HttpHeader>();
                 // now we read headers
                 while (TryReadLine(ref buffer, out line))
                 {
@@ -118,63 +122,20 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                     else
                     {
                         var headerLineText = sb.ToString();
-                        var headerLine = httpComponentParser.ParseHeaderLine(line);
+                        var header = httpComponentParser.ParseHeaderLine(line);
 
-                        logger.LogDebug("Found header: {headerLine}", headerLine);
+                        logger.LogDebug("Found header: {headerLine}", header);
 
-                        if (headerLine != null)
+                        if (header != null)
                         {
-                            if (!IsValidHeader(headerLine.Name, headerLine.Value))
+                            if (!IsValidHeader(header.Name, header.Value))
                             {
                                 logger.LogError("Header line rejected: {line}", headerLineText);
 
                                 return false;
                             }
 
-                            requestBuilder.AddHeader(headerLine.Name, headerLine.Value);
-
-                            // here we have some checks for important headers
-                            if ("Host".Equals(headerLine.Name, StringComparison.OrdinalIgnoreCase))
-                            {
-                                var host = headerLine.Value;
-                                int idx = host.IndexOf(':');
-                                if (idx != -1)
-                                {
-                                    host = host[..idx];
-                                }
-
-                                requestBuilder.SetHost(host);
-                            }
-                            else if ("Content-Length".Equals(headerLine.Name, StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (long.TryParse(headerLine.Value, out long length) && length >= 0)
-                                {
-                                    contentLength = length;
-                                    requestBuilder.SetContentLength(length);
-                                }
-                                else
-                                {
-                                    return false;
-                                }
-                            }
-                            else if ("Content-Type".Equals(headerLine.Name, StringComparison.OrdinalIgnoreCase))
-                            {
-                                contentType = headerLine.Value;
-                                requestBuilder.SetContentType(contentType);
-                            }
-                            else if ("Cookie".Equals(headerLine.Name, StringComparison.OrdinalIgnoreCase))
-                            {
-                                var cookies = cookieValueParser.ParseCookieHeader(headerLine.Value);
-                                if (cookies == null)
-                                {
-                                    logger.LogError("Error parsing cookie value: {cookie}", headerLine.Value);
-                                    return false;
-                                }
-                                else
-                                {
-                                    requestBuilder.AddCookie(cookies);
-                                }
-                            }
+                            headers.Add(header);
                         }
                         else
                         {
@@ -186,6 +147,21 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         reader.AdvanceTo(buffer.Start);
                     }
                 }
+
+                // here we have some checks for important headers
+                var requestHeaders = HttpRequestHeadersFactory.CreateFrom(headers);
+                if (requestHeaders.Host != null)
+                {
+                    requestBuilder.SetHost(requestHeaders.Host.Host);
+                    requestBuilder.SetPort(requestHeaders.Host.Port);
+                }
+
+                requestBuilder.AddCookie(requestHeaders.Cookie);
+                requestBuilder.AddTransferEncoding(requestHeaders.TransferEncoding);
+                requestBuilder.SetContentLength(contentLength);
+                requestBuilder.SetContentType(contentType);
+
+                requestBuilder.SetHeaders(requestHeaders);
 
                 return true;
             }
@@ -296,7 +272,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             return true;
         }
 
-        protected bool IsValidHeader(string name, string value)
+        protected bool IsValidHeader(string name, IEnumerable<string> value)
         {
             foreach (var validator in headerValidators)
             {

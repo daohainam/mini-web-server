@@ -399,10 +399,10 @@ namespace MiniWebServer.Mvc
                 return CreateParameterValueResult.Success(null);
             }
 
-            if (parameterType == typeof(string))
-            {
-                return CreateParameterValueResult.Success(null);
-            }
+            //if (parameterType == typeof(string))
+            //{
+            //    return CreateParameterValueResult.Success(null);
+            //}
 
             return CreateParameterValueResult.Fail();
         }

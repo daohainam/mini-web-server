@@ -1,4 +1,5 @@
-﻿using MiniWebServer.Abstractions.Http;
+﻿using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Http;
 using System.IO.Pipelines;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
@@ -8,9 +9,9 @@ namespace MiniWebServer.Server.Http
     public class HttpWebRequestBuilder : IHttpRequestBuilder
     {
         private HttpMethod httpMethod = HttpMethod.Get;
-        private readonly HttpRequestHeaders headers = [];
+        private HttpRequestHeaders headers = [];
+        private readonly HttpCookies cookies = [];
         private readonly List<HttpTransferEncoding> transferEncodings = [];
-        private readonly List<HttpCookie> cookies = [];
         private string host = string.Empty;
         private int port = 80;
         private string url = "/";
@@ -24,6 +25,8 @@ namespace MiniWebServer.Server.Http
         private bool isHttps = false;
         private readonly HttpParameters parameters = [];
 
+        public HttpRequestHeaders RequestHeaders => headers;
+
         public IHttpRequestBuilder AddHeader(string name, string value)
         {
             headers.Add(name, value);
@@ -33,7 +36,7 @@ namespace MiniWebServer.Server.Http
 
         public IHttpRequestBuilder AddHeaders(IEnumerable<KeyValuePair<string, string>> keyValues)
         {
-            foreach (var k in headers)
+            foreach (var k in keyValues)
             {
                 headers.Add(k.Key, k.Value);
             }
@@ -59,7 +62,7 @@ namespace MiniWebServer.Server.Http
                 hash,
                 parameters,
                 segments,
-                new HttpCookies(cookies),
+                headers.Cookie,
                 bodyPipeline ?? new Pipe(),
                 contentLength,
                 contentType,
@@ -145,13 +148,6 @@ namespace MiniWebServer.Server.Http
             return this;
         }
 
-        public IHttpRequestBuilder AddCookie(IEnumerable<HttpCookie> cookies)
-        {
-            this.cookies.AddRange(cookies);
-
-            return this;
-        }
-
         public IHttpRequestBuilder SetContentLength(long contentLength)
         {
             this.contentLength = contentLength;
@@ -184,6 +180,26 @@ namespace MiniWebServer.Server.Http
         {
             this.isHttps = isHttps;
 
+            return this;
+        }
+
+        public IHttpRequestBuilder AddCookie(HttpCookie cookie)
+        {
+            cookies.Add(cookie);
+
+            return this;
+        }
+        public IHttpRequestBuilder AddCookie(HttpCookies cookies)
+        {
+            cookies.Add(cookies);
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetHeaders(HttpRequestHeaders requestHeaders)
+        {
+            this.headers = requestHeaders;
+            
             return this;
         }
     }

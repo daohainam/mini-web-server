@@ -196,13 +196,13 @@ namespace MiniWebServer.Server
 
         private IMiniApp? FindApp(HttpRequest request)
         {
-            string host = request.Headers.Host;
-            if (string.IsNullOrEmpty(host))
+            var host = request.Headers.Host;
+            if (host == null)
             {
                 return null;
             }
 
-            if (config.HostContainers.TryGetValue(host, out var container))
+            if (config.HostContainers.TryGetValue(host.Host, out var container))
             {
                 return container.App;
             }

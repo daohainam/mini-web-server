@@ -1,4 +1,6 @@
-﻿namespace MiniWebServer.Abstractions.Http.Header.Tests
+﻿using MiniWebServer.Server.Http.Parsers;
+
+namespace MiniWebServer.Abstractions.Http.Header.Tests
 {
     [TestClass()]
     public class RangeHeaderHeaderTests
@@ -9,7 +11,7 @@
         [DataRow("bytes=1023-", true, RangeUnits.Bytes, 1023, long.MaxValue)]
         public void Header_Range_TryParseTest_1Part(string input, bool result, RangeUnits rangeUnit, long start, long end)
         {
-            var b = RangeHeader.TryParse(input, out RangeHeader? header);
+            var b = RangeHeaderParser.TryParse(input, out RangeHeader? header);
 
             Assert.AreEqual(result, b);
 
@@ -27,7 +29,7 @@
         [DataRow("bytes=0-1023, 10000-", true, RangeUnits.Bytes, 0, 1023, 10000, long.MaxValue)]
         public void Header_Range_TryParseTest_2Parts(string input, bool result, RangeUnits rangeUnit, long start1, long end1, long start2, long end2)
         {
-            var b = RangeHeader.TryParse(input, out RangeHeader? header);
+            var b = RangeHeaderParser.TryParse(input, out RangeHeader? header);
 
             Assert.AreEqual(result, b);
 

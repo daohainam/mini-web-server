@@ -1,12 +1,13 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions.Http.Header;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Abstractions.Http.Header.Parsers
+namespace MiniWebServer.Server.Http.Parsers
 {
-    internal class AuthorizationHeaderParser 
+    internal class AuthorizationHeaderParser
     {
         public static bool TryParse(IEnumerable<string> value, out AuthorizationHeader? authorization)
         {
@@ -21,7 +22,7 @@ namespace MiniWebServer.Abstractions.Http.Header.Parsers
             }
 
             int idx = value.IndexOf(' ');
-            if (idx < 0 )
+            if (idx < 0)
             {
                 authorization = new AuthorizationHeader()
                 {

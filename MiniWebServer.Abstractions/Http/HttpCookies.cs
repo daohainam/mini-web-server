@@ -22,5 +22,22 @@
                     this[cookie.Name] = cookie;
             }
         }
+
+        public bool Add(HttpCookie cookie)
+        {
+            return TryAdd(cookie.Name, cookie);
+        }
+        public bool Add(HttpCookies cookies)
+        {
+            foreach (var cookie in cookies)
+            {
+                var b = TryAdd(cookie.Key, cookie.Value);
+
+                if (!b)
+                    return b;
+            }
+
+            return true;
+        }
     }
 }

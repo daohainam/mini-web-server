@@ -39,7 +39,7 @@ namespace ParserTests
             var result = http11Parser.ParseHeaderLine(String2SequenceReader(text));
             Assert.IsNotNull(result);
             Assert.AreEqual(name, result.Name);
-            Assert.AreEqual(value, result.Value);
+            Assert.AreEqual(value, result.Value.FirstOrDefault());
         }
 
         private static ReadOnlySequence<byte> String2SequenceReader(string text)

@@ -35,15 +35,22 @@ Cache-Control:no-cache
             var request = result.HttpWebRequestBuilder.Build();
             Assert.AreEqual(HttpMethod.Get, request.Method);
             Assert.AreEqual(request.Url, "/index.html");
-            Assert.AreEqual(request.Headers.Host, "localhost:8443");
+            Assert.AreEqual(request.Host, "localhost");
+            Assert.AreEqual(request.Port, 8443);
             Assert.AreEqual(request.Headers.Connection, "keep-alive");
             Assert.AreEqual(request.Headers.AcceptLanguage, "vi,en-US;q=0.9,en;q=0.8,nb;q=0.7");
             Assert.AreEqual(request.Headers.CacheControl, "no-cache");
         }
 
         [TestMethod()]
-        [DataRow("GET /index.html?id1=1&id2=2&t1=Mini%20Web%20Server HTTP/1.1\r\n", "GET", "/index.html")]
-        [DataRow("GET /this/is/a/path? HTTP/1.1\r\n", "GET", "/this/is/a/path")]
+        [DataRow(@"GET /index.html?id1=1&id2=2&t1=Mini%20Web%20Server HTTP/1.1
+Host: localhost:8443
+
+", "GET", "/index.html")]
+        [DataRow(@"GET /this/is/a/path? HTTP/1.1
+Host: localhost:8443
+
+", "GET", "/this/is/a/path")]
         public async Task RequestLineParserTestAsync(string requestLine, string method, string url)
         {
             var result = await ReadRequestAsync(requestLine);

@@ -1,16 +1,9 @@
-﻿using MiniWebServer.Abstractions.Http.Header.Parsers;
-
-namespace MiniWebServer.Abstractions.Http.Header
+﻿namespace MiniWebServer.Abstractions.Http.Header
 {
     public class RangeHeader(RangeUnits unit, params RangePart[] parts)
     {
         public RangeUnits Unit { get; } = unit;
         public RangePart[] Parts { get; } = parts ?? throw new ArgumentNullException(nameof(parts));
-
-        public static bool TryParse(string s, out RangeHeader? rangeHeader)
-        {
-            return RangeHeaderParser.TryParse(s, out rangeHeader);
-        }
 
         public override bool Equals(object? obj)
         {

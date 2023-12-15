@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using MiniWebServer.Abstractions.Http;
+using System.Buffers;
 
 namespace MiniWebServer.Server.Abstractions.Parsers.Http11
 {
@@ -16,6 +17,6 @@ namespace MiniWebServer.Server.Abstractions.Parsers.Http11
         /// </summary>
         /// <param name="buffer"></param>
         /// <returns></returns>
-        HttpHeaderLine? ParseHeaderLine(ReadOnlySequence<byte> buffer);
+        HttpHeader? ParseHeaderLine(ReadOnlySequence<byte> buffer);
     }
 }
