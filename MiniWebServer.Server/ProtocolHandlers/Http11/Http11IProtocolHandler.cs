@@ -153,7 +153,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 if (requestHeaders.Host != null)
                 {
                     requestBuilder.SetHost(requestHeaders.Host.Host);
-                    requestBuilder.SetPort(requestHeaders.Host.Port);
+                    if (requestHeaders.Host.Port != 0)
+                        requestBuilder.SetPort(requestHeaders.Host.Port);
                 }
 
                 requestBuilder.AddCookie(requestHeaders.Cookie);
