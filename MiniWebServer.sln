@@ -67,10 +67,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiniWebServer.WebSocket.Abs
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mvc", "Mvc", "{12E1386D-1043-45A1-AC7A-86BCC6D40513}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VirtualFileSystem", "VirtualFileSystem", "{5C98D1BB-4D01-4E85-B400-F80E165C993D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniWebServer.VirtualFileSystem.Abstractions", "VirtualFileSystem\MiniWebServer.VirtualFileSystem.Abstractions\MiniWebServer.VirtualFileSystem.Abstractions.csproj", "{B76481A0-52A8-4281-946A-28CFDBDEA846}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -189,10 +185,6 @@ Global
 		{87CCD997-C4C9-4E2F-B773-70C67DDEFC65}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87CCD997-C4C9-4E2F-B773-70C67DDEFC65}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87CCD997-C4C9-4E2F-B773-70C67DDEFC65}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B76481A0-52A8-4281-946A-28CFDBDEA846}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B76481A0-52A8-4281-946A-28CFDBDEA846}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B76481A0-52A8-4281-946A-28CFDBDEA846}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B76481A0-52A8-4281-946A-28CFDBDEA846}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -216,7 +208,6 @@ Global
 		{F509000B-F2D0-4477-AE31-DEA2DCC5E43D} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
 		{874FFA55-F2B3-46A8-A9EC-8B57DBE31A88} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
 		{4A5ED635-0A28-40F8-94A1-8CD00543AB70} = {CDB8B9EF-99E4-41E1-BE46-698647123255}
-		{B76481A0-52A8-4281-946A-28CFDBDEA846} = {5C98D1BB-4D01-4E85-B400-F80E165C993D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D1843708-76D1-4698-A487-8D1531533306}
