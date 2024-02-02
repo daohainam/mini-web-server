@@ -117,14 +117,14 @@ namespace MiniWebServer.Cgi
                     long maxBytesToRead = contentLength - bytesRead;
                     if (buffer.Length >= maxBytesToRead)
                     {
-                        await cgiInputStreamWriter.WriteAsync(encoding.GetString(buffer.Slice(0, maxBytesToRead))); // what will happen if a multi-byte character is partly sent?
+                        await cgiInputStreamWriter.WriteAsync(encoding.GetString(buffer.Slice(0, maxBytesToRead)).AsMemory(), cancellationToken); // what will happen if a multi-byte character is partly sent?
 
                         reader.AdvanceTo(buffer.GetPosition(maxBytesToRead));
                         break;
                     }
                     else if (buffer.Length > 0)
                     {
-                        await cgiInputStreamWriter.WriteAsync(encoding.GetString(buffer));
+                        await cgiInputStreamWriter.WriteAsync(encoding.GetString(buffer).AsMemory(), cancellationToken);
                         reader.AdvanceTo(buffer.GetPosition(buffer.Length));
 
                         bytesRead += buffer.Length;
