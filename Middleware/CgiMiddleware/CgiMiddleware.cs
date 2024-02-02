@@ -48,24 +48,24 @@ namespace MiniWebServer.Cgi
             }
         }
 
-        private async Task ExecuteCgiHandler(CgiHandler matchedHander, IMiniAppRequestContext context)
+        private async Task ExecuteCgiHandler(CgiHandler matchedHandler, IMiniAppRequestContext context)
         {
-            var exeFile = new FileInfo(matchedHander.Executable);
+            var exeFile = new FileInfo(matchedHandler.Executable);
             if (!exeFile.Exists)
             {
-                throw new FileNotFoundException("Handler not found", matchedHander.Executable);
+                throw new FileNotFoundException("Handler not found", matchedHandler.Executable);
             }
 
-            if (!Directory.Exists(matchedHander.WorkingDirectory))
+            if (!Directory.Exists(matchedHandler.WorkingDirectory))
             {
-                throw new DirectoryNotFoundException($"Working directory not found: {matchedHander.WorkingDirectory}");
+                throw new DirectoryNotFoundException($"Working directory not found: {matchedHandler.WorkingDirectory}");
             }
 
-            var environmentVariables = BuildEnvironmentVariables(matchedHander, context);
+            var environmentVariables = BuildEnvironmentVariables(matchedHandler, context);
 
             using Process handlerProcess = new();
-            handlerProcess.StartInfo.FileName = matchedHander.Executable;
-            handlerProcess.StartInfo.WorkingDirectory = matchedHander.WorkingDirectory;
+            handlerProcess.StartInfo.FileName = matchedHandler.Executable;
+            handlerProcess.StartInfo.WorkingDirectory = matchedHandler.WorkingDirectory;
             handlerProcess.StartInfo.UseShellExecute = false;
             handlerProcess.StartInfo.RedirectStandardInput = true;
             handlerProcess.StartInfo.RedirectStandardOutput = true;
