@@ -13,6 +13,7 @@ using MiniWebServer.MiniApp;
 using MiniWebServer.MiniApp.Authorization;
 using MiniWebServer.MiniApp.Builders;
 using MiniWebServer.MiniWebServer.MimeMapping;
+using MiniWebServer.Mvc;
 using MiniWebServer.Quote;
 using MiniWebServer.Server;
 using MiniWebServer.Server.Abstractions;

@@ -9,7 +9,7 @@ using MiniWebServer.Mvc.RazorLightTemplateParser;
 using MiniWebServer.Mvc.RouteMatchers;
 using System.Reflection;
 
-namespace MiniWebServer.Session
+namespace MiniWebServer.Mvc
 {
     public static class MvcMiddlewareExtensions
     {
@@ -28,7 +28,7 @@ namespace MiniWebServer.Session
                 services => new MiniRazorViewEngine(
                                     new MiniRazorViewEngineOptions(),
                                     services.GetRequiredService<ILogger<MiniRazorViewEngine>>(),
-                                    new RazorLightTemplateParser()
+                                    new RazorLightTemplateParser.RazorLightTemplateParser()
                                     )
                 );
 
@@ -141,7 +141,7 @@ namespace MiniWebServer.Session
                                 methods = ActionMethods.All;
                             }
 
-                            registry.Register(route, new LocalAction(
+                            registry.Register(route, new LocalAction.LocalAction(
                                 route,
                                 new ActionInfo(
                                     action.Name, action, controllerType
