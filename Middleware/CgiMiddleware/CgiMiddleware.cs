@@ -1,7 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
 using MiniWebServer.MiniApp;
+using System.Buffers;
 using System.Diagnostics;
+using System.IO.Pipelines;
+using System.Text;
+using System.Threading;
 
 namespace MiniWebServer.Cgi
 {
@@ -32,7 +36,7 @@ namespace MiniWebServer.Cgi
             {
                 try
                 {
-                    await ExecuteCgiHandler(matchedHander, context);
+                    await ExecuteCgiHandler(matchedHander, context, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -48,7 +52,7 @@ namespace MiniWebServer.Cgi
             }
         }
 
-        private async Task ExecuteCgiHandler(CgiHandler matchedHandler, IMiniAppRequestContext context)
+        private async Task ExecuteCgiHandler(CgiHandler matchedHandler, IMiniAppRequestContext context, CancellationToken cancellationToken)
         {
             var exeFile = new FileInfo(matchedHandler.Executable);
             if (!exeFile.Exists)
@@ -69,6 +73,7 @@ namespace MiniWebServer.Cgi
             handlerProcess.StartInfo.UseShellExecute = false;
             handlerProcess.StartInfo.RedirectStandardInput = true;
             handlerProcess.StartInfo.RedirectStandardOutput = true;
+            // TODO: redirect standard error to server's log (or to response?)
 
             foreach (var variable in environmentVariables)
             {
@@ -81,9 +86,10 @@ namespace MiniWebServer.Cgi
 
             using var cgiInputStreamWriter = handlerProcess.StandardInput;
             // read data from request body and send to handler's standard input
+            await WriteBodyToHandlerInputAsync(context, cgiInputStreamWriter, cancellationToken);
             cgiInputStreamWriter.Close();
 
-            // then write handler's standard output to response
+            // then read handler's standard output to write to response
             using var cgiOutputStreamReader = handlerProcess.StandardOutput;
             string cgiOutput = await cgiOutputStreamReader.ReadToEndAsync();
             cgiOutputStreamReader.Close();
@@ -94,7 +100,43 @@ namespace MiniWebServer.Cgi
             context.Response.StatusCode = HttpResponseCodes.OK;
         }
 
-        private IDictionary<string, string?> BuildEnvironmentVariables(CgiHandler matchedHander, IMiniAppRequestContext context)
+        private static async Task WriteBodyToHandlerInputAsync(IMiniAppRequestContext context, StreamWriter cgiInputStreamWriter, CancellationToken cancellationToken)
+        {
+            var contentLength = context.Request.ContentLength;
+            if (contentLength > 0)
+            {
+                var reader = context.Request.BodyManager.GetReader() ?? throw new InvalidOperationException("Body reader cannot be null");
+                var encoding = Encoding.UTF8; // todo: we should take the right encoding from Content-Type
+
+                ReadResult readResult = await reader.ReadAsync(cancellationToken);
+                ReadOnlySequence<byte> buffer = readResult.Buffer;
+
+                long bytesRead = 0;
+                while (bytesRead < contentLength)
+                {
+                    long maxBytesToRead = contentLength - bytesRead;
+                    if (buffer.Length >= maxBytesToRead)
+                    {
+                        await cgiInputStreamWriter.WriteAsync(encoding.GetString(buffer.Slice(0, maxBytesToRead))); // what will happen if a multi-byte character is partly sent?
+
+                        reader.AdvanceTo(buffer.GetPosition(maxBytesToRead));
+                        break;
+                    }
+                    else if (buffer.Length > 0)
+                    {
+                        await cgiInputStreamWriter.WriteAsync(encoding.GetString(buffer));
+                        reader.AdvanceTo(buffer.GetPosition(buffer.Length));
+
+                        bytesRead += buffer.Length;
+                    }
+
+                    readResult = await reader.ReadAsync(cancellationToken);
+                    buffer = readResult.Buffer;
+                }
+            }
+        }
+
+        private static IDictionary<string, string?> BuildEnvironmentVariables(CgiHandler matchedHander, IMiniAppRequestContext context)
         {
             var environmentVariables = new Dictionary<string, string?>();
 
