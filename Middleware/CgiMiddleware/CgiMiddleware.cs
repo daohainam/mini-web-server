@@ -5,13 +5,14 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Text;
-using System.Threading;
 
 namespace MiniWebServer.Cgi
 {
     public class CgiMiddleware : IMiddleware
     {
-        private CgiOptions options;
+        private const string GATEWAY_INTERFACE = "CGI/1.1";
+
+        private readonly CgiOptions options;
         private readonly ILogger logger;
 
         public CgiMiddleware(CgiOptions options, ILogger logger)
@@ -71,7 +72,7 @@ namespace MiniWebServer.Cgi
             }
 
             string scriptFilePath = BuildScriptFilePath(matchedHandler.ScriptDirectory, context.Request.Url);
-            if (!File.Exists(scriptFilePath))
+            if (!System.IO.File.Exists(scriptFilePath))
             {
                 throw new FileNotFoundException("Script file not found", scriptFilePath);
             }
@@ -177,12 +178,109 @@ namespace MiniWebServer.Cgi
 
         private static IDictionary<string, string?> BuildEnvironmentVariables(CgiHandler matchedHander, IMiniAppRequestContext context)
         {
-            var environmentVariables = new Dictionary<string, string?>();
+            /* https://datatracker.ietf.org/doc/html/draft-robinson-www-interface-00#section-5
+            here is the list of environment variables, implemented ones have a (*) 
+                AUTH_TYPE
+                ONTENT_LENGTH (*) 
+                CONTENT_TYPE (*) 
+                GATEWAY_INTERFACE (*) 
+                HTTP_* (*)
+                PATH_INFO (*)
+                PATH_TRANSLATED (*) skip this for security purpose
+                QUERY_STRING
+                REMOTE_ADDR
+                REMOTE_HOST
+                REMOTE_IDENT
+                REMOTE_USER
+                REQUEST_METHOD
+                SCRIPT_NAME
+                SERVER_NAME
+                SERVER_PORT
+                SERVER_PROTOCOL
+                SERVER_SOFTWARE
+            */
 
-            environmentVariables.Add("CONTENT_LENGTH", context.Request.ContentLength.ToString());
-            environmentVariables.Add("CONTENT_TYPE", context.Request.ContentType);
+            var environmentVariables = new Dictionary<string, string?>
+            {
+                { "CONTENT_LENGTH", context.Request.ContentLength.ToString() },
+                { "CONTENT_TYPE", context.Request.ContentType },
+                { "GATEWAY_INTERFACE", GATEWAY_INTERFACE }
+            };
+
+            AddHttpVariables(context, environmentVariables); // HTTP_*
+
+            environmentVariables.Add("PATH_INFO", context.Request.Url);
+            // we don't provide PATH_TRANSLATED
+
 
             return environmentVariables;
+        }
+
+        private static void AddHttpVariables(IMiniAppRequestContext context, Dictionary<string, string?> environmentVariables)
+        {
+
+            var httpVarName = new StringBuilder();
+            var httpVarValue = new StringBuilder();
+            foreach (var header in context.Request.Headers)
+            {
+                /*
+                The HTTP header name is converted to upper case, has all
+                occurrences of "-" replaced with "_" and has "HTTP_" prepended to
+                give the environment variable name.
+                 */
+
+                // we can simply use ToUpper and Replace, but they don't have a good performance
+                httpVarName.Clear();
+                httpVarName.Append("HTTP_");
+                for (int i = 0; i < header.Key.Length; i++)
+                {
+                    var c = header.Key[i];
+                    if (c == '-')
+                    {
+                        httpVarName.Append('_');
+                    }
+                    else
+                    {
+                        httpVarName.Append(char.ToUpper(c));
+                    }
+                }
+
+                httpVarValue.Clear();
+                foreach (var headerValue in header.Value)
+                {
+                    if (httpVarValue.Length > 0)
+                    {
+                        httpVarValue.Append(';');
+                    }
+
+                    for (int i = 0; i < headerValue.Length; i++)
+                    {
+                        var c = headerValue[i];
+                        if (c < 0x20) // skip invalid characters
+                        {
+                            // do nothing
+                        }
+                        else
+                        {
+                            httpVarValue.Append(c);
+                        }
+                    }
+                }
+
+                var sHttpVarName = httpVarName.ToString();
+                if (environmentVariables.TryGetValue(sHttpVarName, out var value))
+                {
+                    var sb = new StringBuilder(value);
+                    sb.Append(';');
+                    sb.Append(httpVarValue);
+
+                    environmentVariables[sHttpVarName] = sb.ToString();
+                }
+                else
+                {
+                    environmentVariables.Add(sHttpVarName, httpVarValue.ToString());
+                }
+            }
         }
     }
 }
