@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
+using MiniWebServer.Cgi.Parsers;
 using MiniWebServer.MiniApp;
 using System.Buffers;
 using System.Diagnostics;
@@ -113,13 +114,25 @@ namespace MiniWebServer.Cgi
 
             // then read handler's standard output to write to response
             using var cgiOutputStreamReader = handlerProcess.StandardOutput;
-            string cgiOutput = await cgiOutputStreamReader.ReadToEndAsync();
+            var responseReader = new CgiResponseStreamReader(cgiOutputStreamReader, logger);
+            var cgiResponse = await responseReader.ReadAsync();
             cgiOutputStreamReader.Close();
 
             handlerProcess.WaitForExit();
 
-            context.Response.Content = new MiniApp.Content.StringContent(cgiOutput);
-            context.Response.StatusCode = HttpResponseCodes.OK;
+            if (cgiResponse == null)
+            {
+                context.Response.StatusCode = HttpResponseCodes.InternalServerError;
+            }
+            else
+            {
+                context.Response.Content = cgiResponse.Content;
+                context.Response.StatusCode = HttpResponseCodes.OK;
+
+                if (cgiResponse.Headers.Count > 0) { 
+                    context.Response.Headers.AddOrUpdate(cgiResponse.Headers);
+                }
+            }
         }
 
         private static string BuildScriptFilePath(string scriptDirectory, string url)

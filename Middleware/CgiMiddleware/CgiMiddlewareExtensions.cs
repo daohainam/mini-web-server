@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MiniWebServer.Cgi.Parsers;
 using MiniWebServer.MiniApp.Builders;
 using System.Reflection;
 

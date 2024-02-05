@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<AssemblyName>MiniWebServer.$(MSBuildProjectName)</AssemblyName>
-	<RootNamespace>MiniWebServer.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+	<RootNamespace>MiniWebServer.Cgi</RootNamespace>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Title>Mini-Web-Server Authentication</Title>
 	<Authors>Dao Hai Nam</Authors>

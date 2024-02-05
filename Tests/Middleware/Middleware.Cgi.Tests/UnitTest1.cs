@@ -74,7 +74,7 @@ namespace Middleware.Cgi.Tests
             },
             () => {
                 var stream = new MemoryStream();
-                return new HttpResponse(MiniWebServer.Abstractions.HttpResponseCodes.NotFound, stream)
+                return new HttpResponse(HttpResponseCodes.NotFound, stream)
                 {
                 };
             }
