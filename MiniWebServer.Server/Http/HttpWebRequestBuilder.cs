@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Http;
 using System.IO.Pipelines;
+using System.Net;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.Http
@@ -23,6 +25,9 @@ namespace MiniWebServer.Server.Http
         private string[] segments = [];
         private ulong requestId;
         private bool isHttps = false;
+        private IPAddress? remoteAddress;
+        private int remotePort;
+        private HttpVersions httpVersion = HttpVersions.Http11;
         private readonly HttpParameters parameters = [];
 
         public HttpRequestHeaders RequestHeaders => headers;
@@ -66,7 +71,10 @@ namespace MiniWebServer.Server.Http
                 bodyPipeline ?? new Pipe(),
                 contentLength,
                 contentType,
-                isHttps
+                isHttps,
+                remoteAddress,
+                remotePort,
+                httpVersion
                 );
 
             return request;
@@ -200,6 +208,20 @@ namespace MiniWebServer.Server.Http
         {
             this.headers = requestHeaders;
             
+            return this;
+        }
+
+        public IHttpRequestBuilder SetRemoteAddress(IPAddress address)
+        {
+            this.remoteAddress = address;
+
+            return this;
+        }
+
+        public IHttpRequestBuilder SetRemotePort(int port)
+        {
+            this.remotePort = port;
+
             return this;
         }
     }

@@ -66,7 +66,10 @@ namespace Middleware.Cgi.Tests
                     pipe,
                     0, 
                     "text/html",
-                    true
+                    true,
+                    System.Net.IPAddress.Parse("127.0.0.1"),
+                    443,
+                    HttpVersions.Http11
                     );
             },
             () => {

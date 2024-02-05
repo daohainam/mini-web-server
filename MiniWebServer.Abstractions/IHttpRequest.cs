@@ -1,5 +1,6 @@
 ﻿using MiniWebServer.Abstractions.Http;
 using System.IO.Pipelines;
+using System.Net;
 
 namespace MiniWebServer.Abstractions
 {
@@ -19,5 +20,15 @@ namespace MiniWebServer.Abstractions
         string[] Segments { get; }
         bool IsHttps { get; }
         public IRequestBodyManager BodyManager { get; }
+        IPAddress? RemoteAddress { get; }
+        int RemotePort { get; }
+        HttpVersions HttpVersion { get; }
+    }
+
+    public enum HttpVersions
+    {
+        Http11,
+        Http2,
+        Http3,
     }
 }

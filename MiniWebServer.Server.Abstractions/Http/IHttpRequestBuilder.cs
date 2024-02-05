@@ -1,5 +1,6 @@
 ﻿using MiniWebServer.Abstractions.Http;
 using System.IO.Pipelines;
+using System.Net;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.Abstractions.Http
@@ -26,6 +27,8 @@ namespace MiniWebServer.Server.Abstractions.Http
         IHttpRequestBuilder SetHttps(bool isHttps);
         IHttpRequestBuilder SetPort(int port);
         IHttpRequestBuilder SetHost(string host);
+        IHttpRequestBuilder SetRemoteAddress(IPAddress address);
+        IHttpRequestBuilder SetRemotePort(int port);
 
         HttpRequestHeaders RequestHeaders { get; }
     }

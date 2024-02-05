@@ -2,6 +2,7 @@
 using MiniWebServer.Abstractions.Http.Form;
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Net;
 using System.Text;
 
 namespace MiniWebServer.Abstractions.Http
@@ -24,7 +25,11 @@ namespace MiniWebServer.Abstractions.Http
             Pipe bodyPipeline,
             long contentLength,
             string contentType,
-            bool isHttps)
+            bool isHttps,
+            IPAddress? remoteAddress,
+            int remotePort,
+            HttpVersions httpVersion
+            )
         {
             ArgumentNullException.ThrowIfNull(queryParameters);
 
@@ -45,6 +50,9 @@ namespace MiniWebServer.Abstractions.Http
             ContentLength = contentLength;
             ContentType = contentType;
             IsHttps = isHttps;
+            RemoteAddress = remoteAddress;
+            RemotePort = remotePort;
+            HttpVersion = httpVersion;
 
             BodyManager = new RequestBodyManager(BodyPipeline.Reader);
         }
@@ -54,6 +62,8 @@ namespace MiniWebServer.Abstractions.Http
         public long ContentLength { get; }
         public string ContentType { get; }
         public bool IsHttps { get; }
+        public IPAddress? RemoteAddress { get; }
+        public int RemotePort { get; }
         public string Hash { get; }
         public ulong RequestId { get; }
         public HttpMethod Method { get; }
@@ -64,6 +74,7 @@ namespace MiniWebServer.Abstractions.Http
         public string[] Segments { get; }
         public string QueryString { get; }
         public string Url { get; }
+        public HttpVersions HttpVersion { get; }
 
         private IRequestForm? form; // a cache object for lazy loading 
 

@@ -187,17 +187,17 @@ namespace MiniWebServer.Cgi
                 HTTP_* (*)
                 PATH_INFO (*)
                 PATH_TRANSLATED (*) skip this for security purpose
-                QUERY_STRING
-                REMOTE_ADDR
-                REMOTE_HOST
-                REMOTE_IDENT
-                REMOTE_USER
-                REQUEST_METHOD
+                QUERY_STRING (*)
+                REMOTE_ADDR (*)
+                REMOTE_HOST (*)
+                REMOTE_IDENT (*)
+                REMOTE_USER (*)
+                REQUEST_METHOD (*)
                 SCRIPT_NAME
-                SERVER_NAME
-                SERVER_PORT
-                SERVER_PROTOCOL
-                SERVER_SOFTWARE
+                SERVER_NAME (*)
+                SERVER_PORT (*)
+                SERVER_PROTOCOL (*)
+                SERVER_SOFTWARE (*)
             */
 
             var environmentVariables = new Dictionary<string, string?>
@@ -211,6 +211,17 @@ namespace MiniWebServer.Cgi
 
             environmentVariables.Add("PATH_INFO", context.Request.Url);
             // we don't provide PATH_TRANSLATED
+            environmentVariables.Add("PATH_TRANSLATED", string.Empty);
+            environmentVariables.Add("QUERY_STRING", context.Request.QueryString);
+            environmentVariables.Add("REMOTE_ADDR", context.Request.RemoteAddress?.ToString() ?? string.Empty);
+            environmentVariables.Add("REMOTE_HOST", string.Empty);
+            environmentVariables.Add("REMOTE_IDENT", string.Empty);
+            environmentVariables.Add("REMOTE_USER", string.Empty);
+            environmentVariables.Add("REQUEST_METHOD", context.Request.Method.Method);
+            environmentVariables.Add("SERVER_NAME", context.Request.Host);
+            environmentVariables.Add("SERVER_PORT", context.Request.Port.ToString());
+            environmentVariables.Add("SERVER_PROTOCOL", $"HTTP/{context.Request.HttpVersion}");
+            environmentVariables.Add("SERVER_SOFTWARE", "Mini-Web-Server");
 
 
             return environmentVariables;
