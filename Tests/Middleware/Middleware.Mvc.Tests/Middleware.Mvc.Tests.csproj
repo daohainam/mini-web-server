@@ -16,7 +16,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Middleware\Mvc\Mvc.csproj" />
-    <ProjectReference Include="..\..\MiniWebServer.Server\MiniWebServer.Server.csproj" />
+    <ProjectReference Include="..\..\..\Middleware\Mvc\Mvc.csproj" />
+    <ProjectReference Include="..\..\..\MiniWebServer.Server\MiniWebServer.Server.csproj" />
   </ItemGroup>
 </Project>
