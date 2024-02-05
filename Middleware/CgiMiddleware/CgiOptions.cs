@@ -16,6 +16,8 @@ namespace MiniWebServer.Cgi
         public string Route { get; set; } = string.Empty;
         public string Executable { get; set; } = string.Empty;
         public string WorkingDirectory { get; set; } = string.Empty;
+        public string ScriptDirectory { get; set; } = string.Empty;
+        public string[] Parameters { get; set; } = []; // additional paramaters sent to executable, first parameter is always script file
 
         // TODO: we should support context switching, running an executable file in the same server context is potentially unsafe
         public CgiHandlerSecurityContext? SecurityContext { get; set; }

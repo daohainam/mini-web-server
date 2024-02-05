@@ -65,6 +65,17 @@ namespace MiniWebServer.Cgi
                 throw new DirectoryNotFoundException($"Working directory not found: {matchedHandler.WorkingDirectory}");
             }
 
+            if (!Directory.Exists(matchedHandler.ScriptDirectory))
+            {
+                throw new DirectoryNotFoundException($"Script directory not found: {matchedHandler.ScriptDirectory}");
+            }
+
+            string scriptFilePath = BuildScriptFilePath(matchedHandler.ScriptDirectory, context.Request.Url);
+            if (!File.Exists(scriptFilePath))
+            {
+                throw new FileNotFoundException("Script file not found", scriptFilePath);
+            }
+
             var environmentVariables = BuildEnvironmentVariables(matchedHandler, context);
 
             using Process handlerProcess = new();
@@ -73,6 +84,16 @@ namespace MiniWebServer.Cgi
             handlerProcess.StartInfo.UseShellExecute = false;
             handlerProcess.StartInfo.RedirectStandardInput = true;
             handlerProcess.StartInfo.RedirectStandardOutput = true;
+
+            handlerProcess.StartInfo.ArgumentList.Add(scriptFilePath);
+            if (matchedHandler.Parameters.Length > 0)
+            {
+                foreach (var parameter in matchedHandler.Parameters)
+                {
+                    handlerProcess.StartInfo.ArgumentList.Add(parameter);
+                }
+            }
+
             // TODO: redirect standard error to server's log (or to response?)
 
             foreach (var variable in environmentVariables)
@@ -98,6 +119,24 @@ namespace MiniWebServer.Cgi
 
             context.Response.Content = new MiniApp.Content.StringContent(cgiOutput);
             context.Response.StatusCode = HttpResponseCodes.OK;
+        }
+
+        private static string BuildScriptFilePath(string scriptDirectory, string url)
+        {
+            int idx = 0; // we skip beginning slashes
+            while (idx < url.Length && url[idx] == '/')
+            {
+                idx++;
+            }
+
+            if (idx == url.Length)
+            {
+                return Path.Combine(scriptDirectory, string.Empty);
+            }
+            else
+            {
+                return Path.Combine(scriptDirectory, url[idx..].Replace('/', Path.DirectorySeparatorChar));
+            }
         }
 
         private static async Task WriteBodyToHandlerInputAsync(IMiniAppRequestContext context, StreamWriter cgiInputStreamWriter, CancellationToken cancellationToken)

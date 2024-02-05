@@ -33,6 +33,9 @@
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
+    <None Update="scripts\php\hellocgi.php">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
