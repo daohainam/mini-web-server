@@ -114,7 +114,7 @@ namespace MiniWebServer.Cgi
 
             // then read handler's standard output to write to response
             using var cgiOutputStreamReader = handlerProcess.StandardOutput;
-            var responseReader = new CgiResponseStreamReader(cgiOutputStreamReader, logger);
+            var responseReader = new CgiResponseStreamReader(cgiOutputStreamReader, new CgiResponseStreamReaderOptions(), cancellationToken, logger);
             var cgiResponse = await responseReader.ReadAsync();
             cgiOutputStreamReader.Close();
 
