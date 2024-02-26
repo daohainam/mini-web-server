@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions.Http.Header;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -75,6 +77,42 @@ namespace MiniWebServer.Cgi.Parsers
             {
                 responseHeader.CgiResponseType = CgiResponseTypes.DocumentResponse;
                 responseHeader.ContentType = new string(buffer[14..]);
+            }
+            else if (buffer.StartsWith("Location: ", StringComparison.OrdinalIgnoreCase))
+            {
+                responseHeader.CgiResponseType = CgiResponseTypes.ClientRedirectResponse;
+                responseHeader.Location = new string(buffer[10..]);
+            }
+            else if (buffer.StartsWith("Status: ", StringComparison.OrdinalIgnoreCase))
+            {
+                responseHeader.CgiResponseType = CgiResponseTypes.DocumentResponse;
+                int idx = buffer.IndexOf(' ');
+                if (idx > 0)
+                {
+                    if (int.TryParse(buffer[1..(idx)], out var status))
+                    {
+                        responseHeader.ResponseCode = (Abstractions.HttpResponseCodes)status;
+                        responseHeader.ReasonPhrase = new string(buffer[(idx + 1)..]);
+                    }
+                    else
+                    {
+                        logger.LogError("Invalid CGI response: status must be an integer");
+                        return null;
+                    }
+                }
+                else
+                {
+                    if (int.TryParse(buffer, out var status))
+                    {
+                        responseHeader.ResponseCode = (Abstractions.HttpResponseCodes)status;
+                        responseHeader.ReasonPhrase = string.Empty;
+                    }
+                    else
+                    {
+                        logger.LogError("Invalid CGI response: status must be an integer");
+                        return null;
+                    }
+                }
             }
             else
             {
