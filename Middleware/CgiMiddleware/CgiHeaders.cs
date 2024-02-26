@@ -7,7 +7,22 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Cgi
 {
-    public class CgiHeaders: HttpHeaders
+    public class CgiHeaders : HttpHeaders
     {
+        public CgiHeaders()
+        {
+        }
+
+        public CgiHeaders(IEnumerable<HttpHeader> headers) : base(headers)
+        {
+        }
+
+        public CgiHeaders(string name, string value) : base(name, value)
+        {
+        }
+
+        public CgiHeaders(HttpHeader header, params HttpHeader[] headers) : base(header, headers)
+        {
+        }
     }
 }

@@ -1,10 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Abstractions.Http.Header;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,17 +45,37 @@ namespace MiniWebServer.Cgi.Parsers
                 {
                     if (responseHeader.CgiResponseType == CgiResponseTypes.DocumentResponse)
                     {
+                        var headerLines = await ReadHeaderLines(reader, localCancellationToken);
                         string cgiOutput = await reader.ReadToEndAsync();
 
                         var response = new CgiResponse()
                         {
                             ResponseCode = Abstractions.HttpResponseCodes.OK,
                             Content = new MiniApp.Content.StringContent(cgiOutput),
-                            Headers = []
+                            Headers = new(headerLines)
                         };
 
                         return response;
                     }
+                    else if (responseHeader.CgiResponseType == CgiResponseTypes.ClientRedirectResponse)
+                    {
+                        var headerLines = await ReadHeaderLines(reader, localCancellationToken);
+
+                        var response = new CgiResponse()
+                        {
+                            ResponseCode = responseHeader.ResponseCode,
+                            Content = MiniApp.Content.StringContent.Empty,
+                            Headers = new(headerLines)
+                        };
+
+                        return response;
+                    }
+                    else return new CgiResponse()
+                    {
+                        ResponseCode = Abstractions.HttpResponseCodes.InternalServerError,
+                        Content = MiniApp.Content.StringContent.Empty,
+                        Headers = []
+                    };
                 }
             }
             else
@@ -66,6 +89,45 @@ namespace MiniWebServer.Cgi.Parsers
                 Content = MiniApp.Content.StringContent.Empty,
                 Headers = []
             };
+        }
+
+        private static async Task<IEnumerable<HttpHeader>> ReadHeaderLines(StreamReader reader, CancellationToken localCancellationToken)
+        {
+            var line = await reader.ReadLineAsync(localCancellationToken);
+            var headers = new List<HttpHeader>();
+
+            while (!string.IsNullOrEmpty(line))
+            {
+                var header = ParseHeaderLine(line);
+
+                if (header != null)
+                { 
+                    headers.Add(header);
+                }
+            }
+
+            return headers;
+        }
+
+        public static HttpHeader? ParseHeaderLine(string line)
+        {
+            int pos = line.IndexOf(':'); // there are 2 SPs in a request line
+
+            if (pos > 0)
+            {
+                var header = line[1..(pos + 1)];
+                while (pos < header.Length && header[pos] == ' ')
+                {
+                    pos++;
+                }
+
+                return new HttpHeader(
+                    header, 
+                    line[pos..]
+                    );
+            }
+
+            return null;
         }
 
         private CgiResponseResponseHeader? ParseFirstLine(string line)

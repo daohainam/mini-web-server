@@ -29,11 +29,24 @@ namespace MiniWebServer.Abstractions.Http
             Add(name, value);
         }
 
-        public HttpHeaders(params HttpHeader[] headers)
+        public HttpHeaders(IEnumerable<HttpHeader> headers)
         {
+            ArgumentNullException.ThrowIfNull(headers);
+
             foreach (var header in headers)
             {
                 Add(header);
+            }
+        }
+
+        public HttpHeaders(HttpHeader header, params HttpHeader[] headers)
+        {
+            ArgumentNullException.ThrowIfNull(header);
+
+            Add(header);
+            foreach (var h in headers)
+            {
+                Add(h);
             }
         }
 

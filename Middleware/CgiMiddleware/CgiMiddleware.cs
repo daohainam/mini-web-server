@@ -127,7 +127,8 @@ namespace MiniWebServer.Cgi
             else
             {
                 context.Response.Content = cgiResponse.Content;
-                context.Response.StatusCode = HttpResponseCodes.OK;
+                context.Response.StatusCode = cgiResponse.ResponseCode;
+                context.Response.Headers.AddOrUpdate(cgiResponse.Headers);
 
                 if (cgiResponse.Headers.Count > 0) { 
                     context.Response.Headers.AddOrUpdate(cgiResponse.Headers);
