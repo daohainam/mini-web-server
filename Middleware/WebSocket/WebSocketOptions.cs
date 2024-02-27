@@ -15,7 +15,7 @@ namespace MiniWebServer.WebSocket
 
         public TimeSpan KeepAliveInterval { get; set; } = TimeSpan.FromMinutes(2);
         public string? SubProtocol { get; set; }
-        public IList<string> AllowedOrigins { get; } = new List<string>();
+        public IList<string> AllowedOrigins { get; } = [];
 
         private static bool DefaultRequestMatcher(IMiniAppRequestContext appContext)
         {

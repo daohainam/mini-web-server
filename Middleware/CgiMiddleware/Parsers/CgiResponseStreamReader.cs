@@ -14,19 +14,13 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Cgi.Parsers
 {
-    internal class CgiResponseStreamReader : ICgiResponseReader
+    internal class CgiResponseStreamReader(StreamReader reader, CgiResponseStreamReaderOptions options, ILogger logger, CancellationToken cancellationToken) : ICgiResponseReader
     {
-        private readonly StreamReader reader;
-        private readonly CgiResponseStreamReaderOptions options;
-        private readonly CancellationToken cancellationToken;
-        private readonly ILogger logger;
+        private readonly StreamReader reader = reader;
+        private readonly CgiResponseStreamReaderOptions options = options;
+        private readonly CancellationToken cancellationToken = cancellationToken;
+        private readonly ILogger logger = logger;
 
-        public CgiResponseStreamReader(StreamReader reader, CgiResponseStreamReaderOptions options, CancellationToken cancellationToken, ILogger logger) { 
-            this.reader = reader;
-            this.options = options;
-            this.cancellationToken = cancellationToken;
-            this.logger = logger;
-        }
         public async Task<CgiResponse?> ReadAsync()
         {
             // try to read first line

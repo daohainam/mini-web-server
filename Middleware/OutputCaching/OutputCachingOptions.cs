@@ -4,7 +4,7 @@
     {
         public OutputCachingOptions()
         {
-            Policies = new List<IOutputCachePolicy>();
+            Policies = [];
         }
 
         public ICollection<IOutputCachePolicy> Policies { get; }

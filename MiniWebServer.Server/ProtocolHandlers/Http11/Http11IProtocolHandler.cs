@@ -14,33 +14,21 @@ using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
-    public class Http11IProtocolHandler : IProtocolHandler // should we use PipeLines to make the code simpler?
+    public class Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser) : IProtocolHandler // should we use PipeLines to make the code simpler?
     {
         public const string HttpVersionString = "HTTP/1.1";
         public const int HttpMaxHeaderLineLength = 8 * 1024; // max 8KB each line
 
-        protected readonly ProtocolHandlerConfiguration config;
-        protected readonly ILoggerFactory loggerFactory;
-        protected readonly IHttpComponentParser httpComponentParser;
-        private readonly ICookieValueParser cookieValueParser;
-        protected readonly IHeaderValidator[] headerValidators;
-
-        private readonly ILogger<Http11IProtocolHandler> logger;
-
-        public Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser)
-        {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
-            this.loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this.httpComponentParser = httpComponentParser ?? throw new ArgumentNullException(nameof(httpComponentParser));
-            this.cookieValueParser = cookieValueParser ?? throw new ArgumentNullException(nameof(cookieValueParser));
-
-            logger = loggerFactory.CreateLogger<Http11IProtocolHandler>();
-
-            headerValidators = [
+        protected readonly ProtocolHandlerConfiguration config = config ?? throw new ArgumentNullException(nameof(config));
+        protected readonly ILoggerFactory loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        protected readonly IHttpComponentParser httpComponentParser = httpComponentParser ?? throw new ArgumentNullException(nameof(httpComponentParser));
+        private readonly ICookieValueParser cookieValueParser = cookieValueParser ?? throw new ArgumentNullException(nameof(cookieValueParser));
+        protected readonly IHeaderValidator[] headerValidators = [
                 new Http11StandardHeaderValidators.ContentLengthHeaderValidator(config.MaxRequestBodySize, loggerFactory),
                 new Http11StandardHeaderValidators.TransferEncodingHeaderValidator(loggerFactory),
             ];
-        }
+
+        private readonly ILogger<Http11IProtocolHandler> logger = loggerFactory.CreateLogger<Http11IProtocolHandler>();
 
         public int ProtocolVersion => 101;
 

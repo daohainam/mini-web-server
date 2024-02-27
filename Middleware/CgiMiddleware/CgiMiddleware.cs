@@ -9,18 +9,12 @@ using System.Text;
 
 namespace MiniWebServer.Cgi
 {
-    public class CgiMiddleware : IMiddleware
+    public class CgiMiddleware(CgiOptions options, ILogger logger) : IMiddleware
     {
         private const string GATEWAY_INTERFACE = "CGI/1.1";
 
-        private readonly CgiOptions options;
-        private readonly ILogger logger;
-
-        public CgiMiddleware(CgiOptions options, ILogger logger)
-        {
-            this.options = options;
-            this.logger = logger;
-        }
+        private readonly CgiOptions options = options;
+        private readonly ILogger logger = logger;
 
         public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
         {
@@ -114,7 +108,7 @@ namespace MiniWebServer.Cgi
 
             // then read handler's standard output to write to response
             using var cgiOutputStreamReader = handlerProcess.StandardOutput;
-            var responseReader = new CgiResponseStreamReader(cgiOutputStreamReader, new CgiResponseStreamReaderOptions(), cancellationToken, logger);
+            var responseReader = new CgiResponseStreamReader(cgiOutputStreamReader, new CgiResponseStreamReaderOptions(), logger, cancellationToken);
             var cgiResponse = await responseReader.ReadAsync();
             cgiOutputStreamReader.Close();
 
@@ -190,7 +184,7 @@ namespace MiniWebServer.Cgi
             }
         }
 
-        private static IDictionary<string, string?> BuildEnvironmentVariables(CgiHandler matchedHander, IMiniAppRequestContext context)
+        private static Dictionary<string, string?> BuildEnvironmentVariables(CgiHandler matchedHander, IMiniAppRequestContext context)
         {
             /* https://datatracker.ietf.org/doc/html/draft-robinson-www-interface-00#section-5
             here is the list of environment variables, implemented ones have a (*) 

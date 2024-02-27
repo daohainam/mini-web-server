@@ -13,7 +13,7 @@ namespace ParserTests
         [DataRow("GET /index.html?fbclid=IwAR2bODvpBU9VB9t8-kyhqN5XEzLcbV1IfjIwmYmYbrD86W7NUd4aUAnyf9k{}%7B%7D HTTP/1.1", "GET", "/index.html", "", "?fbclid=IwAR2bODvpBU9VB9t8-kyhqN5XEzLcbV1IfjIwmYmYbrD86W7NUd4aUAnyf9k{}{}", "1", "1", 1)]
         public void IsValidRequestLine(string text, string method, string url, string hash, string queryString, string majorVersion, string minorVersion, int paramsCount)
         {
-            IHttpComponentParser http11Parser = new ByteSequenceHttpParser();
+            var http11Parser = new ByteSequenceHttpParser();
 
             var result = http11Parser.ParseRequestLine(String2SequenceReader(text));
             Assert.IsNotNull(result);
@@ -34,7 +34,7 @@ namespace ParserTests
         [DataRow("Connection: keep-alive\r", "Connection", "keep-alive")]
         public void IsValidHeaderLine(string text, string name, string value)
         {
-            IHttpComponentParser http11Parser = new ByteSequenceHttpParser();
+            var http11Parser = new ByteSequenceHttpParser();
 
             var result = http11Parser.ParseHeaderLine(String2SequenceReader(text));
             Assert.IsNotNull(result);

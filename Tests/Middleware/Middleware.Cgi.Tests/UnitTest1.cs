@@ -46,7 +46,7 @@ namespace Middleware.Cgi.Tests
             Assert.AreEqual("Hello CGI!\r\n", result);
         }
 
-        private FakeMiniAppContext BuildContext(string url, string queryString)
+        private static FakeMiniAppContext BuildContext(string url, string queryString)
         {
             var pipe = new Pipe();
 
