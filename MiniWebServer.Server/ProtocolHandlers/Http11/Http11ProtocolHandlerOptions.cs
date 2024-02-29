@@ -2,7 +2,7 @@
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
-    public class Http11IProtocolHandlerOptions(
+    public class Http11ProtocolHandlerOptions(
         IHttpComponentParser http11Parser,
         int readBufferSize,
         int writeBufferSize,

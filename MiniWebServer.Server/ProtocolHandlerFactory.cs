@@ -21,7 +21,7 @@ namespace MiniWebServer.Server
             {
                 // in reality we often use the default parsers
 
-                return new Http11IProtocolHandler(config, loggerFactory,
+                return new Http11ProtocolHandler(config, loggerFactory,
                     services.GetService<IHttpComponentParser>() ?? new ByteSequenceHttpParser(loggerFactory),
                     services.GetService<ICookieValueParser>() ?? new DefaultCookieParser()
                     );

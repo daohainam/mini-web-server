@@ -13,7 +13,7 @@ using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
-    public class Http11IProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser) : IProtocolHandler // should we use PipeLines to make the code simpler?
+    public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser) : IProtocolHandler // should we use PipeLines to make the code simpler?
     {
         public const string HttpVersionString = "HTTP/1.1";
         public const int HttpMaxHeaderLineLength = 8 * 1024; // max 8KB each line
@@ -27,7 +27,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                 new Http11StandardHeaderValidators.TransferEncodingHeaderValidator(loggerFactory),
             ];
 
-        private readonly ILogger<Http11IProtocolHandler> logger = loggerFactory.CreateLogger<Http11IProtocolHandler>();
+        private readonly ILogger<Http11ProtocolHandler> logger = loggerFactory.CreateLogger<Http11ProtocolHandler>();
 
         public int ProtocolVersion => 101;
 
