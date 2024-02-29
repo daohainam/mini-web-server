@@ -5,7 +5,6 @@ using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Parsers;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
-using MiniWebServer.Server.Host;
 using MiniWebServer.Server.Http;
 using System.Buffers;
 using System.IO.Pipelines;
