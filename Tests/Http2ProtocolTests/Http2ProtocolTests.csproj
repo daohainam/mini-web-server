@@ -24,8 +24,4 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="ProtocolHandlers\Http2\" />
-  </ItemGroup>
-
 </Project>
