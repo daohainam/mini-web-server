@@ -26,6 +26,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
     public class Http2ProtocolHandler : IProtocolHandler
     {
         public int ProtocolVersion => 20;
+        private Dictionary<uint, Http2Stream> streams = new(); // we don't use concurrent dictionary because we will implement our own sync merchanism
 
         public Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken)
         {
