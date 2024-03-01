@@ -12,9 +12,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
     {
         private const int HeaderLength = 9; // From RFC: All frames begin with a fixed 9-octet header
 
-        public static bool TryReadFrame(ref ReadOnlySequence<byte> buffer, out Http2Frame? frame, int maxFrameSize)
+        public static bool TryReadFrame(ref ReadOnlySequence<byte> buffer, ref Http2Frame frame, int maxFrameSize)
         {
-            frame = null; // should we allocate new frames or reuse?
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentNullException.ThrowIfNull(frame);
 
             if (buffer.Length < HeaderLength)
             { 
@@ -30,8 +31,33 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 throw new Http2Exception($"FrameSize error {headerLength}");
             }
 
-            return false;
+            frame.Length = headerLength;
+            frame.FrameType = GetFrameType(header[3]);
+            frame.Flags = header[4];
+            frame.StreamIdentifier = GetStreamIdentifier(header);
+
+            return true;
         }
+
+        private static int GetStreamIdentifier(ReadOnlySpan<byte> header)
+        {
+            return (header[5] & 0b_01111111) << 24 | header[6] << 16 | header[7] << 8 | header[8];
+        }
+
+        private static Http2FrameType GetFrameType(byte b) => b switch
+        {
+            0 => Http2FrameType.DATA,
+            1 => Http2FrameType.HEADERS,
+            2 => Http2FrameType.PRIORITY,
+            3 => Http2FrameType.RST_STREAM,
+            4 => Http2FrameType.SETTINGS,
+            5 => Http2FrameType.PUSH_PROMISE,
+            6 => Http2FrameType.PING,
+            7 => Http2FrameType.GOAWAY,
+            8 => Http2FrameType.WINDOW_UPDATE,
+            9 => Http2FrameType.CONTINUATION,
+            _ => throw new Http2Exception($"Unknown frame type {b}")
+        };
 
         public static int ReadHeaderLength(ReadOnlySpan<byte> header)
         {

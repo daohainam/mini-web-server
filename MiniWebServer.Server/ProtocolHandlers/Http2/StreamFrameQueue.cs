@@ -8,7 +8,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     internal class StreamFrameQueue
     {
-        private List<Http2Frame> frames = [];
+        private readonly List<Http2Frame> frames = [];
         private SpinLock spinLock = new();
 
         public IEnumerable<Http2Frame> Frames => frames;
