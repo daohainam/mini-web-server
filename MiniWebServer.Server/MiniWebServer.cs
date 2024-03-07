@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MiniWebServer.Abstractions;
 using MiniWebServer.Server.Abstractions;
 using System.Collections.Concurrent;
+using System.IO.Pipelines;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -79,15 +81,26 @@ namespace MiniWebServer.Server
                 }
 
                 using var serviceScope = serviceProvider.CreateScope();
+
+                //int httpVersion = ProtocolHandlerFactory.HTTP20; // TODO: use HTTP2 magic string or TLS protocol exts to determine HTTP version, we will need to move HTTP version to connection handler
+
+                if (!TryGetHttpVersion(stream, out HttpVersions httpVersion))
+                {
+                    // unknown version
+                    logger.LogError("Unknown HTTP version");
+                    return;
+                }
+
+                var protocolHandlerFactory = serviceProvider.GetRequiredService<IProtocolHandlerFactory>();
+                var protocolConfig = new ProtocolHandlerConfiguration(httpVersion, config.MaxRequestBodySize);
+                var protocolHandler = protocolHandlerFactory.Create(httpVersion, protocolConfig);
+
                 var client = new MiniWebClientConnection(
                     new MiniWebConnectionConfiguration(
                         connectionId,
                         tcpClient,
                         stream,
                         isHttps,
-                        protocolHandlerFactory.Create(
-                        new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, config.MaxRequestBodySize)
-                    ), // A connection always starts with HTTP 1.1 
                     hostContainers,
                     requestIdManager,
                     TimeSpan.FromMilliseconds(config.ReadRequestTimeout),
@@ -95,6 +108,7 @@ namespace MiniWebServer.Server
                     TimeSpan.FromMilliseconds(config.ConnectionTimeout),
                     config.ReadBufferSize
                     ),
+                    protocolHandler,
                     serviceScope.ServiceProvider,
                     cancellationToken
                 );
@@ -114,6 +128,13 @@ namespace MiniWebServer.Server
             }
 
             clientTasks.TryRemove(connectionId, out _);
+        }
+
+        private bool TryGetHttpVersion(Stream stream, out HttpVersions httpVersion)
+        {
+            httpVersion = HttpVersions.Http11;
+
+            return true;
         }
 
         private bool ValidateClientCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)

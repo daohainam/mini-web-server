@@ -27,8 +27,8 @@ namespace MiniWebServer.Abstractions
 
     public enum HttpVersions
     {
-        Http11,
-        Http2,
-        Http3,
+        Http11 = 101,
+        Http20 = 200,
+        Http30 = 300,
     }
 }

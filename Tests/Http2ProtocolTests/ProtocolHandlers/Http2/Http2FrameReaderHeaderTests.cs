@@ -14,7 +14,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
         public void ReadHeaderLengthTest(byte b1, byte b2, byte b3, int expected)
         {
             var buffer = new byte[3] { b1, b2, b3 };
-            var length = Http2FrameReader.ReadHeaderLength(buffer);
+            var length = Http2FrameReader.ReadPayloadLength(buffer);
 
             Assert.AreEqual(expected, length);
         }
@@ -25,7 +25,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
         {
             Http2Frame frame = new();
             var rbuffer = new ReadOnlySequence<byte>(buffer);
-            var b = Http2FrameReader.TryReadFrame(ref rbuffer, ref frame, 16384);
+            var b = Http2FrameReader.TryReadFrame(ref rbuffer, ref frame, 16384, out var payload);
 
             Assert.IsTrue(b);
             Assert.IsTrue(frame != null);
@@ -41,13 +41,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
             {
                 (
                 [
-
-                    new byte[] { 0x00, 0x00, 0xFF,
+                    new byte[] { 0x00, 0x00, 0x00,
                         0x01, // HEADER_TYPE
                         0x00,
                         0x70, 0xFF, 0x00, 0xFF
                     },
-                    0x0000FF, 0x01, (byte)0x00, 0x70FF00FF
+                    0x000000, 0x01, (byte)0x00, 0x70FF00FF
                 ]
                 )
             };

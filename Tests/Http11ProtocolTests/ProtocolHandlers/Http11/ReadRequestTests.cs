@@ -69,7 +69,7 @@ Host: localhost:8443
             var loggerFactory = new LoggerFactory();
 
             var httpParser = new ByteSequenceHttpParser(loggerFactory);
-            var handler = new Http11ProtocolHandler(new ProtocolHandlerConfiguration(ProtocolHandlerFactory.HTTP11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser());
+            var handler = new Http11ProtocolHandler(new ProtocolHandlerConfiguration(global::MiniWebServer.Abstractions.HttpVersions.Http11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser());
 
             var requestBuilder = new HttpWebRequestBuilder();
 

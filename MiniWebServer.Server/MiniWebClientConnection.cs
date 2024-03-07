@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.MiniApp;
+using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Http;
 using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
@@ -17,13 +18,15 @@ namespace MiniWebServer.Server
     {
         public MiniWebClientConnection(
             MiniWebConnectionConfiguration config,
+            IProtocolHandler protocolHandler,
             IServiceProvider serviceProvider,
             CancellationToken cancellationToken
             )
         {
             ConnectionId = config.Id;
 
-            this.config = config;
+            this.config = config ?? throw new ArgumentNullException( nameof( config ) );
+            this.protocolHandler = protocolHandler ?? throw new ArgumentNullException( nameof( protocolHandler ) );
             this.cancellationToken = cancellationToken;
             this.serviceProvider = serviceProvider;
 
@@ -34,6 +37,7 @@ namespace MiniWebServer.Server
         public ulong ConnectionId { get; }
 
         private readonly MiniWebConnectionConfiguration config;
+        private readonly IProtocolHandler protocolHandler;
         private readonly ILogger logger;
         private readonly CancellationToken cancellationToken;
         private readonly IServiceProvider serviceProvider;
@@ -79,7 +83,7 @@ namespace MiniWebServer.Server
                             .SetRemoteAddress(remoteEndPoint.Address)
                             .SetRemotePort(remoteEndPoint.Port);
 
-                        var readRequestResult = await config.ProtocolHandler.ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken);
+                        var readRequestResult = await protocolHandler.ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken);
                         if (!readRequestResult)
                         {
                             isKeepAlive = false; // we always close wrongly working connections
@@ -111,7 +115,7 @@ namespace MiniWebServer.Server
 
                                 // now we continue reading body part
                                 CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                                Task readBodyTask = config.ProtocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
+                                Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
                                 Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
 
                                 readBodyCancellationTokenSource.Cancel();
@@ -199,7 +203,7 @@ namespace MiniWebServer.Server
 
         private async Task SendResponseAsync(HttpResponse response, CancellationToken cancellationToken)
         {
-            await config.ProtocolHandler.WriteResponseAsync(response, cancellationToken);
+            await protocolHandler.WriteResponseAsync(response, cancellationToken);
 
             await response.Stream.FlushAsync(cancellationToken);
         }
