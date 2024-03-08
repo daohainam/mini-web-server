@@ -72,5 +72,31 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         {
             return header[0] << 16 | header[1] << 8 | header[2];
         }
+
+        public static bool TryReadSETTINGSFramePayload(ref ReadOnlySequence<byte> payload, out Http2FrameSETTINGSItem[] settings)
+        {
+            if (payload.Length % 6 != 0)
+            {
+                settings = [];
+                return false;
+            }
+
+            var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
+
+            int count = payloadBytes.Length / 6;
+            settings = new Http2FrameSETTINGSItem[count];
+            for (int i = 0; i < count; i++)
+            {
+                int si = i * 6;
+                settings[i] = new Http2FrameSETTINGSItem() 
+                { 
+                    Identifier = (ushort)(payloadBytes[si] << 8 | payloadBytes[si + 1]),
+                    Value = (uint)(payloadBytes[si + 2] << 24 | payloadBytes[si + 3] << 16 | payloadBytes[si + 4] << 8 | payloadBytes[si + 5])
+                };
+            }        
+            
+            return true;
+        }
+
     }
 }

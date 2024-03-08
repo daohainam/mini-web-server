@@ -13,8 +13,8 @@ namespace MiniWebServer.Server
         TimeSpan readRequestTimeout,
         TimeSpan sendResponseTimeout,
         TimeSpan executeTimeout,
-        int readRequestBufferSize
-            )
+        int readRequestBufferSize,
+        long maxRequestBodySize)
     {
         public ulong Id { get; } = id;
         public TcpClient TcpClient { get; } = tcpClient;
@@ -26,5 +26,6 @@ namespace MiniWebServer.Server
         public TimeSpan SendResponseTimeout { get; } = sendResponseTimeout;
         public TimeSpan ExecuteTimeout { get; } = executeTimeout;
         public int ReadRequestBufferSize { get; } = readRequestBufferSize;
+        public long MaxRequestBodySize { get; } = maxRequestBodySize;
     }
 }

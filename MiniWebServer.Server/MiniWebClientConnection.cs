@@ -9,16 +9,23 @@ using MiniWebServer.Server.Http.Helpers;
 using MiniWebServer.Server.MiniApp;
 using MiniWebServer.Server.Session;
 using MiniWebServer.WebSocket.Abstractions;
+using System.Buffers;
+using System.IO;
 using System.IO.Pipelines;
 using System.Net;
+using System.Reflection.PortableExecutable;
+using System.Text;
 
 namespace MiniWebServer.Server
 {
     public class MiniWebClientConnection
     {
+        private static readonly byte[] HTTP2_MAGIC = Encoding.ASCII.GetBytes("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
+
+
         public MiniWebClientConnection(
             MiniWebConnectionConfiguration config,
-            IProtocolHandler protocolHandler,
+            IProtocolHandlerFactory protocolHandlerFactory,
             IServiceProvider serviceProvider,
             CancellationToken cancellationToken
             )
@@ -26,7 +33,7 @@ namespace MiniWebServer.Server
             ConnectionId = config.Id;
 
             this.config = config ?? throw new ArgumentNullException( nameof( config ) );
-            this.protocolHandler = protocolHandler ?? throw new ArgumentNullException( nameof( protocolHandler ) );
+            this.protocolHandlerFactory = protocolHandlerFactory ?? throw new ArgumentNullException( nameof( protocolHandlerFactory ) );
             this.cancellationToken = cancellationToken;
             this.serviceProvider = serviceProvider;
 
@@ -37,7 +44,7 @@ namespace MiniWebServer.Server
         public ulong ConnectionId { get; }
 
         private readonly MiniWebConnectionConfiguration config;
-        private readonly IProtocolHandler protocolHandler;
+        private readonly IProtocolHandlerFactory protocolHandlerFactory;
         private readonly ILogger logger;
         private readonly CancellationToken cancellationToken;
         private readonly IServiceProvider serviceProvider;
@@ -59,6 +66,25 @@ namespace MiniWebServer.Server
 
                 PipeReader requestPipeReader = PipeReader.Create(config.ClientStream);
                 PipeWriter responsePipeWriter = PipeWriter.Create(config.ClientStream);
+
+                ReadResult readResult = await requestPipeReader.ReadAsync(cancellationToken);
+                ReadOnlySequence<byte> buffer = readResult.Buffer;
+
+                HttpVersions httpVersion = TryGetHttpVersion(buffer);
+                if (httpVersion != HttpVersions.Http11 && httpVersion != HttpVersions.Http20)
+                {
+                    // unknown version
+                    logger.LogError("Not supported HTTP version");
+                    return;
+                }
+
+                if (httpVersion == HttpVersions.Http20) // skip MAGIC string
+                {
+                    requestPipeReader.AdvanceTo(buffer.GetPosition(HTTP2_MAGIC.Length));
+                }
+
+                var protocolConfig = new ProtocolHandlerConfiguration(httpVersion, config.MaxRequestBodySize);
+                var protocolHandler = protocolHandlerFactory.Create(httpVersion, protocolConfig);
 
                 MiniAppConnectionContext connectionContext = BuildMiniAppConnectionContext();
 
@@ -92,7 +118,7 @@ namespace MiniWebServer.Server
 
                             cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                             logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
-                            await SendResponseAsync(response, cancellationToken);
+                            await SendResponseAsync(response, protocolHandler, cancellationToken);
 
                             break;
                         }
@@ -142,7 +168,7 @@ namespace MiniWebServer.Server
 
                                 cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
                                 logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
-                                await SendResponseAsync(response, cancellationToken);
+                                await SendResponseAsync(response, protocolHandler, cancellationToken);
                             }
 
                             //if (connectionContext.WebSockets.IsUpgradeRequest && app != null) // if this is an upgrade request, we switch to websocket mode and continue processing
@@ -201,7 +227,7 @@ namespace MiniWebServer.Server
             return connectionContext;
         }
 
-        private async Task SendResponseAsync(HttpResponse response, CancellationToken cancellationToken)
+        private async Task SendResponseAsync(HttpResponse response, IProtocolHandler protocolHandler, CancellationToken cancellationToken)
         {
             await protocolHandler.WriteResponseAsync(response, cancellationToken);
 
@@ -285,6 +311,32 @@ namespace MiniWebServer.Server
 
             // user will be set by Authentication middleware, we don't do anything here
             return new MiniAppContext(connectionContext, app, request, response, session, null);
+        }
+
+        private static HttpVersions TryGetHttpVersion(ReadOnlySequence<byte> buffer)
+        {
+            var httpVersion = HttpVersions.Http11;
+
+            if (buffer.Length >= HTTP2_MAGIC.Length)
+            {
+                var span = ToSpan(buffer.Slice(0, HTTP2_MAGIC.Length));
+
+                if (span.SequenceEqual(HTTP2_MAGIC))
+                {
+                    return HttpVersions.Http20;
+                }
+            }
+
+            return httpVersion;
+        }
+
+        private static ReadOnlySpan<byte> ToSpan(ReadOnlySequence<byte> buffer)
+        {
+            if (buffer.IsSingleSegment)
+            {
+                return buffer.FirstSpan;
+            }
+            return buffer.ToArray();
         }
     }
 }

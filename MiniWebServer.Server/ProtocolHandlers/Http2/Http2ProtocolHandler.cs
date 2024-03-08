@@ -49,9 +49,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         public async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
         {
-            long contentLength = 0;
-            string contentType = string.Empty;
-
             try
             {
                 ReadResult readResult = await reader.ReadAsync(cancellationToken);
@@ -63,125 +60,35 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
                 var frame = new Http2Frame(); // can we reuse?
 
-                // read request line
+                // HTTP2 connections always start with a SETTINGS frame
                 if (Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload))
                 {
                     if (logger.IsEnabled(LogLevel.Debug))
                     {
-                        logger.LogDebug("Frame found: {f}, Stream Id: {sid}", frame.FrameType, frame.StreamIdentifier);
+                        logger.LogDebug("Frame found: {f}, Stream Id: {sid}, payload length: {pll}", frame.FrameType, frame.StreamIdentifier, frame.Length);
                     }
 
-                    switch (frame.FrameType)
+                    if (frame.FrameType != Http2FrameType.SETTINGS)
                     {
-                        case Http2FrameType.HEADERS:
-
-                            break;
+                        logger.LogError("First frame must be a SETTINGS frame");
+                        return false;
                     }
 
+                    if (!Http2FrameReader.TryReadSETTINGSFramePayload(ref payload, out var settings))
+                    {
+                        return false;
+                    }
 
-                    //var requestLine = httpComponentParser.ParseRequestLine(line);
+                    if (logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger.LogDebug("Found {n} settings in payload", settings.Length);
+                    }
 
-                    //if (requestLine != null)
-                    //{
-                    //    logger.LogDebug("Parsed request line: {requestLine}", requestLine);
-
-                    //    // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
-                    //    // if Url length exceeds Url buffer length, you should return 414 URI Too Long
-
-                    //    // todo: parse the Url with percent-encoding (https://www.rfc-editor.org/rfc/rfc3986)
-
-                    //    httpMethod = requestLine.Method;
-                    //    requestBuilder
-                    //        .SetMethod(requestLine.Method)
-                    //        .SetUrl(requestLine.Url)
-                    //        .SetParameters(requestLine.Parameters)
-                    //        .SetQueryString(requestLine.QueryString)
-                    //    .SetHash(requestLine.Hash)
-                    //        .SetSegments(requestLine.Segments);
-                    //}
-                    //else
-                    //{
-                    //    logger.LogError("Invalid request line");
-
-                    //    return false;
-                    //}
-
-                    //reader.AdvanceTo(buffer.Start); // after a successful TryReadLine, buffer.Start advanced to the byte after '\n'
                 }
                 else
                 {
-                    // we could not read header line
                     return false;
                 }
-
-                //var headers = new List<HttpHeader>();
-                //// now we read headers
-                //while (TryReadLine(ref buffer, out line))
-                //{
-                //    if (line.Length > HttpMaxHeaderLineLength)
-                //    {
-                //        logger.LogError("Header line too long");
-                //        return false;
-                //    }
-
-                //    var sb = new StringBuilder();
-                //    sb.Append(Encoding.ASCII.GetString(line).Replace("\r", ""));
-
-                //    if (sb.Length == 0) // found an empty line
-                //    {
-                //        if (!ValidateRequestHeader(httpMethod, contentLength, contentType))
-                //        {
-                //            return false; // reject request for whatever reason
-                //        }
-
-                //        reader.AdvanceTo(buffer.Start);
-                //        break;
-                //    }
-                //    else
-                //    {
-                //        var headerLineText = sb.ToString();
-                //        var header = httpComponentParser.ParseHeaderLine(line);
-
-                //        logger.LogDebug("Found header: {headerLine}", header);
-
-                //        if (header != null)
-                //        {
-                //            if (!IsValidHeader(header.Name, header.Value))
-                //            {
-                //                logger.LogError("Header line rejected: {line}", headerLineText);
-                //                return false;
-                //            }
-
-                //            headers.Add(header);
-                //        }
-                //        else
-                //        {
-                //            logger.LogError("Invalid header line: {line}", headerLineText);
-
-                //            return false;
-                //        }
-
-                //        reader.AdvanceTo(buffer.Start);
-                //    }
-                //}
-
-                //// here we have some checks for important headers
-                //var requestHeaders = HttpRequestHeadersFactory.CreateFrom(headers);
-                //if (requestHeaders.Host != null)
-                //{
-                //    requestBuilder.SetHost(requestHeaders.Host.Host);
-                //    if (requestHeaders.Host.Port != 0)
-                //        requestBuilder.SetPort(requestHeaders.Host.Port);
-                //}
-
-                //requestBuilder.AddCookie(requestHeaders.Cookie);
-                //requestBuilder.AddTransferEncoding(requestHeaders.TransferEncoding);
-                //requestBuilder.SetContentLength(contentLength);
-                //requestBuilder.SetContentType(contentType);
-
-                //requestBuilder.SetHeaders(requestHeaders);
-
-                //return true;
 
                 return false;
             }

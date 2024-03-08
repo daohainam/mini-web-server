@@ -84,17 +84,6 @@ namespace MiniWebServer.Server
 
                 //int httpVersion = ProtocolHandlerFactory.HTTP20; // TODO: use HTTP2 magic string or TLS protocol exts to determine HTTP version, we will need to move HTTP version to connection handler
 
-                if (!TryGetHttpVersion(stream, out HttpVersions httpVersion))
-                {
-                    // unknown version
-                    logger.LogError("Unknown HTTP version");
-                    return;
-                }
-
-                var protocolHandlerFactory = serviceProvider.GetRequiredService<IProtocolHandlerFactory>();
-                var protocolConfig = new ProtocolHandlerConfiguration(httpVersion, config.MaxRequestBodySize);
-                var protocolHandler = protocolHandlerFactory.Create(httpVersion, protocolConfig);
-
                 var client = new MiniWebClientConnection(
                     new MiniWebConnectionConfiguration(
                         connectionId,
@@ -106,9 +95,10 @@ namespace MiniWebServer.Server
                     TimeSpan.FromMilliseconds(config.ReadRequestTimeout),
                     TimeSpan.FromMilliseconds(config.SendResponseTimeout),
                     TimeSpan.FromMilliseconds(config.ConnectionTimeout),
-                    config.ReadBufferSize
+                    config.ReadBufferSize,
+                    config.MaxRequestBodySize
                     ),
-                    protocolHandler,
+                    serviceProvider.GetRequiredService<IProtocolHandlerFactory>(),
                     serviceScope.ServiceProvider,
                     cancellationToken
                 );
@@ -128,13 +118,6 @@ namespace MiniWebServer.Server
             }
 
             clientTasks.TryRemove(connectionId, out _);
-        }
-
-        private bool TryGetHttpVersion(Stream stream, out HttpVersions httpVersion)
-        {
-            httpVersion = HttpVersions.Http11;
-
-            return true;
         }
 
         private bool ValidateClientCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)

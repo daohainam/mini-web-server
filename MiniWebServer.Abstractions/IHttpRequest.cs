@@ -30,5 +30,6 @@ namespace MiniWebServer.Abstractions
         Http11 = 101,
         Http20 = 200,
         Http30 = 300,
+        Unknown = 0
     }
 }
