@@ -54,7 +54,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 ReadResult readResult = await reader.ReadAsync(cancellationToken);
                 ReadOnlySequence<byte> buffer = readResult.Buffer;
 
-                requestBuilder.SetBodyPipeline(new Pipe());
+                //requestBuilder.SetBodyPipeline(new Pipe());
 
                 var httpMethod = HttpMethod.Get;
 
@@ -74,6 +74,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         return false;
                     }
 
+                    if (frame.StreamIdentifier != 0)
+                    {
+                        logger.LogError("Stream identifier for a SETTINGS frame MUST be zero");
+                        return false;
+                    }
+
                     if (!Http2FrameReader.TryReadSETTINGSFramePayload(ref payload, out var settings))
                     {
                         return false;
@@ -82,6 +88,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     if (logger.IsEnabled(LogLevel.Debug))
                     {
                         logger.LogDebug("Found {n} settings in payload", settings.Length);
+
+                        foreach (var key in settings)
+                        {
+                            logger.LogDebug("{id}: {v}", key.Identifier, key.Value);
+                        }
                     }
 
                 }

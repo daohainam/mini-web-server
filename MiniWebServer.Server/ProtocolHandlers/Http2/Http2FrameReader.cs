@@ -90,7 +90,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 int si = i * 6;
                 settings[i] = new Http2FrameSETTINGSItem() 
                 { 
-                    Identifier = (ushort)(payloadBytes[si] << 8 | payloadBytes[si + 1]),
+                    Identifier = (Http2FrameSettings)(payloadBytes[si] << 8 | payloadBytes[si + 1]),
                     Value = (uint)(payloadBytes[si + 2] << 24 | payloadBytes[si + 3] << 16 | payloadBytes[si + 4] << 8 | payloadBytes[si + 5])
                 };
             }        
