@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -88,15 +89,113 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             for (int i = 0; i < count; i++)
             {
                 int si = i * 6;
-                settings[i] = new Http2FrameSETTINGSItem() 
-                { 
+                settings[i] = new Http2FrameSETTINGSItem()
+                {
                     Identifier = (Http2FrameSettings)(payloadBytes[si] << 8 | payloadBytes[si + 1]),
                     Value = (uint)(payloadBytes[si + 2] << 24 | payloadBytes[si + 3] << 16 | payloadBytes[si + 4] << 8 | payloadBytes[si + 5])
                 };
-            }        
-            
+            }
+
             return true;
         }
 
+        public static bool TryReadWINDOW_UPDATEFramePayload(ref ReadOnlySequence<byte> payload, out uint windowSizeIncrement)
+        {
+            if (payload.Length != 4)
+            {
+                windowSizeIncrement = 0;
+                return false;
+            }
+
+            var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
+
+            windowSizeIncrement = (uint)((payloadBytes[0] & 0b_0111_1111) << 24 | payloadBytes[1] << 16 | payloadBytes[2] << 8 | payloadBytes[3]);
+
+            return true;
+        }
+
+        public static bool TryReadHEADERSFramePayload(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, out Http2FrameHEADERSPayload headersPayload)
+        {
+            /*
+              HEADERS Frame {
+              Length (24),
+              Type (8) = 0x01,
+
+              Unused Flags (2),
+              PRIORITY Flag (1),
+              Unused Flag (1),
+              PADDED Flag (1),
+              END_HEADERS Flag (1),
+              Unused Flag (1),
+              END_STREAM Flag (1),
+
+              Reserved (1),
+              Stream Identifier (31),
+
+              [Pad Length (8)],
+              [Exclusive (1)],
+              [Stream Dependency (31)],
+              [Weight (8)],
+              Field Block Fragment (..),
+              Padding (..2040),
+            }
+             */
+
+            var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
+            var flags = frame.Flags;
+            int idx = 0;
+            headersPayload = new();
+
+            var hasPayLength = (flags & 0b_0000_1000) != 0;
+            var hasPriority = (flags & 0b_0010_0000) != 0;
+            var hasEndHeaders = (flags & 0b_0000_0100) != 0;
+            var hasEndStream = (flags & 0b_0000_0001) != 0;
+
+            if (hasPayLength)
+            {
+                headersPayload.PadLength = payloadBytes[0];
+
+                idx = Interlocked.Increment(ref idx);
+            }
+            else
+            {
+                headersPayload.PadLength = 0;
+            }
+
+            if (hasPriority)
+            {
+                headersPayload.Exclusive = (payloadBytes[idx] & 0b_1000_0000) != 0;
+                headersPayload.StreamDependency = (uint)((payloadBytes[idx] & 0b_0111_1111) << 24 | payloadBytes[idx + 1] << 16 | payloadBytes[idx + 2] << 8 | payloadBytes[idx + 3]);
+                headersPayload.Weight = payloadBytes[idx + 4];
+
+                idx = Interlocked.Add(ref idx, 5);
+            }
+            else
+            {
+                headersPayload.Exclusive = false;
+                headersPayload.StreamDependency = 0;
+                headersPayload.Weight = 0;
+            }
+
+            if (TryParseFieldBlock(payload.Slice(idx), out var fieldBlock))
+            {
+                headersPayload.FieldBlockFragment = fieldBlock;
+            }
+            else
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryParseFieldBlock(ReadOnlySequence<byte> readOnlySequence, out Http2Fields fields)
+        {
+            var s = Encoding.ASCII.GetString(readOnlySequence.ToArray());
+
+            fields = new Http2Fields();
+
+            return true;
+        }
     }
 }
