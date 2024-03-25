@@ -41,7 +41,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             frame.Length = payloadLength;
             frame.FrameType = GetFrameType(header[3]);
             frame.Flags = header[4];
-            frame.StreamIdentifier = (uint)GetStreamIdentifier(header); // first bit is always 0 so it is always a positive number
+            frame.StreamIdentifier = GetStreamIdentifier(header);
 
             payload = buffer.Slice(HeaderLength, payloadLength);
             buffer = buffer.Slice(payload.End);
@@ -49,9 +49,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return true;
         }
 
-        private static int GetStreamIdentifier(ReadOnlySpan<byte> header)
+        private static uint GetStreamIdentifier(ReadOnlySpan<byte> header)
         {
-            return (header[5] & 0b_0111_1111) << 24 | header[6] << 16 | header[7] << 8 | header[8];
+            // first bit is always 0 so it is always a positive number
+            return (uint)((header[5] & 0b_0111_1111) << 24 | header[6] << 16 | header[7] << 8 | header[8]);
         }
 
         private static Http2FrameType GetFrameType(byte b) => b switch
