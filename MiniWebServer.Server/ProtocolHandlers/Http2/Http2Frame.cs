@@ -53,6 +53,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         public int Length { get; set; }
         public Http2FrameType FrameType { get; set; }
         public byte Flags { get; set; }
-        public int StreamIdentifier { get; set; }
+        public uint StreamIdentifier { get; set; }
     }
 }

@@ -17,6 +17,26 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 return false;
             }
 
+            if (streamContainer.ContainsKey(frame.StreamIdentifier))
+            {
+
+            }
+            else
+            {
+                // open a new stream
+                var stream = new Http2Stream() { 
+                    StreamId = frame.StreamIdentifier,
+                    FrameQueue = new StreamFrameQueue()
+                };
+
+                stream.FrameQueue.Add(frame);
+                streamContainer[frame.StreamIdentifier] = stream;
+
+                if (logger.IsEnabled(LogLevel.Debug)) {
+                    logger.LogDebug("Stream {id} opened", frame.StreamIdentifier);
+                }
+            }
+
             if (logger.IsEnabled(LogLevel.Debug))
             {
             }

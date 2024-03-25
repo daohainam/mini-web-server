@@ -28,8 +28,71 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
                 foreach (var key in settings)
                 {
-                    logger.LogDebug("{id}: {v}", key.Identifier, key.Value);
+                    if (logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger.LogDebug("{id}: {v}", key.Identifier, key.Value);
+                    }
+
+                    if (!ProcessSETTINGSItem(key.Identifier, key.Value))
+                    {
+                        return false;
+                    }
                 }
+            }
+
+            return true;
+        }
+
+        private bool ProcessSETTINGSItem(Http2FrameSettings identifier, uint value)
+        {
+            switch (identifier)
+            {
+                case Http2FrameSettings.SETTINGS_ENABLE_PUSH:
+                    if (value != 0)
+                    {
+                        logger.LogInformation("Server Push is not supported"); // PUSH_PROMISE is not supported (it is deprecated by Chrome)
+                    }
+                    break;
+                case Http2FrameSettings.SETTINGS_MAX_CONCURRENT_STREAMS:
+                    logger.LogInformation("Max_concurrent_streams = {m}", value); // 0 is also accepted, but it will prevent creating new streams
+                    maxConcurrentStreams = value;
+                    break;
+                case Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE:
+                    if (value >= 16_383 && value <= 16_777_215)
+                    {
+                        logger.LogInformation("MAX_FRAME_SIZE = {m}", value);
+                        maxFrameSize = value;
+                    }
+                    else
+                    {
+                        logger.LogError("Invalid MAX_FRAME_SIZE: {m}", value);
+                        return false;
+                    }
+                    break;
+                case Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE:
+                    if (value >= 65_535 && value <= 2_147_643_647) // Values above the maximum flow-control window size of (2^31)-1 MUST be treated as a connection error
+                    {
+                        logger.LogInformation("INITIAL_WINDOW_SIZE = {m}", value);
+                        initialWindowSize = value;
+                    }
+                    else
+                    {
+                        logger.LogError("Invalid INITIAL_WINDOW_SIZE: {m}", value);
+                        return false;
+                    }
+                    break;
+                case Http2FrameSettings.SETTINGS_HEADER_TABLE_SIZE:
+                    if (value >= 1_024 && value <= 16_384) 
+                    {
+                        logger.LogInformation("HEADER_TABLE_SIZE = {m}", value);
+                        headerTableSize = value;
+                    }
+                    else
+                    {
+                        logger.LogError("Invalid HEADER_TABLE_SIZE: {m}", value);
+                        return false;
+                    }
+                    break;
             }
 
             return true;

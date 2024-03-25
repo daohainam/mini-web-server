@@ -8,9 +8,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     internal class Http2Stream
     {
-        public uint StreamId { get; set; }
+        public required uint StreamId { get; set; }
         public Http2StreamStates State { get; set; } = Http2StreamStates.IDLE;
-        public uint WindowSizeIncrement { get; set; }
         public required StreamFrameQueue FrameQueue { get; set; }
     }
 }

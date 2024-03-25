@@ -34,19 +34,27 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
     public partial class Http2ProtocolHandler(ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser) : IProtocolHandler
     {
-        private const int DefaultMaxFrameSize = 16384; // frame size = 2^14 unless when you change it with a SETTINGS frame
+        private const uint DefaultMaxFrameSize = 16384; // frame size = 2^14 unless when you change it with a SETTINGS frame
+        private const uint DefaultInitialWindowSize = 65535;
+        private const uint DefaultHeaderTableSize = 4096;
+        private const int StreamContainerLockTimeout = 3000; // 3 seconds
 
-        private readonly ILoggerFactory loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         private readonly ILogger<Http2ProtocolHandler> logger = loggerFactory.CreateLogger<Http2ProtocolHandler>();
 
         public int ProtocolVersion => 20;
-        private int maxFrameSize = DefaultMaxFrameSize;
-        private readonly Http2StreamContainer streamContainer = [];
-        private ulong frameCount = 0Lu;
 
-        // the following settings are controlled by frames sent by client
+        // connection settings
+        private uint maxFrameSize = DefaultMaxFrameSize;
+        private uint initialWindowSize = DefaultInitialWindowSize;
+        private uint headerTableSize = DefaultHeaderTableSize;
+        private uint maxConcurrentStreams = 100; // can be changed by SETTINGS_MAX_CONCURRENT_STREAMS parameter in SETTINGS frame
         private uint windowSizeIncrement;
 
+        // streams
+        private readonly Http2StreamContainer streamContainer = [];
+
+        // for analytics
+        private ulong frameCount = 0Lu;
         public Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
@@ -130,7 +138,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         public Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            // add to response queue
+
+            return Task.FromResult(true);
         }
     }
 }

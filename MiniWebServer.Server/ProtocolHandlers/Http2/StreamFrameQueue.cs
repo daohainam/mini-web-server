@@ -8,7 +8,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     internal class StreamFrameQueue
     {
-        private readonly List<Http2Frame> frames = [];
+        private readonly Queue<Http2Frame> frames = [];
         private SpinLock spinLock = new();
 
         public IEnumerable<Http2Frame> Frames => frames;
@@ -20,7 +20,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             try
             {
                 spinLock.Enter(ref gotLock);
-                frames.Add(frame);
+                frames.Enqueue(frame);
                 LastModifyTime = DateTime.Now;
             }
             finally

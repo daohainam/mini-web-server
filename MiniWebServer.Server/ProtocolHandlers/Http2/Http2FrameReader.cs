@@ -13,7 +13,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
     {
         private const int HeaderLength = 9; // From RFC: All frames begin with a fixed 9-octet header
 
-        public static bool TryReadFrame(ref ReadOnlySequence<byte> buffer, ref Http2Frame frame, int maxFrameSize, out ReadOnlySequence<byte> payload)
+        public static bool TryReadFrame(ref ReadOnlySequence<byte> buffer, ref Http2Frame frame, uint maxFrameSize, out ReadOnlySequence<byte> payload)
         {
             ArgumentNullException.ThrowIfNull(buffer);
             ArgumentNullException.ThrowIfNull(frame);
@@ -41,7 +41,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             frame.Length = payloadLength;
             frame.FrameType = GetFrameType(header[3]);
             frame.Flags = header[4];
-            frame.StreamIdentifier = GetStreamIdentifier(header);
+            frame.StreamIdentifier = (uint)GetStreamIdentifier(header); // first bit is always 0 so it is always a positive number
 
             payload = buffer.Slice(HeaderLength, payloadLength);
             buffer = buffer.Slice(payload.End);
