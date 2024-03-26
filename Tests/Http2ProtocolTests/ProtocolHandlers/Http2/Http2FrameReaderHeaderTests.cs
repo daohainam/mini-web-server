@@ -21,7 +21,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
 
         [TestMethod()]
         [DynamicData(nameof(TryReadFrameTestBuffers), DynamicDataSourceType.Method)]
-        public void TryReadFrameTest(byte[] buffer, int length, int frameType, byte flags, int streamId)
+        public void TryReadFrameTest(byte[] buffer, int length, int frameType, byte flags, uint streamId)
         {
             Http2Frame frame = new();
             var rbuffer = new ReadOnlySequence<byte>(buffer);
@@ -30,7 +30,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
             Assert.IsTrue(b);
             Assert.IsTrue(frame != null);
             Assert.AreEqual(length, frame.Length);
-            Assert.AreEqual(flags, frame.Flags);
+            Assert.AreEqual((Http2FrameFlags)flags, frame.Flags);
             Assert.AreEqual(frameType, (int)frame.FrameType);
             Assert.AreEqual(streamId, frame.StreamIdentifier);
         }

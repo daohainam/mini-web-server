@@ -40,7 +40,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
             frame.Length = payloadLength;
             frame.FrameType = GetFrameType(header[3]);
-            frame.Flags = header[4];
+            frame.Flags = (Http2FrameFlags)header[4];
             frame.StreamIdentifier = GetStreamIdentifier(header);
 
             payload = buffer.Slice(HeaderLength, payloadLength);
@@ -147,10 +147,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             int idx = 0;
             headersPayload = new();
 
-            var hasPayLength = (flags & 0b_0000_1000) != 0;
-            var hasPriority = (flags & 0b_0010_0000) != 0;
-            var hasEndHeaders = (flags & 0b_0000_0100) != 0;
-            var hasEndStream = (flags & 0b_0000_0001) != 0;
+            var hasPayLength = flags.HasFlag(Http2FrameFlags.PADDED);
+            var hasPriority = flags.HasFlag(Http2FrameFlags.PRIORITY);
 
             if (hasPayLength)
             {
@@ -186,6 +184,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             {
                 return false;
             }
+
+
 
             return true;
         }

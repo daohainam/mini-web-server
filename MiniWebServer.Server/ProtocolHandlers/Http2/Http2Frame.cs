@@ -52,7 +52,16 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         public int Length { get; set; }
         public Http2FrameType FrameType { get; set; }
-        public byte Flags { get; set; }
+        public Http2FrameFlags Flags { get; set; }
         public uint StreamIdentifier { get; set; }
     }
+
+    [Flags]
+    public enum Http2FrameFlags
+    {
+        PRIORITY = 0b_0010_0000,
+        PADDED = 0b_0000_1000,
+        END_HEADERS = 0b_0000_0100,
+        END_STREAM = 0b_0000_0001
+    } 
 }
