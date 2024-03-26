@@ -78,7 +78,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 {
                     if (logger.IsEnabled(LogLevel.Debug))
                     {
-                        logger.LogDebug("Frame found: {f}, Stream Id: {sid}, payload length: {pll}", frame.FrameType, frame.StreamIdentifier, frame.Length);
+                        logger.LogDebug("Frame found: {ft}, Stream Id: {sid}, payload length: {pll}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
                     }
 
                     if (frameCount == 0 && frame.FrameType != Http2FrameType.SETTINGS)
@@ -92,6 +92,22 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     }
 
                     frameCount = Interlocked.Increment(ref frameCount);
+
+                    if (frame.Flags.HasFlag(Http2FrameFlags.END_STREAM))
+                    {
+                        // start building a request
+
+                        var request = BuildRequestFromStream(frame.StreamIdentifier);
+
+                        if (request != null)
+                        {
+
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
                 }
 
                 return false;
@@ -106,6 +122,19 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 logger.LogError(ex, "Error reading request");
                 return false;
             }
+        }
+
+        private HttpRequest? BuildRequestFromStream(uint streamIdentifier)
+        {
+            if (!streamContainer.TryRemove(streamIdentifier, out var stream))
+            {
+                logger.LogError("Stream not found: {id}", streamIdentifier);
+                return null;
+            }
+
+            var requestBuilder = new HttpWebRequestBuilder();
+
+            return requestBuilder.Build();
         }
 
         private bool ProcessFrame(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, ILogger logger)
