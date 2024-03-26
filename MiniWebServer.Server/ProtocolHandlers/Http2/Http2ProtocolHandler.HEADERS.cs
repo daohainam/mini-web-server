@@ -9,9 +9,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     public partial class Http2ProtocolHandler
     {
-        private bool ProcessHEADERSFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload)
+        private bool ProcessHEADERSFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload, ILogger logger)
         {
-            if (!Http2FrameReader.TryReadHEADERSFramePayload(ref frame, ref payload, out var headersPayload))
+            if (!Http2FrameReader.TryReadHEADERSFramePayload(logger, ref frame, ref payload, out var headersPayload))
             {
                 logger.LogError("Error reading WINDOW_UPDATE payload");
                 return false;

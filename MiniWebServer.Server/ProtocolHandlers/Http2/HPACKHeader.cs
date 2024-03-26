@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
-    internal class HPACKHeader(int staticTableIndex, byte[] name, byte[] value)
+    internal class HPACKHeader(int staticTableIndex, string name, string value)
     {
         public int StaticTableIndex { get; } = staticTableIndex;
-        public byte[] Name { get; } = name;
-        public byte[] Value { get; } = value;
+        public string Name { get; } = name;
+        public string Value { get; } = value;
+        public byte[] NameAsBytes { get; } = name.Length > 0 ? Encoding.ASCII.GetBytes(name) : [];
+        public byte[] ValueAsBytes { get; } = value.Length > 0 ? Encoding.ASCII.GetBytes(value) : [];
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -115,7 +116,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return true;
         }
 
-        public static bool TryReadHEADERSFramePayload(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, out Http2FrameHEADERSPayload headersPayload)
+        public static bool TryReadHEADERSFramePayload(ILogger logger, ref Http2Frame frame, ref ReadOnlySequence<byte> payload, out Http2FrameHEADERSPayload headersPayload)
         {
             /*
               HEADERS Frame {
@@ -142,10 +143,51 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             }
              */
 
+            headersPayload = new();
             var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
+            int i = 0;
+
+            // it is easier to parse the header frames when we have received a full stream, but I decided to parse here to determine errors as soon as possible
+
+            while (i < payloadBytes.Length)
+            {
+                byte b = payloadBytes[i];
+
+                if ((b & 0b_1000_0000) == 0b_1000_0000) // Indexed Header Field, https://httpwg.org/specs/rfc7541.html#indexed.header.representation
+                {
+                    var headerIndex = b & 0x7F;
+                    var header = HPACKStaticTable.GetHeader(headerIndex);
+
+                    if (header == null)
+                    {
+                        logger.LogError("Header index not found {idx}", headerIndex);
+
+                        headersPayload = Http2FrameHEADERSPayload.Empty;
+                        return false;
+                    }
+                    else
+                    {
+                        logger.LogDebug("Found header: {k}: {v}", header.Name, header.Value);
+
+                        headersPayload.Headers.Add(header.Name, header.Value);
+                    }
+                }
+                else if ((b & 0b_1100_0000) == 0b_0100_0000) // Literal Header Field, https://httpwg.org/specs/rfc7541.html#literal.header.representation
+                {
+
+                }
+                else if ((b & 0b_1110_0000) == 0b_0010_0000) // Dynamic Table Size Update, https://httpwg.org/specs/rfc7541.html#encoding.context.update
+                {
+
+                }
+
+                i++;
+            }
+
+            //var s = BitConverter.ToString(payload.ToArray());
+
             var flags = frame.Flags;
             int idx = 0;
-            headersPayload = new();
 
             var hasPayLength = flags.HasFlag(Http2FrameFlags.PADDED);
             var hasPriority = flags.HasFlag(Http2FrameFlags.PRIORITY);

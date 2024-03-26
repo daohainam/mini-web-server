@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MiniWebServer.Abstractions.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,8 +13,17 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         public bool Exclusive { get; set; }
         public uint StreamDependency { get; set; }
         public byte Weight { get; set; }    
-        public object FieldBlockFragment { get; set; }
+        public object? FieldBlockFragment { get; set; }
+        public HttpHeaders Headers { get; set; } = new HttpHeaders();
 
         // there will be a Padding in a HEADERS frame, but we don't need to process it
+
+        public static readonly Http2FrameHEADERSPayload Empty = new() {
+            PadLength = 0,
+            Exclusive = false,
+            StreamDependency = 0,
+            Weight = 0,
+            FieldBlockFragment = null
+        };
     }
 }

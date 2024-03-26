@@ -78,7 +78,19 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         private static HPACKHeader CreateHeader(int staticTableIndex, string name, string value) =>
             new(
                 staticTableIndex,
-                Encoding.ASCII.GetBytes(name),
-                value.Length != 0 ? Encoding.ASCII.GetBytes(value) : []);
+                name,
+                value);
+
+        public static HPACKHeader? GetHeader(int staticTableIndex)
+        {
+            if (staticTableIndex >= 1 && staticTableIndex <= DecoderTable.Length)
+            {
+                return DecoderTable[staticTableIndex - 1];
+            }
+            else
+            {
+                return null;
+            }
+        }
     }
 }
