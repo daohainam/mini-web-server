@@ -25,7 +25,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             }
 
             var headerSlice = buffer.Slice(0, HeaderLength);
-            var header = headerSlice.FirstSpan; // hope that everything is in the first span :)
+            var header = headerSlice.IsSingleSegment ? headerSlice.FirstSpan : headerSlice.ToArray(); 
             var payloadLength = ReadPayloadLength(header);
 
             if (payloadLength > maxFrameSize)
