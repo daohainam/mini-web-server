@@ -160,15 +160,17 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
                     if (header == null)
                     {
+#if DEBUG
                         logger.LogError("Header index not found {idx}", headerIndex);
-
+#endif
                         headersPayload = Http2FrameHEADERSPayload.Empty;
                         return false;
                     }
                     else
                     {
+#if DEBUG
                         logger.LogDebug("Found header: {k}: {v}", header.Name, header.Value);
-
+#endif
                         headersPayload.Headers.Add(header.Name, header.Value);
                     }
                 }

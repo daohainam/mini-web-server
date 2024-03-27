@@ -76,11 +76,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 // HTTP2 connections always start with a SETTINGS frame
                 while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload))
                 {
+#if DEBUG
                     if (logger.IsEnabled(LogLevel.Debug))
                     {
                         logger.LogDebug("Frame found: {ft}, Stream Id: {sid}, payload length: {pll}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
                     }
-
+#endif
                     if (frameCount == 0 && frame.FrameType != Http2FrameType.SETTINGS)
                     {
                         logger.LogError("First frame must be a SETTINGS frame");

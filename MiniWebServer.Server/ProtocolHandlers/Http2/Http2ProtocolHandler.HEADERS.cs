@@ -32,9 +32,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 stream.FrameQueue.Add(frame);
                 streamContainer[frame.StreamIdentifier] = stream;
 
+#if DEBUG
                 if (logger.IsEnabled(LogLevel.Debug)) {
                     logger.LogDebug("Stream {id} opened", frame.StreamIdentifier);
                 }
+#endif
             }
 
             if (logger.IsEnabled(LogLevel.Debug))
