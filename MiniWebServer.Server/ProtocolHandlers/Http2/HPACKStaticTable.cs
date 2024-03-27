@@ -10,22 +10,28 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
     {
         // https://httpwg.org/specs/rfc7541.html#static.table.definition
 
+        public const string AUTHORITY = ":authority";
+        public const string METHOD = ":method";
+        public const string PATH = ":path";
+        public const string SCHEME = ":scheme";
+        public const string STATUS = ":status";
+
         public static readonly HPACKHeader[] DecoderTable =
         [
-            CreateHeader(1, ":authority", ""),
-            CreateHeader(2, ":method", "GET"),
-            CreateHeader(3, ":method", "POST"),
-            CreateHeader(4, ":path", "/"),
-            CreateHeader(5, ":path", "/index.html"),
-            CreateHeader(6, ":scheme", "http"),
-            CreateHeader(7, ":scheme", "https"),
-            CreateHeader(8, ":status", "200"),
-            CreateHeader(9, ":status", "204"),
-            CreateHeader(10, ":status", "206"),
-            CreateHeader(11, ":status", "304"),
-            CreateHeader(12, ":status", "400"),
-            CreateHeader(13, ":status", "404"),
-            CreateHeader(14, ":status", "500"),
+            CreateHeader(1, AUTHORITY, ""),
+            CreateHeader(2, METHOD, "GET"),
+            CreateHeader(3, METHOD, "POST"),
+            CreateHeader(4, PATH, "/"),
+            CreateHeader(5, PATH, "/index.html"),
+            CreateHeader(6, SCHEME, "http"),
+            CreateHeader(7, SCHEME, "https"),
+            CreateHeader(8, STATUS, "200"),
+            CreateHeader(9, STATUS, "204"),
+            CreateHeader(10, STATUS, "206"),
+            CreateHeader(11, STATUS, "304"),
+            CreateHeader(12, STATUS, "400"),
+            CreateHeader(13, STATUS, "404"),
+            CreateHeader(14, STATUS, "500"),
             CreateHeader(15, "accept-charset", ""),
             CreateHeader(16, "accept-encoding", "gzip, deflate"),
             CreateHeader(17, "accept-language", ""),
@@ -76,7 +82,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         ];
 
         private static HPACKHeader CreateHeader(int staticTableIndex, string name, string value) =>
-            new(
+            new( 
+                HPACKHeaderTypes.Static,
                 staticTableIndex,
                 name,
                 value);

@@ -11,5 +11,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         public required uint StreamId { get; set; }
         public Http2StreamStates State { get; set; } = Http2StreamStates.IDLE;
         public required StreamFrameQueue FrameQueue { get; set; }
+        public List<Http2FrameHEADERSPayload> HeaderPayloads { get; set; } = [];
     }
 }

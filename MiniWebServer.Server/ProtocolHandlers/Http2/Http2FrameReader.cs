@@ -171,7 +171,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 #if DEBUG
                         logger.LogDebug("Found header: {k}: {v}", header.Name, header.Value);
 #endif
-                        headersPayload.Headers.Add(header.Name, header.Value);
+                        headersPayload.Headers.Add(header);
                     }
                 }
                 else if ((b & 0b_1100_0000) == 0b_0100_0000) // Literal Header Field, https://httpwg.org/specs/rfc7541.html#literal.header.representation

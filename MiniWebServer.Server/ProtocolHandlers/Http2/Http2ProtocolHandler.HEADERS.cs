@@ -9,6 +9,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     public partial class Http2ProtocolHandler
     {
+
         private bool ProcessHEADERSFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload, ILogger logger)
         {
             if (!Http2FrameReader.TryReadHEADERSFramePayload(logger, ref frame, ref payload, out var headersPayload))
@@ -28,6 +29,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     StreamId = frame.StreamIdentifier,
                     FrameQueue = new StreamFrameQueue()
                 };
+
+                stream.HeaderPayloads.Add(headersPayload);
 
                 stream.FrameQueue.Add(frame);
                 streamContainer[frame.StreamIdentifier] = stream;

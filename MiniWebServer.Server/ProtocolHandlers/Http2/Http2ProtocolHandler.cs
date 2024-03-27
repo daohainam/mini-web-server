@@ -136,15 +136,58 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
             var requestBuilder = new HttpWebRequestBuilder();
 
-            foreach (var frame in stream.FrameQueue.Frames)
+            if (!DecodeHeaders(stream, requestBuilder))
             {
-                if (frame.FrameType == Http2FrameType.HEADERS)
-                {
-
-                }
+                return null;
             }
 
             return requestBuilder.Build();
+        }
+
+        private static bool DecodeHeaders(Http2Stream stream, HttpWebRequestBuilder requestBuilder)
+        {
+            // convert encoded headers from a frame to HTTP regular headers
+            
+            foreach (var headerPayload in stream.HeaderPayloads)
+            {
+                foreach (var header in headerPayload.Headers)
+                {
+                    switch (header.HeaderType)
+                    {
+                        case HPACKHeaderTypes.Static:
+                            var staticHeader = HPACKStaticTable.GetHeader(header.StaticTableIndex) ?? throw new InvalidOperationException("Invalid HPACK static index");
+                            switch (staticHeader.StaticTableIndex) // https://httpwg.org/specs/rfc7541.html#static.table.definition, refer HPACKStaticTable for more information
+                            {
+                                case 1:
+                                    requestBuilder.SetHost(staticHeader.Value);
+                                    break;
+                                case 2:
+                                    requestBuilder.SetMethod(HttpMethod.Get);
+                                    break;
+                                case 3:
+                                    requestBuilder.SetMethod(HttpMethod.Post);
+                                    break;
+                                case 4:
+                                    requestBuilder.SetUrl("/");
+                                    break;
+                                case 5:
+                                    requestBuilder.SetUrl("/index.html");
+                                    break;
+                                case 6:
+                                    requestBuilder.SetHttps(false);
+                                    break;
+                                case 7:
+                                    requestBuilder.SetHttps(true);
+                                    break;
+                                default:
+                                    throw new NotImplementedException("Header index not supported"); // TODO: this should not happen, I made this to remind myself about this incompletion
+                            }
+                            break;
+                    }
+                }
+            }
+
+            return true;
         }
 
         private bool ProcessFrame(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, ILogger logger)
