@@ -95,6 +95,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     frameCount = Interlocked.Increment(ref frameCount);
 
                     // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
+                    if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
+                    {
+                        // parse header frames
+                        var headers = BuildHeaders(frame.StreamIdentifier);
+                    }
+                    
                     if (frame.Flags.HasFlag(Http2FrameFlags.END_STREAM))
                     {
                         // start building a request
@@ -123,6 +129,23 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             {
                 logger.LogError(ex, "Error reading request");
                 return false;
+            }
+        }
+
+        private List<HPACKHeader>? BuildHeaders(uint streamIdentifier)
+        {
+            if (!streamContainer.TryGetValue(streamIdentifier, out var stream))
+            {
+                logger.LogError("Stream not found: {id}", streamIdentifier);
+                return null;
+            }
+
+            foreach (var headerFrame in stream.FrameQueue.Frames)
+            {
+                if (headerFrame.FrameType == Http2FrameType.HEADERS)
+                {
+
+                }
             }
         }
 

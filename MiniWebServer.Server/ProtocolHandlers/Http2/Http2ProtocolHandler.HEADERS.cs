@@ -14,7 +14,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         {
             if (!Http2FrameReader.TryReadHEADERSFramePayload(logger, ref frame, ref payload, out var headersPayload))
             {
-                logger.LogError("Error reading WINDOW_UPDATE payload");
+                logger.LogError("Error reading HEADERS payload");
                 return false;
             }
 

@@ -14,7 +14,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         public uint StreamDependency { get; set; }
         public byte Weight { get; set; }    
         public object? FieldBlockFragment { get; set; }
-        public List<HPACKHeader> Headers { get; set; } = [];
+        //public List<HPACKHeader> Headers { get; set; } = [];
 
         // there will be a Padding in a HEADERS frame, but we don't need to process it
 
