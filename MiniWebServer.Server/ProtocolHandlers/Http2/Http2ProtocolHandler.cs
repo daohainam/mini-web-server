@@ -54,7 +54,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         private readonly Http2StreamContainer streamContainer = [];
 
         // for analytics
-        private ulong frameCount = 0Lu;
+        private ulong frameCount = 0Lu; // for "telemetry"
         public Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();

@@ -53,5 +53,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
 
             return buffers;
         }
+
+        [TestMethod()]
+        [DataRow(10, 4, 10)]
+        public void DecodeIntegerTest(int v, int n, int expectedV)
+        {
+            Assert.AreEqual(expectedV, HPACKInteger.Decode(v, n));
+        }
     }
 }

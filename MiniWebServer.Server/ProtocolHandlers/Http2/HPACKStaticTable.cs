@@ -16,6 +16,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         public const string SCHEME = ":scheme";
         public const string STATUS = ":status";
 
+        public const int TableSize = 61;
+
         public static readonly HPACKHeader[] DecoderTable =
         [
             CreateHeader(1, AUTHORITY, ""),
