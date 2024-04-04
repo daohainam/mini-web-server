@@ -5,15 +5,17 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     public class Http2FrameReader
     {
         private const int HeaderLength = 9; // From RFC: All frames begin with a fixed 9-octet header
-        private const byte IS_HUFFMAN_ENCODED = 0b_1000_0000;
 
         public static bool TryReadFrame(ref ReadOnlySequence<byte> buffer, ref Http2Frame frame, uint maxFrameSize, out ReadOnlySequence<byte> payload)
         {
@@ -117,7 +119,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return true;
         }
 
-        public static bool TryReadHEADERSFramePayload(ILogger logger, ref Http2Frame frame, ref ReadOnlySequence<byte> payload, out Http2FrameHEADERSPayload headersPayload)
+        public static bool TryReadHEADERSFramePayload(ILogger logger, ref Http2Frame frame, ReadOnlySequence<byte> payload, HPACKHeaderTable headerTable, out Http2FrameHEADERSPayload headersPayload)
         {
             /*
               HEADERS Frame {
@@ -145,103 +147,186 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
              */
 
             headersPayload = new();
-            var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
-//            int i = 0;
 
-//            // it is easier to parse the header frames when we have received a full stream, but I decided to parse here to determine errors as soon as possible
+            // it is easier to parse the header frames when we have received a full stream, but I decided to parse here to determine errors as soon as possible
 
-//            while (i < payloadBytes.Length)
-//            {
-//                byte b = payloadBytes[i];
+            while (!payload.IsEmpty)
+            {
+                //var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
 
-//                if ((b & 0b_1000_0000) == 0b_1000_0000) // Indexed Header Field, https://httpwg.org/specs/rfc7541.html#indexed.header.representation
-//                {
-//                    var headerIndex = b & 0x7F;
-//                    var header = HPACKStaticTable.GetHeader(headerIndex);
+                byte b = payload.Slice(0, 1).FirstSpan[0];
 
-//                    if (header == null)
-//                    {
-//#if DEBUG
-//                        logger.LogError("Header index not found {idx}", headerIndex);
-//#endif
-//                        headersPayload = Http2FrameHEADERSPayload.Empty;
-//                        return false;
-//                    }
-//                    else
-//                    {
-//#if DEBUG
-//                        logger.LogDebug("Found header: {k}: {v}", header.Name, header.Value);
-//#endif
-//                        headersPayload.Headers.Add(header);
-//                    }
-//                }
-//                else if ((b & 0b_1100_0000) == 0b_0100_0000) // Literal Header Field with Incremental Indexing, https://httpwg.org/specs/rfc7541.html#literal.header.with.incremental.indexing
-//                {
+                if ((b & 0b_1000_0000) == 0b_1000_0000) // Indexed Header Field, https://httpwg.org/specs/rfc7541.html#indexed.header.representation
+                {
+                    payload = payload.Slice(1);
 
-//                }
-//                else if ((b & 0b_1111_0000) == 0b_0000_0000) // Literal Header Field without Incremental Indexing, https://httpwg.org/specs/rfc7541.html#literal.header.without.indexing
-//                {
-//                    /*
-                     
-//                        Literal Header Field without Indexing — Indexed Name
-                      
-//                        0   1   2   3   4   5   6   7
-//                        +---+---+---+---+---+---+---+---+
-//                        | 0 | 0 | 0 | 0 |  Index (4+)   |
-//                        +---+---+-----------------------+
-//                        | H |     Value Length (7+)     |
-//                        +---+---------------------------+
-//                        | Value String (Length octets)  |
-//                        +-------------------------------+
+                    var headerIndex = b & 0x7F;
+                    var header = HPACKStaticTable.GetHeader(headerIndex);
 
-//                        Literal Header Field without Indexing — New Name
+                    if (header == null)
+                    {
+#if DEBUG
+                        logger.LogError("Header index not found {idx}", headerIndex);
+#endif
+                        headersPayload = Http2FrameHEADERSPayload.Empty;
+                        return false;
+                    }
+                    else
+                    {
+#if DEBUG
+                        logger.LogDebug("Found static header: {k}: {v}", header.Name, header.Value);
+#endif
+                        headersPayload.Headers.Add(header);
+                    }
+                }
+                else if ((b & 0b_1100_0000) == 0b_0100_0000) // Literal Header Field with Incremental Indexing, https://httpwg.org/specs/rfc7541.html#literal.header.with.incremental.indexing
+                {
+                    var index = b & 0b_0011_1111;
+                    if (index == 0) // New Name
+                    {
+                        /*
+                          0   1   2   3   4   5   6   7
+                        +---+---+---+---+---+---+---+---+
+                        | 0 | 1 |           0           |
+                        +---+---+-----------------------+
+                        | H |     Name Length (7+)      |
+                        +---+---------------------------+
+                        |  Name String (Length octets)  |
+                        +---+---------------------------+
+                        | H |     Value Length (7+)     |
+                        +---+---------------------------+
+                        | Value String (Length octets)  |
+                        +-------------------------------+
+                        Literal Header Field with Incremental Indexing — New Name 
+                         */
 
-//                          0   1   2   3   4   5   6   7
-//                        +---+---+---+---+---+---+---+---+
-//                        | 0 | 0 | 0 | 0 |       0       |
-//                        +---+---+-----------------------+
-//                        | H |     Name Length (7+)      |
-//                        +---+---------------------------+
-//                        |  Name String (Length octets)  |
-//                        +---+---------------------------+
-//                        | H |     Value Length (7+)     |
-//                        +---+---------------------------+
-//                        | Value String (Length octets)  |
-//                        +-------------------------------+
-//                     */
+                        payload = payload.Slice(1);
 
-//                    var index = b & 0b_0000_1111;
-//                    if (index == 0) // New Name
-//                    {
-//                        var hs = payloadBytes[++i];
-//                        var length = HPACKInteger.Decode(hs, 7);
-//                        var name = HPACKString.Decode((hs & IS_HUFFMAN_ENCODED) == IS_HUFFMAN_ENCODED, payloadBytes.Slice(i, length));
+                        var length = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
+                        var name = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
 
-//                        i += length; 
+                        payload = payload.Slice(length);
+                        length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
 
-//                        hs = payloadBytes[++i];
-//                        var value = HPACKString.Decode((hs & IS_HUFFMAN_ENCODED) == IS_HUFFMAN_ENCODED, payloadBytes.Slice(i, length));
-//                    }
-//                    else
-//                    {
-//                        // read from header tables
-//                        var hs = payloadBytes[++i];
-//                        var valueLength = HPACKInteger.Decode(hs, 7);
-//                        var value = HPACKString.Decode((hs & IS_HUFFMAN_ENCODED) == IS_HUFFMAN_ENCODED, payloadBytes.Slice(++i, valueLength));
+                        length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
+                        var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
 
-//                        //if (headerTable.TryGetHeader(index, out var header))
-//                        //{
-//                        //    // header found
-//                        //}
-//                    }
-//                }
-//                else if ((b & 0b_1110_0000) == 0b_0010_0000) // Dynamic Table Size Update, https://httpwg.org/specs/rfc7541.html#encoding.context.update
-//                {
+#if DEBUG
+                        logger.LogDebug("Found new LwII header: {k}: {v}", name, value);
+#endif
+                        headersPayload.Headers.Add(new HPACKHeader(name, value));
 
-//                }
+                        payload = payload.Slice(length);
+                    }
+                    else
+                    {
+                        /*
+                          0   1   2   3   4   5   6   7
+                        +---+---+---+---+---+---+---+---+
+                        | 0 | 1 |      Index (6+)       |
+                        +---+---+-----------------------+
+                        | H |     Value Length (7+)     |
+                        +---+---------------------------+
+                        | Value String (Length octets)  |
+                        +-------------------------------+
 
-//                i++;
-//            }
+                        Literal Header Field with Incremental Indexing — Indexed Name
+                        */
+
+                        index = HPACKInteger.ReadInt(ref payload, 8);
+
+                        // read from header tables
+                        var valueLength = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
+                        var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, valueLength)));
+
+                        if (headerTable.TryGetHeader(index, out var header))
+                        {
+#if DEBUG
+                            logger.LogDebug("Found indexed LwII header: {k}: {v}", header!.Name, value);
+#endif
+                            headersPayload.Headers.Add(new HPACKHeader(header.HeaderType, header.StaticTableIndex, header.Name, value));
+                        }
+
+                        payload = payload.Slice(valueLength);
+                    }
+                }
+                else if ((b & 0b_1111_0000) == 0b_0000_0000) // Literal Header Field without Incremental Indexing, https://httpwg.org/specs/rfc7541.html#literal.header.without.indexing
+                {
+                    var index = b & 0b_0000_1111;
+                    if (index == 0) // New Name
+                    {
+                        /*
+                              0   1   2   3   4   5   6   7
+                            +---+---+---+---+---+---+---+---+
+                            | 0 | 0 | 0 | 0 |       0       |
+                            +---+---+-----------------------+
+                            | H |     Name Length (7+)      |
+                            +---+---------------------------+
+                            |  Name String (Length octets)  |
+                            +---+---------------------------+
+                            | H |     Value Length (7+)     |
+                            +---+---------------------------+
+                            | Value String (Length octets)  |
+                            +-------------------------------+
+                            Literal Header Field without Indexing — New Name
+                         */
+
+                        var length = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
+                        var name = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
+
+                        payload = payload.Slice(length);
+                        length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
+
+                        length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
+                        var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
+
+#if DEBUG
+                        logger.LogDebug("Found new LwoII header: {k}: {v}", name, value);
+#endif
+                        headersPayload.Headers.Add(new HPACKHeader(name, value));
+
+                        payload = payload.Slice(length);
+                    }
+                    else
+                    {
+                        /*
+                            Literal Header Field without Indexing — Indexed Name
+
+                            0   1   2   3   4   5   6   7
+                            +---+---+---+---+---+---+---+---+
+                            | 0 | 0 | 0 | 0 |  Index (4+)   |
+                            +---+---+-----------------------+
+                            | H |     Value Length (7+)     |
+                            +---+---------------------------+
+                            | Value String (Length octets)  |
+                            +-------------------------------+
+                        */
+
+                        if (index == 0b_0000_1111)
+                        {
+                            index = HPACKInteger.ReadInt(ref payload, 8);
+                        }
+
+                        // read from header tables
+                        var valueLength = HPACKInteger.ReadInt(ref payload, 7, out var firstByte);
+                        var value = HPACKString.Decode((firstByte & IS_HUFFMAN_ENCODED) == IS_HUFFMAN_ENCODED, GetSpan(payload.Slice(0, valueLength)));
+
+                        if (headerTable.TryGetHeader(index, out var header))
+                        {
+#if DEBUG
+                            logger.LogDebug("Found indexed LwoII header: {k}: {v}", header!.Name, value);
+#endif
+                            headersPayload.Headers.Add(new HPACKHeader(header.HeaderType, header.StaticTableIndex, header.Name, value));
+                        }
+
+                        payload = payload.Slice(valueLength);
+                    }
+                }
+                else if ((b & 0b_1110_0000) == 0b_0010_0000) // Dynamic Table Size Update, https://httpwg.org/specs/rfc7541.html#encoding.context.update
+                {
+
+                }
+            }
 
             var flags = frame.Flags;
             int idx = 0;
@@ -249,31 +334,31 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             var hasPayLength = flags.HasFlag(Http2FrameFlags.PADDED);
             var hasPriority = flags.HasFlag(Http2FrameFlags.PRIORITY);
 
-            if (hasPayLength)
-            {
-                headersPayload.PadLength = payloadBytes[0];
+            //if (hasPayLength)
+            //{
+            //    headersPayload.PadLength = payloadBytes[0];
 
-                idx = Interlocked.Increment(ref idx);
-            }
-            else
-            {
-                headersPayload.PadLength = 0;
-            }
+            //    idx = Interlocked.Increment(ref idx);
+            //}
+            //else
+            //{
+            //    headersPayload.PadLength = 0;
+            //}
 
-            if (hasPriority)
-            {
-                headersPayload.Exclusive = (payloadBytes[idx] & 0b_1000_0000) != 0;
-                headersPayload.StreamDependency = (uint)((payloadBytes[idx] & 0b_0111_1111) << 24 | payloadBytes[idx + 1] << 16 | payloadBytes[idx + 2] << 8 | payloadBytes[idx + 3]);
-                headersPayload.Weight = payloadBytes[idx + 4];
+            //if (hasPriority)
+            //{
+            //    headersPayload.Exclusive = (payloadBytes[idx] & 0b_1000_0000) != 0;
+            //    headersPayload.StreamDependency = (uint)((payloadBytes[idx] & 0b_0111_1111) << 24 | payloadBytes[idx + 1] << 16 | payloadBytes[idx + 2] << 8 | payloadBytes[idx + 3]);
+            //    headersPayload.Weight = payloadBytes[idx + 4];
 
-                idx = Interlocked.Add(ref idx, 5);
-            }
-            else
-            {
-                headersPayload.Exclusive = false;
-                headersPayload.StreamDependency = 0;
-                headersPayload.Weight = 0;
-            }
+            //    idx = Interlocked.Add(ref idx, 5);
+            //}
+            //else
+            //{
+            //    headersPayload.Exclusive = false;
+            //    headersPayload.StreamDependency = 0;
+            //    headersPayload.Weight = 0;
+            //}
 
             if (TryParseFieldBlock(payload.Slice(idx), out var fieldBlock))
             {
@@ -289,6 +374,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return true;
         }
 
+        private static ReadOnlySpan<byte> GetSpan(ReadOnlySequence<byte> readOnlySequence)
+        {
+            return readOnlySequence.IsSingleSegment ? readOnlySequence.FirstSpan : readOnlySequence.ToArray();
+        }
+
         private static bool TryParseFieldBlock(ReadOnlySequence<byte> readOnlySequence, out Http2Fields fields)
         {
             var s = Encoding.ASCII.GetString(readOnlySequence.ToArray());
@@ -297,5 +387,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
             return true;
         }
+
+        
     }
 }

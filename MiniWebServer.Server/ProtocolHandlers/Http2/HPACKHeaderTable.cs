@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
-    internal class HPACKHeaderTable
+    public class HPACKHeaderTable
     {
         public bool TryGetHeader(int index, out HPACKHeader? header)
         {

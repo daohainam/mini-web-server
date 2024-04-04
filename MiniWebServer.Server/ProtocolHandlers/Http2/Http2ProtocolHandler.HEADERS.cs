@@ -12,20 +12,21 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         private bool ProcessHEADERSFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload, ILogger logger)
         {
-            if (!Http2FrameReader.TryReadHEADERSFramePayload(logger, ref frame, ref payload, out var headersPayload))
+            if (!Http2FrameReader.TryReadHEADERSFramePayload(logger, ref frame, payload, headerTable, out var headersPayload))
             {
                 logger.LogError("Error reading HEADERS payload");
                 return false;
             }
 
-            if (streamContainer.ContainsKey(frame.StreamIdentifier))
+            if (streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
             {
-
+                stream.HeaderPayloads.Add(headersPayload);
+                stream.FrameQueue.Add(frame);
             }
             else
             {
                 // open a new stream
-                var stream = new Http2Stream() { 
+                stream = new Http2Stream() { 
                     StreamId = frame.StreamIdentifier,
                     FrameQueue = new StreamFrameQueue()
                 };

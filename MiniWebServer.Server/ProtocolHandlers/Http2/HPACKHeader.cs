@@ -8,7 +8,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     public class HPACKHeader(HPACKHeaderTypes headerType, int staticTableIndex, string name, string value)
     {
-        public HPACKHeader(HPACKHeader header): this(header.HeaderType, header.StaticTableIndex, header.Name, header.Value)
+        public HPACKHeader(string name, string value) : this(HPACKHeaderTypes.Literal, 0, name, value)
+        {
+        }
+        public HPACKHeader(HPACKHeader header) : this(header.HeaderType, header.StaticTableIndex, header.Name, header.Value)
         {
         }
 
@@ -22,6 +25,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
     public enum HPACKHeaderTypes
     {
-        Static
+        Static,
+        Literal
     }
 }

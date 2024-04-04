@@ -10,6 +10,7 @@ using MiniWebServer.Server.ProtocolHandlers.Http11;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Security.Principal;
@@ -37,7 +38,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         private const uint DefaultMaxFrameSize = 16384; // frame size = 2^14 unless when you change it with a SETTINGS frame
         private const uint DefaultInitialWindowSize = 65535;
         private const uint DefaultHeaderTableSize = 4096;
-        private const int StreamContainerLockTimeout = 3000; // 3 seconds
 
         private readonly ILogger<Http2ProtocolHandler> logger = loggerFactory.CreateLogger<Http2ProtocolHandler>();
 
@@ -52,6 +52,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         // streams
         private readonly Http2StreamContainer streamContainer = [];
+
+        private readonly HPACKHeaderTable headerTable = new();
 
         // for analytics
         private ulong frameCount = 0Lu; // for "telemetry"
@@ -88,28 +90,42 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         return false;
                     }
 
-                    if (!ProcessFrame(ref frame, ref payload, logger)) { 
-                        return false; 
+                    if (!ProcessFrame(ref frame, ref payload, logger))
+                    {
+                        return false;
                     }
 
                     frameCount = Interlocked.Increment(ref frameCount);
 
                     // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
-                    if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
-                    {
-                        // parse header frames
-                        var headers = BuildHeaders(frame.StreamIdentifier);
-                    }
-                    
+                    //if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
+                    //{
+                    //    // parse header frames
+                    //    if (!streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
+                    //    {
+                    //        logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
+                    //    }
+                    //    else
+                    //    {
+                    //        var headers = BuildHeaders(stream);
+
+                    //    }
+                    //}
+
                     if (frame.Flags.HasFlag(Http2FrameFlags.END_STREAM))
                     {
                         // start building a request
 
-                        var request = BuildRequestFromStream(frame.StreamIdentifier);
+                        if (!streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
+                        {
+                            logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
+                        }
+
+                        var request = BuildRequestFromStream(stream!);
 
                         if (request != null)
                         {
-
+                            return true;
                         }
                         else
                         {
@@ -132,34 +148,25 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             }
         }
 
-        private List<HPACKHeader>? BuildHeaders(uint streamIdentifier)
+        private static List<HPACKHeader> BuildHeaders(Http2Stream stream)
         {
-            if (!streamContainer.TryGetValue(streamIdentifier, out var stream))
+            ArgumentNullException.ThrowIfNull(stream);
+
+            var headers = new List<HPACKHeader>();
+            foreach (var headerFrame in stream.HeaderPayloads)
             {
-                logger.LogError("Stream not found: {id}", streamIdentifier);
-                return null;
+                headers.AddRange(headerFrame.Headers);
             }
 
-            foreach (var headerFrame in stream.FrameQueue.Frames)
-            {
-                if (headerFrame.FrameType == Http2FrameType.HEADERS)
-                {
-
-                }
-            }
+            return headers;
         }
 
-        private HttpRequest? BuildRequestFromStream(uint streamIdentifier)
+        private static HttpRequest? BuildRequestFromStream(Http2Stream stream)
         {
-            if (!streamContainer.TryRemove(streamIdentifier, out var stream))
-            {
-                logger.LogError("Stream not found: {id}", streamIdentifier);
-                return null;
-            }
-
             var requestBuilder = new HttpWebRequestBuilder();
+            var hpackHeaders = BuildHeaders(stream);
 
-            if (!DecodeHeaders(stream, requestBuilder))
+            if (!DecodeHeaders(hpackHeaders, requestBuilder))
             {
                 return null;
             }
@@ -167,46 +174,45 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return requestBuilder.Build();
         }
 
-        private static bool DecodeHeaders(Http2Stream stream, HttpWebRequestBuilder requestBuilder)
+        private static bool DecodeHeaders(IEnumerable<HPACKHeader> hpackHeaders, HttpWebRequestBuilder requestBuilder)
         {
             // convert encoded headers from a frame to HTTP regular headers
-            
-            foreach (var headerPayload in stream.HeaderPayloads)
+
+            foreach (var header in hpackHeaders)
             {
-                foreach (var header in headerPayload.Headers)
+                if (header.HeaderType == HPACKHeaderTypes.Static)
                 {
-                    switch (header.HeaderType)
+                    var staticHeader = HPACKStaticTable.GetHeader(header.StaticTableIndex) ?? throw new InvalidOperationException("Invalid HPACK static index");
+                    switch (staticHeader.StaticTableIndex) // https://httpwg.org/specs/rfc7541.html#static.table.definition, refer HPACKStaticTable for more information
                     {
-                        case HPACKHeaderTypes.Static:
-                            var staticHeader = HPACKStaticTable.GetHeader(header.StaticTableIndex) ?? throw new InvalidOperationException("Invalid HPACK static index");
-                            switch (staticHeader.StaticTableIndex) // https://httpwg.org/specs/rfc7541.html#static.table.definition, refer HPACKStaticTable for more information
-                            {
-                                case 1:
-                                    requestBuilder.SetHost(staticHeader.Value);
-                                    break;
-                                case 2:
-                                    requestBuilder.SetMethod(HttpMethod.Get);
-                                    break;
-                                case 3:
-                                    requestBuilder.SetMethod(HttpMethod.Post);
-                                    break;
-                                case 4:
-                                    requestBuilder.SetUrl("/");
-                                    break;
-                                case 5:
-                                    requestBuilder.SetUrl("/index.html");
-                                    break;
-                                case 6:
-                                    requestBuilder.SetHttps(false);
-                                    break;
-                                case 7:
-                                    requestBuilder.SetHttps(true);
-                                    break;
-                                default:
-                                    throw new NotImplementedException("Header index not supported"); // TODO: this should not happen, I made this to remind myself about this incompletion
-                            }
+                        case 1:
+                            requestBuilder.SetHost(header.Value);
                             break;
+                        case 2:
+                            requestBuilder.SetMethod(HttpMethod.Get);
+                            break;
+                        case 3:
+                            requestBuilder.SetMethod(HttpMethod.Post);
+                            break;
+                        case 4:
+                            requestBuilder.SetUrl("/");
+                            break;
+                        case 5:
+                            requestBuilder.SetUrl("/index.html");
+                            break;
+                        case 6:
+                            requestBuilder.SetHttps(false);
+                            break;
+                        case 7:
+                            requestBuilder.SetHttps(true);
+                            break;
+                        default:
+                            throw new NotImplementedException("Header index not supported"); // TODO: this should not happen, I made this to remind myself about this incompletion
                     }
+                }
+                else if (header.HeaderType == HPACKHeaderTypes.Literal)
+                {
+                    requestBuilder.AddHeader(header.Name, header.Value);
                 }
             }
 
