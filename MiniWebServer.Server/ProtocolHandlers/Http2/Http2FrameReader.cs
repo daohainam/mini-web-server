@@ -174,7 +174,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     else
                     {
 #if DEBUG
-                        logger.LogDebug("Found static header: {k}: {v}", header.Name, header.Value);
+                        logger.LogDebug("Static header: {k}: {v}", header.Name, header.Value);
 #endif
                         headersPayload.Headers.Add(header);
                     }
@@ -212,7 +212,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
 
 #if DEBUG
-                        logger.LogDebug("Found new LwII header: {k}: {v}", name, value);
+                        logger.LogDebug("New LwII header: {k}: {v}", name, value);
 #endif
                         headersPayload.Headers.Add(new HPACKHeader(name, value));
 
@@ -242,7 +242,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         if (headerTable.TryGetHeader(index, out var header))
                         {
 #if DEBUG
-                            logger.LogDebug("Found indexed LwII header: {k}: {v}", header!.Name, value);
+                            logger.LogDebug("Indexed LwII header: {k}: {v}", header!.Name, value);
 #endif
                             headersPayload.Headers.Add(new HPACKHeader(header.HeaderType, header.StaticTableIndex, header.Name, value));
                         }
@@ -281,7 +281,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
 
 #if DEBUG
-                        logger.LogDebug("Found new LwoII header: {k}: {v}", name, value);
+                        logger.LogDebug("New LwoII header: {k}: {v}", name, value);
 #endif
                         headersPayload.Headers.Add(new HPACKHeader(name, value));
 
@@ -302,19 +302,16 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                             +-------------------------------+
                         */
 
-                        if (index == 0b_0000_1111)
-                        {
-                            index = HPACKInteger.ReadInt(ref payload, 8);
-                        }
+                        index = HPACKInteger.ReadInt(ref payload, 4);
 
                         // read from header tables
-                        var valueLength = HPACKInteger.ReadInt(ref payload, 7, out var firstByte);
-                        var value = HPACKString.Decode((firstByte & IS_HUFFMAN_ENCODED) == IS_HUFFMAN_ENCODED, GetSpan(payload.Slice(0, valueLength)));
+                        var valueLength = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
+                        var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, valueLength)));
 
                         if (headerTable.TryGetHeader(index, out var header))
                         {
 #if DEBUG
-                            logger.LogDebug("Found indexed LwoII header: {k}: {v}", header!.Name, value);
+                            logger.LogDebug("Indexed LwoII header: {k}: {v}", header!.Name, value);
 #endif
                             headersPayload.Headers.Add(new HPACKHeader(header.HeaderType, header.StaticTableIndex, header.Name, value));
                         }

@@ -116,21 +116,15 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     {
                         // start building a request
 
-                        if (!streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
+                        if (!streamContainer.Remove(frame.StreamIdentifier, out var stream))
                         {
                             logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
-                        }
-
-                        var request = BuildRequestFromStream(stream!);
-
-                        if (request != null)
-                        {
-                            return true;
-                        }
-                        else
-                        {
                             return false;
                         }
+
+                        var b = BuildRequestFromStream(stream!, requestBuilder);
+
+                        return b;
                     }
                 }
 
@@ -161,32 +155,31 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return headers;
         }
 
-        private static HttpRequest? BuildRequestFromStream(Http2Stream stream)
+        private static bool BuildRequestFromStream(Http2Stream stream, IHttpRequestBuilder requestBuilder)
         {
-            var requestBuilder = new HttpWebRequestBuilder();
             var hpackHeaders = BuildHeaders(stream);
 
             if (!DecodeHeaders(hpackHeaders, requestBuilder))
             {
-                return null;
+                return false;
             }
 
-            return requestBuilder.Build();
+            return true;
         }
 
-        private static bool DecodeHeaders(IEnumerable<HPACKHeader> hpackHeaders, HttpWebRequestBuilder requestBuilder)
+        private static bool DecodeHeaders(IEnumerable<HPACKHeader> hpackHeaders, IHttpRequestBuilder requestBuilder)
         {
             // convert encoded headers from a frame to HTTP regular headers
 
-            foreach (var header in hpackHeaders)
+            foreach (var hpackHeader in hpackHeaders)
             {
-                if (header.HeaderType == HPACKHeaderTypes.Static)
+                if (hpackHeader.HeaderType == HPACKHeaderTypes.Static)
                 {
-                    var staticHeader = HPACKStaticTable.GetHeader(header.StaticTableIndex) ?? throw new InvalidOperationException("Invalid HPACK static index");
+                    var staticHeader = HPACKStaticTable.GetHeader(hpackHeader.StaticTableIndex) ?? throw new InvalidOperationException("Invalid HPACK static index");
                     switch (staticHeader.StaticTableIndex) // https://httpwg.org/specs/rfc7541.html#static.table.definition, refer HPACKStaticTable for more information
                     {
                         case 1:
-                            requestBuilder.SetHost(header.Value);
+                            requestBuilder.SetHost(hpackHeader.Value);
                             break;
                         case 2:
                             requestBuilder.SetMethod(HttpMethod.Get);
@@ -206,13 +199,25 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         case 7:
                             requestBuilder.SetHttps(true);
                             break;
+                        case >= 8 and <= 14:
+                            // from 8-14 are response statuses
+                            break;
+                        case 15:
+                            // Accept-Charset: Do not use this header. Browsers omit this header and servers should ignore it. (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Charset)
+                            break;
+                        case 16:
+                            requestBuilder.AddHeader(staticHeader.Name, staticHeader.Value);
+                            break;
+                        case >= 17:
+                            requestBuilder.AddHeader(staticHeader.Name, hpackHeader.Value);
+                            break;
                         default:
-                            throw new NotImplementedException("Header index not supported"); // TODO: this should not happen, I made this to remind myself about this incompletion
+                            throw new NotImplementedException($"Header index not supported: {staticHeader.StaticTableIndex}"); // TODO: this should not happen, I made this to remind myself about this incompletion
                     }
                 }
-                else if (header.HeaderType == HPACKHeaderTypes.Literal)
+                else if (hpackHeader.HeaderType == HPACKHeaderTypes.Literal)
                 {
-                    requestBuilder.AddHeader(header.Name, header.Value);
+                    requestBuilder.AddHeader(hpackHeader.Name, hpackHeader.Value);
                 }
             }
 

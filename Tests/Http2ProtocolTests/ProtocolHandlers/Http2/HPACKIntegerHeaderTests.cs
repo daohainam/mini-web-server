@@ -15,9 +15,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
         [TestMethod()]
         public void ReadIntTest()
         {
-            var bytes = new byte[] { 0b_10011010, 0b_00001010 };
+            var bytes = new byte[] { 0b_0001_1111, 0b_10011010, 0b_00001010 };
             var byteSequence = new ReadOnlySequence<byte>(bytes);
-            var r = HPACKInteger.ReadInt(0b_0001_1111, ref byteSequence, 5);
+            var r = HPACKInteger.ReadInt(ref byteSequence, 5);
 
             Assert.AreEqual(1337, r);
         }

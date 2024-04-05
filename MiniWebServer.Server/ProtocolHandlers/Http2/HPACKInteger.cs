@@ -26,7 +26,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 return 1;
             if (n == 1) 
                 return 2;
-            return 2 << n;
+            return 2 << (n - 1);
         }
 
         public static int ReadInt(ref ReadOnlySequence<byte> payload, int n)
@@ -41,7 +41,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             else
             {
                 var m = 0;
-                var i = 0;
+                int i = hs;
                 byte next;
                 do
                 {
