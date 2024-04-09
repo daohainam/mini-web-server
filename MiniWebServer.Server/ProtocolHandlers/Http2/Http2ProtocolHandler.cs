@@ -84,6 +84,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         logger.LogDebug("Frame found: {ft}, Stream Id: {sid}, payload length: {pll}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
                     }
 #endif
+
                     if (frameCount == 0 && frame.FrameType != Http2FrameType.SETTINGS)
                     {
                         logger.LogError("First frame must be a SETTINGS frame");
@@ -96,6 +97,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     }
 
                     frameCount = Interlocked.Increment(ref frameCount);
+
+                    reader.AdvanceTo(buffer.Start);
 
                     // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
                     //if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
@@ -157,6 +160,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         private static bool BuildRequestFromStream(Http2Stream stream, IHttpRequestBuilder requestBuilder)
         {
+            requestBuilder.SetHttpVersion(HttpVersions.Http20);
+
             var hpackHeaders = BuildHeaders(stream);
 
             if (!DecodeHeaders(hpackHeaders, requestBuilder))
@@ -188,10 +193,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                             requestBuilder.SetMethod(HttpMethod.Post);
                             break;
                         case 4:
-                            requestBuilder.SetUrl("/");
+                            if (httpComponentParser.TryParseUrl())
+                            {
+                                requestBuilder.SetUrl(hpackHeader.Value);
+                            }
                             break;
                         case 5:
-                            requestBuilder.SetUrl("/index.html");
+                            requestBuilder.SetUrl(staticHeader.Value);
                             break;
                         case 6:
                             requestBuilder.SetHttps(false);

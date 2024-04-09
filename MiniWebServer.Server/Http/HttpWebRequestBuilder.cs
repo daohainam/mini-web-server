@@ -191,6 +191,13 @@ namespace MiniWebServer.Server.Http
             return this;
         }
 
+        public IHttpRequestBuilder SetHttpVersion(HttpVersions version)
+        {
+            this.httpVersion = version;
+
+            return this;
+        }
+
         public IHttpRequestBuilder AddCookie(HttpCookie cookie)
         {
             cookies.Add(cookie);

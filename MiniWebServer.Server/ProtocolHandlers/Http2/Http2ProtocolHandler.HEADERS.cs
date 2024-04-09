@@ -12,7 +12,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         private bool ProcessHEADERSFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload, ILogger logger)
         {
-            if (!Http2FrameReader.TryReadHEADERSFramePayload(logger, ref frame, payload, headerTable, out var headersPayload))
+            if (!Http2FrameReader.TryReadHEADERSFramePayload(ref frame, payload, headerTable, out var headersPayload, logger))
             {
                 logger.LogError("Error reading HEADERS payload");
                 return false;

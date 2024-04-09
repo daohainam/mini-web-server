@@ -119,7 +119,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return true;
         }
 
-        public static bool TryReadHEADERSFramePayload(ILogger logger, ref Http2Frame frame, ReadOnlySequence<byte> payload, HPACKHeaderTable headerTable, out Http2FrameHEADERSPayload headersPayload)
+        public static bool TryReadHEADERSFramePayload(ref Http2Frame frame, ReadOnlySequence<byte> payload, HPACKHeaderTable headerTable, out Http2FrameHEADERSPayload headersPayload, ILogger logger)
         {
             /*
               HEADERS Frame {
@@ -153,7 +153,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             while (!payload.IsEmpty)
             {
                 //var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
-
+                var bb = payload.ToArray();
                 byte b = payload.Slice(0, 1).FirstSpan[0];
 
                 if ((b & 0b_1000_0000) == 0b_1000_0000) // Indexed Header Field, https://httpwg.org/specs/rfc7541.html#indexed.header.representation

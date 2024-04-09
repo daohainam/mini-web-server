@@ -18,5 +18,6 @@ namespace MiniWebServer.Server.Abstractions.Parsers.Http11
         /// <param name="buffer"></param>
         /// <returns></returns>
         HttpHeader? ParseHeaderLine(ReadOnlySequence<byte> buffer);
+        bool TryParseUrl(ReadOnlySequence<byte> readOnlySequence, out string? url, out string? hash, out string? queryString, out string[]? segments, out HttpParameters? parameters);
     }
 }
