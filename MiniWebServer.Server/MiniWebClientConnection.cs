@@ -160,10 +160,13 @@ namespace MiniWebServer.Server
                             }
                             else
                             {
-                                var connectionHeader = response.Headers.Connection;
-                                if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
+                                if (request.HttpVersion == HttpVersions.Http11) // We don't need keep-alive header in HTTP/2+ 
                                 {
-                                    response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
+                                    var connectionHeader = response.Headers.Connection;
+                                    if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
+                                    {
+                                        response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
+                                    }
                                 }
 
                                 cancellationTokenSource.CancelAfter(config.SendResponseTimeout);

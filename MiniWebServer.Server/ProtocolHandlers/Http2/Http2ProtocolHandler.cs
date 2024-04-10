@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Abstractions.Http.Header;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
 using MiniWebServer.Server.Abstractions.Parsers;
@@ -13,6 +14,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
+using System.Net.Http.Headers;
+using System.Reflection.PortableExecutable;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -59,7 +62,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         private ulong frameCount = 0Lu; // for "telemetry"
         public Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            // throw new NotImplementedException();
+
+            return Task.CompletedTask;
         }
 
         public async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
@@ -158,7 +163,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return headers;
         }
 
-        private static bool BuildRequestFromStream(Http2Stream stream, IHttpRequestBuilder requestBuilder)
+        private bool BuildRequestFromStream(Http2Stream stream, IHttpRequestBuilder requestBuilder)
         {
             requestBuilder.SetHttpVersion(HttpVersions.Http20);
 
@@ -172,7 +177,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return true;
         }
 
-        private static bool DecodeHeaders(IEnumerable<HPACKHeader> hpackHeaders, IHttpRequestBuilder requestBuilder)
+        private bool DecodeHeaders(IEnumerable<HPACKHeader> hpackHeaders, IHttpRequestBuilder requestBuilder)
         {
             // convert encoded headers from a frame to HTTP regular headers
 
@@ -184,7 +189,16 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     switch (staticHeader.StaticTableIndex) // https://httpwg.org/specs/rfc7541.html#static.table.definition, refer HPACKStaticTable for more information
                     {
                         case 1:
-                            requestBuilder.SetHost(hpackHeader.Value);
+                            if (HostHeader.TryParse(hpackHeader.Value, out var host))
+                            {
+                                requestBuilder.RequestHeaders.Host = host;
+                                requestBuilder.SetHost(host!.Host);
+                                requestBuilder.SetPort(host!.Port);
+                            }
+                            else
+                            {
+                                throw new InvalidHeaderException(new HttpHeader("Host", hpackHeader.Value));
+                            }
                             break;
                         case 2:
                             requestBuilder.SetMethod(HttpMethod.Get);
@@ -193,9 +207,23 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                             requestBuilder.SetMethod(HttpMethod.Post);
                             break;
                         case 4:
-                            if (httpComponentParser.TryParseUrl())
+                            if (hpackHeader.Value.Length == 0)
                             {
-                                requestBuilder.SetUrl(hpackHeader.Value);
+                                logger.LogError("Header 4 cannot be empty");
+                                return false;
+                            }
+                            if (httpComponentParser.TryParseUrl(new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(hpackHeader.Value)), out string? url, out string? hash, out string? queryString, out string[]? segments, out HttpParameters? parameters))
+                            {
+                                requestBuilder.SetUrl(url!);
+                                requestBuilder.SetHash(hash!);
+                                requestBuilder.SetQueryString(queryString!);
+                                requestBuilder.SetSegments(segments!);
+                                requestBuilder.SetParameters(parameters!);
+                            }
+                            else
+                            {
+                                logger.LogError("Error parsing header 4: {p}", hpackHeader.Value);
+                                return false;
                             }
                             break;
                         case 5:
