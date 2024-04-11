@@ -15,6 +15,7 @@ using System.IO.Pipelines;
 using System.Net;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using System.Threading;
 
 namespace MiniWebServer.Server
 {
@@ -74,7 +75,7 @@ namespace MiniWebServer.Server
                 if (httpVersion != HttpVersions.Http11 && httpVersion != HttpVersions.Http20)
                 {
                     // unknown version
-                    logger.LogError("Not supported HTTP version");
+                    logger.LogError("Unsupported HTTP version");
                     return;
                 }
 
@@ -124,85 +125,69 @@ namespace MiniWebServer.Server
                         }
                         else
                         {
-                            isKeepAlive = false; // we will close the connection if there is any error while building request
+                            // in Http11 we process requests serially one by one, but in Http2+ we can process them concurrently
 
-                            var request = requestBuilder.Build();
-
-                            isKeepAlive = request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later
-
-                            var app = FindApp(request); // should we reuse apps???
-
-                            var response = new HttpResponse(HttpResponseCodes.NotFound, config.ClientStream);
-
-                            if (app != null)
+                            if (httpVersion == HttpVersions.Http11)
                             {
-                                cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
-                                logger.LogDebug("[{cid}][{rid}] - Processing request...", ConnectionId, requestId);
+                                isKeepAlive = false; // we will close the connection if there is any error while building request
 
-                                // now we continue reading body part
-                                CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                                Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
-                                Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
+                                var request = requestBuilder.Build();
 
-                                readBodyCancellationTokenSource.Cancel();
+                                isKeepAlive = request.KeepAliveRequested; // todo: we should have a look at how we manage a keep-alive connection later
 
-                                // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
-                                Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
-                                logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
-                            }
+                                var app = FindApp(request); // should we reuse apps???
 
-                            if (connectionContext.WebSockets.IsUpgradeRequest)
-                            {
-                                // if this is a websocket request, then we always close the connection when it's done
-                                // we don't send the response because in WebSocket middleware we have sent back an 'Upgrade' response, and 
-                                // the connection is now a websocket connection (even if we have done nothing in websocket handler)
-                                isKeepAlive = false;
+                                var response = new HttpResponse(HttpResponseCodes.NotFound, config.ClientStream);
+
+                                if (app != null)
+                                {
+                                    cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
+                                    logger.LogDebug("[{cid}][{rid}] - Processing request...", ConnectionId, requestId);
+
+                                    // now we continue reading body part
+                                    CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                                    Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
+                                    Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
+
+                                    readBodyCancellationTokenSource.Cancel();
+
+                                    // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
+                                    Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
+                                    logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
+                                }
+
+                                if (connectionContext.WebSockets.IsUpgradeRequest)
+                                {
+                                    // if this is a websocket request, then we always close the connection when it's done
+                                    // we don't send the response because in WebSocket middleware we have sent back an 'Upgrade' response, and 
+                                    // the connection is now a websocket connection (even if we have done nothing in websocket handler)
+                                    isKeepAlive = false;
+                                }
+                                else
+                                {
+                                    if (request.HttpVersion == HttpVersions.Http11) // We don't need keep-alive header in HTTP/2+ 
+                                    {
+                                        var connectionHeader = response.Headers.Connection;
+                                        if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
+                                        {
+                                            response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
+                                        }
+                                    }
+
+                                    cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+                                    logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
+                                    await SendResponseAsync(response, protocolHandler, cancellationToken);
+                                }
                             }
                             else
                             {
-                                if (request.HttpVersion == HttpVersions.Http11) // We don't need keep-alive header in HTTP/2+ 
-                                {
-                                    var connectionHeader = response.Headers.Connection;
-                                    if (!"keep-alive".Equals(connectionHeader) && !"close".Equals(connectionHeader))
-                                    {
-                                        response.Headers.Connection = isKeepAlive ? "keep-alive" : "close";
-                                    }
-                                }
+                                isKeepAlive = true;
 
-                                cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
-                                logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
-                                await SendResponseAsync(response, protocolHandler, cancellationToken);
+                                var request = requestBuilder.Build();
+                                var response = new HttpResponse(HttpResponseCodes.NotFound, config.ClientStream);
+
+                                var dispatchTask = DispatchRequestAsync(connectionContext, request, response, requestPipeReader, protocolHandler, cancellationToken);
                             }
-
-                            //if (connectionContext.WebSockets.IsUpgradeRequest && app != null) // if this is an upgrade request, we switch to websocket mode and continue processing
-                            //{
-                            //    isKeepAlive = false; // we will always close the connection when this websocket operation ends
-
-                            //    var webSocketFactory = connectionContext.Services.GetService<IWebSocketFactory>();
-                            //    if (webSocketFactory == null)
-                            //    {
-                            //        logger.LogWarning("[{cid}][{rid}] - No websocket factory registered, closing connection", ConnectionId, requestId);
-                            //    }
-                            //    else if (connectionContext.WebSockets.Handler != null)
-                            //    {
-                            //        logger.LogInformation("[{cid}][{rid}] - Connection upgraded, transfering control to websocket handler", ConnectionId, requestId);
-                            //        try
-                            //        {
-                            //            var webSocket = webSocketFactory.CreateWebSocket(config.ClientStream, config.ClientStream);
-
-                            //            await connectionContext.WebSockets.Handler(webSocket);
-
-                            //            await webSocket.CloseAsync(cancellationToken); // CloseAsync should silently skip if it is already in Close state
-                            //        } catch (Exception ex)
-                            //        {
-                            //            logger.LogError(ex, "[{cid}][{rid}] - Error calling websocket handler", ConnectionId, requestId);
-                            //        }
-                            //    }
-                            //    else
-                            //    {
-                            //        logger.LogWarning("[{cid}][{rid}] - No websocket handler defined, closing connection", ConnectionId, requestId);
-                            //    }
-                            //}
                         }
                     }
                     catch (OperationCanceledException)
@@ -219,6 +204,30 @@ namespace MiniWebServer.Server
             {
                 CloseConnection();
             }
+        }
+
+        private async Task DispatchRequestAsync(MiniAppConnectionContext connectionContext, HttpRequest request, HttpResponse response, PipeReader requestPipeReader, IProtocolHandler protocolHandler, CancellationToken cancellationToken)
+        {
+            var app = FindApp(request); // should we reuse apps???
+
+            if (app != null)
+            {
+                logger.LogDebug("[{cid}][{rid}] - Processing request...", ConnectionId, request.RequestId);
+
+                // now we continue reading body part
+                CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
+                Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
+
+                readBodyCancellationTokenSource.Cancel();
+
+                // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
+                Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
+                logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, request.RequestId);
+            }
+
+            logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, request.RequestId);
+            await SendResponseAsync(response, protocolHandler, cancellationToken);
         }
 
         private MiniAppConnectionContext BuildMiniAppConnectionContext()
