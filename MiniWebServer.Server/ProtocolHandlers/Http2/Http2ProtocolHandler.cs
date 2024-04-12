@@ -288,13 +288,28 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             throw new NotImplementedException();
         }
 
-        public Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
+        public async Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
         {
             var streamId = GetNextSTreamIdentifier();
 
-            // generate HEADERS frames
+            var headerFrames = BuildHeaderFrames(response);
+            await WriteFramesAsync(headerFrames);
 
             return Task.FromResult(true);
+        }
+
+        private IEnumerable<Http2Frame> BuildHeaderFrames(IHttpResponse response)
+        {
+            var headerFrame = new Http2Frame()
+            {
+                StreamIdentifier = streamId,
+                FrameType = Http2FrameType.HEADERS,
+            };
+
+            if (!Http2FrameReader.TryEncodeHeaderFrame(headerFrame, ref buffer))
+            {
+
+            }
         }
 
         private uint GetNextSTreamIdentifier()
