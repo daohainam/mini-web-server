@@ -18,7 +18,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 return false;
             }
 
-            if (streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
+            if (inputStreamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
             {
                 stream.HeaderPayloads.Add(headersPayload);
                 stream.FrameQueue.Add(frame);
@@ -34,7 +34,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 stream.HeaderPayloads.Add(headersPayload);
 
                 stream.FrameQueue.Add(frame);
-                streamContainer[frame.StreamIdentifier] = stream;
+                inputStreamContainer[frame.StreamIdentifier] = stream;
 
 #if DEBUG
                 if (logger.IsEnabled(LogLevel.Debug)) {

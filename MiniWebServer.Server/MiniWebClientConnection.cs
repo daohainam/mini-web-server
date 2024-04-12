@@ -23,7 +23,6 @@ namespace MiniWebServer.Server
     {
         private static readonly byte[] HTTP2_MAGIC = Encoding.ASCII.GetBytes("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
 
-
         public MiniWebClientConnection(
             MiniWebConnectionConfiguration config,
             IProtocolHandlerFactory protocolHandlerFactory,
@@ -142,7 +141,9 @@ namespace MiniWebServer.Server
                                 if (app != null)
                                 {
                                     cancellationTokenSource.CancelAfter(config.ExecuteTimeout);
+#if DEBUG
                                     logger.LogDebug("[{cid}][{rid}] - Processing request...", ConnectionId, requestId);
+#endif
 
                                     // now we continue reading body part
                                     CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -153,7 +154,9 @@ namespace MiniWebServer.Server
 
                                     // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
                                     Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
+#if DEBUG
                                     logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
+#endif
                                 }
 
                                 if (connectionContext.WebSockets.IsUpgradeRequest)
@@ -175,7 +178,9 @@ namespace MiniWebServer.Server
                                     }
 
                                     cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+#if DEBUG
                                     logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
+#endif
                                     await SendResponseAsync(response, protocolHandler, cancellationToken);
                                 }
                             }
@@ -212,7 +217,9 @@ namespace MiniWebServer.Server
 
             if (app != null)
             {
+#if DEBUG
                 logger.LogDebug("[{cid}][{rid}] - Processing request...", ConnectionId, request.RequestId);
+#endif
 
                 // now we continue reading body part
                 CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -221,12 +228,15 @@ namespace MiniWebServer.Server
 
                 readBodyCancellationTokenSource.Cancel();
 
-                // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
                 Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
+#if DEBUG
                 logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, request.RequestId);
+#endif
             }
 
+#if DEBUG
             logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, request.RequestId);
+#endif
             await SendResponseAsync(response, protocolHandler, cancellationToken);
         }
 

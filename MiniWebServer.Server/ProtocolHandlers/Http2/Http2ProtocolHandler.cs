@@ -54,9 +54,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         private uint windowSizeIncrement;
 
         // streams
-        private readonly Http2StreamContainer streamContainer = [];
-
+        private readonly Http2StreamContainer inputStreamContainer = [];
         private readonly HPACKHeaderTable headerTable = new();
+        private uint nextOutputStreamId = 0; // do not change this value directly, call GetNextSTreamIdentifier() when you want to get an new Id
 
         // for analytics
         private ulong frameCount = 0Lu; // for "telemetry"
@@ -124,7 +124,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     {
                         // start building a request
 
-                        if (!streamContainer.Remove(frame.StreamIdentifier, out var stream))
+                        if (!inputStreamContainer.Remove(frame.StreamIdentifier, out var stream))
                         {
                             logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
                             return false;
@@ -290,9 +290,16 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         public Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
         {
-            // add to response queue
+            var streamId = GetNextSTreamIdentifier();
+
+            // generate HEADERS frames
 
             return Task.FromResult(true);
+        }
+
+        private uint GetNextSTreamIdentifier()
+        {
+            return Interlocked.Add(ref nextOutputStreamId, 2); // an Id initiated by server is always an even 31-bit number 
         }
     }
 }

@@ -366,8 +366,6 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 return false;
             }
 
-
-
             return true;
         }
 
