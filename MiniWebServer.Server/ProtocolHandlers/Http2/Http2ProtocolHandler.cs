@@ -290,15 +290,15 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         public async Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
         {
-            var streamId = GetNextSTreamIdentifier();
+            var streamId = GetNextStreamIdentifier();
+            var stream = response.Stream ?? throw new InvalidOperationException("response.Stream should not be null");
 
-            var headerFrames = BuildHeaderFrames(response);
-            await WriteFramesAsync(headerFrames);
+            await WriteResponseAsync(streamId, response, stream);
 
-            return Task.FromResult(true);
+            return true;
         }
 
-        private IEnumerable<Http2Frame> BuildHeaderFrames(IHttpResponse response)
+        private async Task WriteResponseAsync(uint streamId, IHttpResponse response, Stream stream)
         {
             var headerFrame = new Http2Frame()
             {
@@ -306,13 +306,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 FrameType = Http2FrameType.HEADERS,
             };
 
-            if (!Http2FrameReader.TryEncodeHeaderFrame(headerFrame, ref buffer))
+            if (await !Http2FrameWriter.SerializeHeaderFrames(streamId, response, stream))
             {
 
             }
         }
 
-        private uint GetNextSTreamIdentifier()
+        private uint GetNextStreamIdentifier()
         {
             return Interlocked.Add(ref nextOutputStreamId, 2); // an Id initiated by server is always an even 31-bit number 
         }
