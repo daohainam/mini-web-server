@@ -64,5 +64,28 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
             return ReadInt(ref payload, 7);
         }
+
+        public static void WriteInt(int hs, byte[] bytes, int n, out int length)
+        {
+            length = 0;
+
+            int pow = Pow2(n) - 1;
+            if (hs < pow)
+            {
+                bytes[length++] = (byte)hs;
+            }
+            else
+            {
+                bytes[length] = (byte)pow;
+                hs -= pow;
+
+                while (hs >= 128)
+                {
+                    bytes[length++] = (byte)(0b_1000_0000 | (hs % 128));
+                    hs /= 128;
+                }
+                bytes[length++] = (byte)hs;
+            }
+        }
     }
 }

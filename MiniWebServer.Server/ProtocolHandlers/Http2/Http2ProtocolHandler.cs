@@ -16,6 +16,7 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Reflection.PortableExecutable;
+using System.Runtime.Serialization;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -300,17 +301,60 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         private async Task WriteResponseAsync(uint streamId, IHttpResponse response, Stream stream)
         {
-            var headerFrame = new Http2Frame()
+            foreach (var headerFrame in SerializationHeader(streamId, response, maxFrameSize))
             {
-                StreamIdentifier = streamId,
+                
+            }
+
+            //if (!await Http2FrameWriter.SerializeHeaderFrames(streamId, response, stream))
+            //{
+
+            //}
+        }
+
+        private IEnumerable<Http2Frame> SerializationHeader(uint streamId, IHttpResponse response, uint maxPayloadSize)
+        {
+            var frame = new Http2Frame()
+            {
                 FrameType = Http2FrameType.HEADERS,
+                StreamIdentifier = streamId,
             };
+            var headers = new List<HttpHeader>(response.Headers);
 
-            if (await !Http2FrameWriter.SerializeHeaderFrames(streamId, response, stream))
+            var payload = ArrayPool<byte>.Shared.Rent((int)maxPayloadSize);
+
+            SerializeHeaderFramePayload(response, ref payload, out int length);
+
+            // build frame payload
+
+            // now we return first frame
+            yield return frame;
+        }
+
+        private void SerializeHeaderFramePayload(IHttpResponse response, ref byte[] payload, out int length)
+        {
+            int index = GetStaticHeaderIndex(response.StatusCode);
+            length = 0;
+
+            if (index > 0)
             {
-
+                HPACKInteger.WriteInt(index, payload, 7, out length);
+                payload[0] |= 0b_1000_0000;
             }
         }
+
+        private static int GetStaticHeaderIndex(HttpResponseCodes code) => code switch
+        { 
+            // return index in static table, refer to HPACK docs: https://httpwg.org/specs/rfc7541.html#static.table.definition
+            HttpResponseCodes.OK => 8,
+            HttpResponseCodes.NoContent => 9,
+            HttpResponseCodes.PartialContent => 10,
+            HttpResponseCodes.NotModified => 11,
+            HttpResponseCodes.BadRequest => 12,
+            HttpResponseCodes.NotFound => 13,
+            HttpResponseCodes.InternalServerError => 14,
+            _ => -1
+        };
 
         private uint GetNextStreamIdentifier()
         {
