@@ -1,4 +1,5 @@
 # Mini-Web-Server
+**(English below)**
 (tài liệu này được viết dựa trên phiên bản [0.3.2](https://github.com/daohainam/mini-web-server/tree/ba1af65b9a1e3a8f73e97a6c3541f831911469ac))
 
 Trang web demo chạy trên Mini-Web-Server: https://www.mini-web-server.com
@@ -52,6 +53,30 @@ Các dự án trong solution được chia thành các nhóm sau:
 - Các pipeline [^pipe-line] cho request và response được tạo ra. Dữ liệu từ client gửi lên có thể rất lớn, có thể rời rạc và có thể không hợp lệ, việc dùng các pipeline sẽ giúp ta xử lý dữ liệu ngay trên bộ đệm, và dịch chuyển 'cửa sổ' bộ đệm để đọc dữ liệu hiệu quả hơn.
 - Vòng lặp sau được thực hiện: ReadRequestAsync() -> request = requestBuilder.Build() -> MiniApp app = FindApp(request) -> ReadBodyAsync() chạy đồng thời với CallByMethod(), có nghĩa là việc thực thi request sẽ được thực hiện ngay khi đọc xong request header. ReadBodyAsync đưa dữ liệu từ socket vào vùng đệm (và dừng lại khi bộ đệm đầy), nếu trong lúc thực thi MiniApp yêu cầu đọc request body, chúng ta sẽ lấy từ bộ đệm đó, khi đó bộ đệm được làm trống và ReadBodyAsync sẽ lại tiếp tục đưa dữ liệu từ socket vào bộ đệm. Giải pháp này giúp chúng ta không tốn tài nguyên xử lý body request nếu MiniApp không yêu cầu, cũng như ta có thể chờ đến khi client gửi xong body request mới tiếp tục thực thi MiniApp. Sau khi MiniApp thực thi xong, ta sẽ tạo response = responseBuilder.Build() và gửi về client bằng [SendResponseAsync](https://github.com/daohainam/mini-web-server/blob/ba1af65b9a1e3a8f73e97a6c3541f831911469ac/MiniWebServer.Server/MiniWebClientConnection.cs#L190).
 
-# Tham khảo
+
+[**English**]
+# Mini-Web-Server
+(this document is based on version [0.3.2](https://github.com/daohainam/mini-web-server/tree/ba1af65b9a1e3a8f73e97a6c3541f831911469ac))
+A demo web site running on Mini-Web-Server can be found at: https://www.mini-web-server.com
+
+Welcome to Mini-Web-Server, a project created with the purpose of helping junior developers upgrade to seniors!
+
+Mini-Web-Server - aka Mini, is a web server, with many features:
+- High performance, memory use optimized.
+- Multi host supported, allowing to serve different contents to different domains.
+- Support HTTPS, HTTP 1.1, WebSocket and provide the ability to upgrade to support HTTP/2, HTTP/3. (*HTTP/2 is being implemented http2 branch*)
+- Easy to add more features, thanks to Middleware support.
+- Easy to embed to other apps.
+- Support Authorization, Session, Hsts, Https redirection, Mvc, caching...
+- Support writing MiniApp or Mvc app to serve dynamic content. (similar to ASP.NET apps)
+- ...
+
+# Project Overview
+- Built with .NET 8, capable of running on all platforms supported by .NET 8.
+- Minimize using 3rd party libraries, including standard HTTP libraries from .NET SDK.
+- Marked with [tags](https://github.com/daohainam/mini-web-server/tags) to make it easier for readers to reference the resources. 
+- The main purpose of the project is to create a learning resource to study advanced topics, such as multithreading, OOAD, networking, HTTP protocol, design patterns... However, it must be robust and feature-complete enough to be deployed as a web server backend behind reverse proxies.
+
+# Tham khảo/References
 [^builder-pattern]: https://refactoring.guru/design-patterns/builder
 [^pipe-line]: https://learn.microsoft.com/en-us/dotnet/standard/io/pipelines
