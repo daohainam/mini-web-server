@@ -37,7 +37,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
      * 
      */
 
-    public partial class Http2ProtocolHandler(ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser) : IProtocolHandler
+    public partial class Http2ProtocolHandler(ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser, ProtocolHandlerContext protocolHandlerContext) : IProtocolHandler
     {
         private const uint DefaultMaxFrameSize = 16384; // frame size = 2^14 unless when you change it with a SETTINGS frame
         private const uint DefaultInitialWindowSize = 65535;
@@ -68,11 +68,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return Task.CompletedTask;
         }
 
-        public async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
+        public async Task<bool> ReadRequestAsync(IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
         {
             try
             {
-                ReadResult readResult = await reader.ReadAsync(cancellationToken);
+                ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAsync(cancellationToken);
                 ReadOnlySequence<byte> buffer = readResult.Buffer;
 
                 //requestBuilder.SetBodyPipeline(new Pipe());
@@ -80,6 +80,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 var httpMethod = HttpMethod.Get;
 
                 var frame = new Http2Frame(); // can we reuse?
+                var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
 
                 // HTTP2 connections always start with a SETTINGS frame
                 while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload))
@@ -91,11 +92,34 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     }
 #endif
 
-                    if (frameCount == 0 && frame.FrameType != Http2FrameType.SETTINGS)
+                    if (frameCount == 0)
                     {
-                        logger.LogError("First frame must be a SETTINGS frame");
-                        return false;
+                        if (frame.FrameType != Http2FrameType.SETTINGS)
+                        {
+                            logger.LogError("First frame must be a SETTINGS frame");
+                            return false;
+                        }
+                        else
+                        {
+                            var b = ProcessSETTINGSFrame(ref frame, ref payload, out var settings);
+
+                            // send back a SETTINGS frame
+                            var settingFrame = new Http2Frame()
+                            {
+                                FrameType = Http2FrameType.SETTINGS,
+                            };
+
+                            int length = Http2FrameWriter.SerializeSettingFrame(settingFrame, settings, writePayload);
+                            if (length > 0)
+                            {
+                                protocolHandlerContext.Stream.Write(writePayload, 0, length);
+                            }
+
+                            continue;
+                        }
                     }
+
+                    
 
                     if (!ProcessFrame(ref frame, ref payload, logger))
                     {
@@ -104,7 +128,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
                     frameCount = Interlocked.Increment(ref frameCount);
 
-                    reader.AdvanceTo(buffer.Start);
+                    protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
 
                     // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
                     //if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
@@ -136,6 +160,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         return b;
                     }
                 }
+
+                ArrayPool<byte>.Shared.Return(writePayload);
 
                 return false;
             }
@@ -271,7 +297,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     b = ProcessHEADERSFrame(ref frame, ref payload, logger);
                     break;
                 case Http2FrameType.SETTINGS:
-                    b = ProcessSETTINGSFrame(ref frame, ref payload);
+                    b = ProcessSETTINGSFrame(ref frame, ref payload, out var settings);
                     break;
                 case Http2FrameType.WINDOW_UPDATE:
                     b = ProcessWINDOW_UPDATEFrame(ref frame, ref payload);

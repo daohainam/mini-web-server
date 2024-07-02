@@ -16,7 +16,7 @@ namespace MiniWebServer.Server
         private readonly ILoggerFactory loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         private readonly IServiceProvider services = services ?? throw new ArgumentNullException(nameof(services));
 
-        public IProtocolHandler Create(HttpVersions httpVersion, ProtocolHandlerConfiguration config)
+        public IProtocolHandler Create(HttpVersions httpVersion, ProtocolHandlerConfiguration config, ProtocolHandlerContext protocolHandlerContext)
         {
             if (httpVersion == HttpVersions.Http11)
             {
@@ -24,14 +24,16 @@ namespace MiniWebServer.Server
 
                 return new Http11ProtocolHandler(config, loggerFactory,
                     services.GetService<IHttpComponentParser>() ?? new ByteSequenceHttpParser(loggerFactory),
-                    services.GetService<ICookieValueParser>() ?? new DefaultCookieParser()
+                    services.GetService<ICookieValueParser>() ?? new DefaultCookieParser(),
+                    protocolHandlerContext
                     );
             }
             else if (httpVersion == HttpVersions.Http20)
             {
                 return new Http2ProtocolHandler(loggerFactory,
                     services.GetService<IHttpComponentParser>() ?? new ByteSequenceHttpParser(loggerFactory),
-                    services.GetService<ICookieValueParser>() ?? new DefaultCookieParser()
+                    services.GetService<ICookieValueParser>() ?? new DefaultCookieParser(),
+                    protocolHandlerContext
                     );
             }
 

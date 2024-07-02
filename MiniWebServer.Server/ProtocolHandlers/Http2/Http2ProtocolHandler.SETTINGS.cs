@@ -9,15 +9,16 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     public partial class Http2ProtocolHandler
     {
-        private bool ProcessSETTINGSFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload)
+        private bool ProcessSETTINGSFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload, out Http2FrameSETTINGSItem[] settings)
         {
             if (frame.StreamIdentifier != 0)
             {
                 logger.LogError("Stream identifier for a SETTINGS frame MUST be zero");
+                settings = [];
                 return false;
             }
 
-            if (!Http2FrameReader.TryReadSETTINGSFramePayload(ref payload, out var settings))
+            if (!Http2FrameReader.TryReadSETTINGSFramePayload(ref payload, out settings))
             {
                 return false;
             }

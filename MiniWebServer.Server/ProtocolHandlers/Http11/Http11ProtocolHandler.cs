@@ -13,7 +13,7 @@ using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http11
 {
-    public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser) : IProtocolHandler // should we use PipeLines to make the code simpler?
+    public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser, ProtocolHandlerContext protocolHandlerContext) : IProtocolHandler // should we use PipeLines to make the code simpler?
     {
         public const string HttpVersionString = "HTTP/1.1";
         public const int HttpMaxHeaderLineLength = 8 * 1024; // max 8KB each line
@@ -31,7 +31,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
 
         public int ProtocolVersion => 101;
 
-        public async Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
+        public async Task<bool> ReadRequestAsync(IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
         {
             long contentLength = 0;
             string contentType = string.Empty;
@@ -39,7 +39,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
             try
             {
 
-                ReadResult readResult = await reader.ReadAsync(cancellationToken);
+                ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAsync(cancellationToken);
                 ReadOnlySequence<byte> buffer = readResult.Buffer;
 
                 requestBuilder.SetBodyPipeline(new Pipe());
@@ -75,7 +75,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                         return false;
                     }
 
-                    reader.AdvanceTo(buffer.Start); // after a successful TryReadLine, buffer.Start advanced to the byte after '\n'
+                    protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start); // after a successful TryReadLine, buffer.Start advanced to the byte after '\n'
                 }
                 else
                 {
@@ -103,7 +103,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                             return false; // reject request for whatever reason
                         }
 
-                        reader.AdvanceTo(buffer.Start);
+                        protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
                         break;
                     }
                     else
@@ -131,7 +131,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http11
                             return false;
                         }
 
-                        reader.AdvanceTo(buffer.Start);
+                        protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
                     }
                 }
 

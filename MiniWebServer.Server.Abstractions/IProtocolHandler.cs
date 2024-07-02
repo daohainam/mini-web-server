@@ -14,7 +14,7 @@ namespace MiniWebServer.Server.Abstractions
         /// <param name="requestBuilder"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        Task<bool> ReadRequestAsync(PipeReader reader, IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken);
+        Task<bool> ReadRequestAsync(IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken);
         Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken);
         void Reset();
         Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken);

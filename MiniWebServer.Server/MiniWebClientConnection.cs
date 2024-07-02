@@ -84,7 +84,13 @@ namespace MiniWebServer.Server
                 }
 
                 var protocolConfig = new ProtocolHandlerConfiguration(httpVersion, config.MaxRequestBodySize);
-                var protocolHandler = protocolHandlerFactory.Create(httpVersion, protocolConfig);
+                var protocolHandlerContext = new ProtocolHandlerContext()
+                {
+                    PipeReader = requestPipeReader,
+                    Stream = config.ClientStream
+                };
+
+                var protocolHandler = protocolHandlerFactory.Create(httpVersion, protocolConfig, protocolHandlerContext);
 
                 MiniAppConnectionContext connectionContext = BuildMiniAppConnectionContext();
 
@@ -109,7 +115,7 @@ namespace MiniWebServer.Server
                             .SetRemoteAddress(remoteEndPoint.Address)
                             .SetRemotePort(remoteEndPoint.Port);
 
-                        var readRequestResult = await protocolHandler.ReadRequestAsync(requestPipeReader, requestBuilder, cancellationToken);
+                        var readRequestResult = await protocolHandler.ReadRequestAsync(requestBuilder, cancellationToken);
                         if (!readRequestResult)
                         {
                             isKeepAlive = false; // we always close wrongly working connections
