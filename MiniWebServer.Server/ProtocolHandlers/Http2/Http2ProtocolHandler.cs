@@ -115,6 +115,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                                 protocolHandlerContext.Stream.Write(writePayload, 0, length);
                             }
 
+                            frameCount++;
                             continue;
                         }
                     }
