@@ -69,11 +69,14 @@ Host: localhost:8443
             var loggerFactory = new LoggerFactory();
 
             var httpParser = new ByteSequenceHttpParser(loggerFactory);
-            var handler = new Http11ProtocolHandler(new ProtocolHandlerConfiguration(global::MiniWebServer.Abstractions.HttpVersions.Http11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser());
+            var handler = new Http11ProtocolHandler(new ProtocolHandlerConfiguration(global::MiniWebServer.Abstractions.HttpVersions.Http11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser(), 
+                new ProtocolHandlerContext() { 
+                    PipeReader = reader, Stream = new MemoryStream()
+                });
 
             var requestBuilder = new HttpWebRequestBuilder();
 
-            var result = await handler.ReadRequestAsync(reader, requestBuilder, CancellationToken.None);
+            var result = await handler.ReadRequestAsync(requestBuilder, CancellationToken.None);
 
             return new ReadRequestTestResult(result, requestBuilder);
         }

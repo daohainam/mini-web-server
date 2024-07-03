@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     public partial class Http2ProtocolHandler
     {
-        private bool ProcessSETTINGSFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload, out Http2FrameSETTINGSItem[] settings)
+        private bool ProcessSETTINGSFrame(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, out Http2FrameSETTINGSItem[] settings)
         {
             if (frame.StreamIdentifier != 0)
             {
@@ -39,6 +40,29 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         return false;
                     }
                 }
+            }
+
+            if (frame.Flags.HasFlag(Http2FrameFlags.SETTINGS_ACK))
+            {
+                logger.LogDebug("Received a SETTINGS_ACK frame");
+            }
+            else
+            {
+                // send an ACK back
+                var settingFrame = new Http2Frame()
+                {
+                    FrameType = Http2FrameType.SETTINGS,
+                    Flags = Http2FrameFlags.SETTINGS_ACK
+                };
+
+                var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
+                int length = Http2FrameWriter.SerializeSettingFrame(settingFrame, settings, writePayload);
+                if (length > 0)
+                {
+                    protocolHandlerContext.Stream.Write(writePayload, 0, length);
+                }
+
+                ArrayPool<byte>.Shared.Return(writePayload);
             }
 
             return true;

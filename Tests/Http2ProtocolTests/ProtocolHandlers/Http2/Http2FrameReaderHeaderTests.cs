@@ -46,7 +46,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
                         0x00,
                         0x70, 0xFF, 0x00, 0xFF
                     },
-                    0x000000, 0x01, (byte)0x00, 0x70FF00FF
+                    0x000000, 0x01, (byte)0x00, 0x70FF00FFu
                 ]
                 )
             };

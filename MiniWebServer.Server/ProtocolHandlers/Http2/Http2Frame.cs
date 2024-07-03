@@ -62,6 +62,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         PRIORITY = 0b_0010_0000,
         PADDED = 0b_0000_1000,
         END_HEADERS = 0b_0000_0100,
-        END_STREAM = 0b_0000_0001
+        END_STREAM = 0b_0000_0001,
+
+        SETTINGS_ACK = 0b_0000_0001,
     } 
 }

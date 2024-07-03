@@ -16,6 +16,7 @@
   ],
   "HostOptions": [],
   "FeatureOptions": {
-    "MaxRequestBodySize":  10000000000
+    "MaxRequestBodySize": 10000000000,
+    "ReadRequestTimeout": 600000
   }
 }

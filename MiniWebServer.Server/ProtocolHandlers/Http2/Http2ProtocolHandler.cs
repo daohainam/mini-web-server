@@ -72,97 +72,102 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         {
             try
             {
-                ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAsync(cancellationToken);
-                ReadOnlySequence<byte> buffer = readResult.Buffer;
-
-                //requestBuilder.SetBodyPipeline(new Pipe());
-
-                var httpMethod = HttpMethod.Get;
-
-                var frame = new Http2Frame(); // can we reuse?
-                var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-
-                // HTTP2 connections always start with a SETTINGS frame
-                while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload))
+                while (!cancellationToken.IsCancellationRequested)
                 {
-#if DEBUG
-                    if (logger.IsEnabled(LogLevel.Debug))
+                    ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAsync(cancellationToken);
+                    ReadOnlySequence<byte> buffer = readResult.Buffer;
+
+                    //requestBuilder.SetBodyPipeline(new Pipe());
+
+                    var httpMethod = HttpMethod.Get;
+
+                    var frame = new Http2Frame(); // can we reuse?
+
+                    // HTTP2 connections always start with a SETTINGS frame
+                    while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload))
                     {
-                        logger.LogDebug("Frame found: {ft}, Stream Id: {sid}, payload length: {pll}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
-                    }
+#if DEBUG
+                        if (logger.IsEnabled(LogLevel.Debug))
+                        {
+                            logger.LogDebug("Frame found: {ft}, Stream Id: {sid}, payload length: {pll}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
+                        }
 #endif
 
-                    if (frameCount == 0)
-                    {
-                        if (frame.FrameType != Http2FrameType.SETTINGS)
+                        if (frameCount == 0)
                         {
-                            logger.LogError("First frame must be a SETTINGS frame");
-                            return false;
-                        }
-                        else
-                        {
-                            var b = ProcessSETTINGSFrame(ref frame, ref payload, out var settings);
+                            if (frame.FrameType != Http2FrameType.SETTINGS)
+                            {
+                                logger.LogError("First frame must be a SETTINGS frame");
+                                return false;
+                            }
 
-                            // send back a SETTINGS frame
                             var settingFrame = new Http2Frame()
                             {
                                 FrameType = Http2FrameType.SETTINGS,
                             };
 
+                            // send first SETTINGS frame
+                            var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
+                            Http2FrameSETTINGSItem[] settings = [
+                                new () {
+                                    Identifier = Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE,
+                                    Value = initialWindowSize,
+                                },
+                                new () {
+                                    Identifier = Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE,
+                                    Value = maxFrameSize,
+                                },
+                                ];
                             int length = Http2FrameWriter.SerializeSettingFrame(settingFrame, settings, writePayload);
                             if (length > 0)
                             {
                                 protocolHandlerContext.Stream.Write(writePayload, 0, length);
                             }
 
-                            frameCount++;
-                            continue;
+                            ArrayPool<byte>.Shared.Return(writePayload);
                         }
-                    }
 
-                    
-
-                    if (!ProcessFrame(ref frame, ref payload, logger))
-                    {
-                        return false;
-                    }
-
-                    frameCount = Interlocked.Increment(ref frameCount);
-
-                    protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
-
-                    // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
-                    //if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
-                    //{
-                    //    // parse header frames
-                    //    if (!streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
-                    //    {
-                    //        logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
-                    //    }
-                    //    else
-                    //    {
-                    //        var headers = BuildHeaders(stream);
-
-                    //    }
-                    //}
-
-                    if (frame.Flags.HasFlag(Http2FrameFlags.END_STREAM))
-                    {
-                        // start building a request
-
-                        if (!inputStreamContainer.Remove(frame.StreamIdentifier, out var stream))
+                        if (!ProcessFrame(ref frame, ref payload, logger))
                         {
-                            logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
                             return false;
                         }
 
-                        var b = BuildRequestFromStream(stream!, requestBuilder);
+                        frameCount = Interlocked.Increment(ref frameCount);
 
-                        return b;
+                        protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
+
+                        // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
+                        //if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
+                        //{
+                        //    // parse header frames
+                        //    if (!streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
+                        //    {
+                        //        logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
+                        //    }
+                        //    else
+                        //    {
+                        //        var headers = BuildHeaders(stream);
+
+                        //    }
+                        //}
+
+                        if ((frame.FrameType == Http2FrameType.HEADERS || frame.FrameType == Http2FrameType.DATA) && frame.Flags.HasFlag(Http2FrameFlags.END_STREAM))
+                        {
+                            // start building a request
+
+                            if (!inputStreamContainer.Remove(frame.StreamIdentifier, out var stream))
+                            {
+                                logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
+                                return false;
+                            }
+
+                            var b = BuildRequestFromStream(stream!, requestBuilder);
+
+                            return b;
+                        }
                     }
                 }
 
-                ArrayPool<byte>.Shared.Return(writePayload);
 
                 return false;
             }

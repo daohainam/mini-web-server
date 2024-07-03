@@ -1,9 +1,11 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 
 namespace MiniWebServer.Abstractions.Http
 {
     public record HttpCookie
     {
+        private static CultureInfo enUS = new("en-US");
         public HttpCookie(string name, string value,
             string? domain = default,
             DateTimeOffset? expires = default,
@@ -74,7 +76,7 @@ namespace MiniWebServer.Abstractions.Http
             if (Expires.HasValue)
             {
                 sb.Append("; Expires=");
-                sb.Append(Expires.Value.UtcDateTime.ToString("ddd, dd MMM yyyy HH:mm:ss G\\MT"));
+                sb.Append(Expires.Value.UtcDateTime.ToString("ddd, dd MMM yyyy HH:mm:ss G\\MT", enUS));
             }
             if (HttpOnly.HasValue)
             {
