@@ -39,9 +39,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
     public partial class Http2ProtocolHandler(ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser, ProtocolHandlerContext protocolHandlerContext) : IProtocolHandler
     {
-        private const uint DefaultMaxFrameSize = 16384; // frame size = 2^14 unless when you change it with a SETTINGS frame
-        private const uint DefaultInitialWindowSize = 65535;
-        private const uint DefaultHeaderTableSize = 4096;
+        private const uint DefaultMaxFrameSize = 16_384; // frame size = 2^14 unless when you change it with a SETTINGS frame
+        private const uint DefaultInitialWindowSize = 65_535;
+        private const uint DefaultHeaderTableSize = 4_096;
 
         private readonly ILogger<Http2ProtocolHandler> logger = loggerFactory.CreateLogger<Http2ProtocolHandler>();
 
@@ -77,7 +77,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 while (!isCompleted && !cancellationToken.IsCancellationRequested)
                 {
                     ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAtLeastAsync(9, cancellationToken); // 9 = Frame header size
-                    logger.LogDebug("Read result: IsCompleted={r}, Buffer.Length={l}", readResult.IsCompleted, readResult.Buffer.Length);
+                    //logger.LogDebug("Read result: IsCompleted={r}, Buffer.Length={l}", readResult.IsCompleted, readResult.Buffer.Length);
 
                     ReadOnlySequence<byte> buffer = readResult.Buffer;
 
@@ -181,6 +181,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             catch (OperationCanceledException)
             {
                 logger.LogInformation("Connection expired");
+                return false;
+            }
+            catch (IOException ex)
+            {
+                logger.LogError(ex, "I/O error");
                 return false;
             }
             catch (Exception ex)
