@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
@@ -115,6 +116,37 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
 
             windowSizeIncrement = (uint)((payloadBytes[0] & 0b_0111_1111) << 24 | payloadBytes[1] << 16 | payloadBytes[2] << 8 | payloadBytes[3]);
+            return true;
+        }
+
+        public static bool TryReadPINGFramePayload(ref ReadOnlySequence<byte> payload, out byte[] opaqueData)
+        {
+            if (payload.Length != 8) // https://httpwg.org/specs/rfc9113.html#PING: Receipt of a PING frame with a length field value other than 8 MUST be treated as a connection error
+            {
+                opaqueData = [];
+                return false;
+            }
+
+            opaqueData = new byte[8];
+            payload.CopyTo(opaqueData);
+
+            return true;
+        }
+
+        public static bool TryReadPRIORITYFramePayload(ref ReadOnlySequence<byte> payload, out Http2FramePRIOTITYPayload priorityPayload)
+        {
+            if (payload.Length != 5)
+            {
+                priorityPayload = Http2FramePRIOTITYPayload.Empty;
+                return false;
+            }
+
+            var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
+            priorityPayload = new() { 
+                Exclusive = (payloadBytes[0] & 0b_1000_0000) != 0,
+                StreamDependency = (uint)((payloadBytes[0] & 0b_0111_1111) << 24 | payloadBytes[1] << 16 | payloadBytes[2] << 8 | payloadBytes[3]),
+                Weight = payloadBytes[4]
+            };
 
             return true;
         }

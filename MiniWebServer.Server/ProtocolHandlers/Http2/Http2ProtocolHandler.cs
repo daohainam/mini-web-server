@@ -72,9 +72,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         {
             try
             {
-                while (!cancellationToken.IsCancellationRequested)
+                bool isCompleted = false;
+
+                while (!isCompleted && !cancellationToken.IsCancellationRequested)
                 {
-                    ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAsync(cancellationToken);
+                    ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAtLeastAsync(9, cancellationToken); // 9 = Frame header size
+                    logger.LogDebug("Read result: IsCompleted={r}, Buffer.Length={l}", readResult.IsCompleted, readResult.Buffer.Length);
+
                     ReadOnlySequence<byte> buffer = readResult.Buffer;
 
                     //requestBuilder.SetBodyPipeline(new Pipe());
@@ -118,10 +122,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                                     Value = maxFrameSize,
                                 },
                                 ];
-                            int length = Http2FrameWriter.SerializeSettingFrame(settingFrame, settings, writePayload);
+                            int length = Http2FrameWriter.SerializeSETTINGSFrame(settingFrame, settings, writePayload);
                             if (length > 0)
                             {
                                 protocolHandlerContext.Stream.Write(writePayload, 0, length);
+                                await protocolHandlerContext.Stream.FlushAsync();
                             }
 
                             ArrayPool<byte>.Shared.Return(writePayload);
@@ -166,6 +171,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                             return b;
                         }
                     }
+
+                    isCompleted = readResult.IsCompleted;
                 }
 
 
@@ -307,6 +314,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     break;
                 case Http2FrameType.WINDOW_UPDATE:
                     b = ProcessWINDOW_UPDATEFrame(ref frame, ref payload);
+                    break;
+                case Http2FrameType.PRIORITY:
+                    b = ProcessPRIORITYFrame(ref frame, ref payload, out var priorityPayload);
+                    break;
+                case Http2FrameType.PING:
+                    b = ProcessPINGFrame(ref frame, ref payload);
                     break;
                 default:
                     logger.LogError("Unknown frame type: {ft}, stream: {sid}", frame.FrameType, frame.StreamIdentifier);

@@ -42,7 +42,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 }
             }
 
-            if (frame.Flags.HasFlag(Http2FrameFlags.SETTINGS_ACK))
+            if (frame.Flags.HasFlag(Http2FrameFlags.ACK))
             {
                 logger.LogDebug("Received a SETTINGS_ACK frame");
             }
@@ -52,11 +52,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 var settingFrame = new Http2Frame()
                 {
                     FrameType = Http2FrameType.SETTINGS,
-                    Flags = Http2FrameFlags.SETTINGS_ACK
+                    Flags = Http2FrameFlags.ACK
                 };
 
                 var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-                int length = Http2FrameWriter.SerializeSettingFrame(settingFrame, settings, writePayload);
+                int length = Http2FrameWriter.SerializeSETTINGSFrame(settingFrame, [], writePayload);
                 if (length > 0)
                 {
                     protocolHandlerContext.Stream.Write(writePayload, 0, length);

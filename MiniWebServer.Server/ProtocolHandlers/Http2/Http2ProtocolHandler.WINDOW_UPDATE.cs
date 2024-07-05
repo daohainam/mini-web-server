@@ -39,7 +39,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 }
                 else
                 {
-                    
+                    this.windowSizeIncrement = windowSizeIncrement;
                 }
             }
 

@@ -4,6 +4,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
     internal class Http2FrameWriter
     {
+        private const int PING_OPAQUE_DATA_SIZE = 8;
+
         internal static Task<bool> SerializeHeaderFrames(uint streamId, IHttpResponse response, Stream stream)
         {
             throw new NotImplementedException();
@@ -29,7 +31,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             payload[2] = (byte)(length & 0xFF);
         }
 
-        public static int SerializeSettingFrame(Http2Frame frame, IEnumerable<Http2FrameSETTINGSItem> settingItems, byte[] writePayload)
+        public static int SerializeSETTINGSFrame(Http2Frame frame, IEnumerable<Http2FrameSETTINGSItem> settingItems, byte[] writePayload)
         {
             ArgumentNullException.ThrowIfNull(nameof(frame));
 
@@ -38,16 +40,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 throw new InternalHttp2Exception("Payload size too small");
             }
 
-            int length = 0;
+            int length = settingItems.Count() * 6; // 6 == setting item size
 
             WritePayloadLength(writePayload, length);
             writePayload[3] = (byte)Http2FrameType.SETTINGS;
             writePayload[4] = (byte)frame.Flags;
             // note: SETTINGS frames always have stream Id == 0
-            writePayload[5] = 0; // TODO: can we use SIMD instructions here? 
-            writePayload[6] = 0;
-            writePayload[7] = 0;
-            writePayload[8] = 0;
+            Array.Clear(writePayload, 5, 4);
 
             int idx = 9;
             foreach (var settingItem in settingItems) {
@@ -61,6 +60,25 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             }
 
             return idx;
+        }
+
+        public static int SerializePINGFrame(Http2Frame frame, byte[] opaqueData, byte[] writePayload)
+        {
+            ArgumentNullException.ThrowIfNull(nameof(frame));
+
+            if (opaqueData.Length != PING_OPAQUE_DATA_SIZE)
+            {
+                throw new InternalHttp2Exception("Invalid OpaqueData size");
+            }
+
+            WritePayloadLength(writePayload, 8);
+            writePayload[3] = (byte)Http2FrameType.PING;
+            writePayload[4] = (byte)frame.Flags;
+            // note: PING frames always have stream Id == 0
+            Array.Clear(writePayload, 5, 4);
+            Array.Copy(opaqueData, 0, writePayload, 9, PING_OPAQUE_DATA_SIZE);
+
+            return 9 + PING_OPAQUE_DATA_SIZE; // header size + opaque data size
         }
     }
 }
