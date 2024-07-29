@@ -12,6 +12,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         {
             if (isHuffmanEncoded)
             {
+                var bitLength = Huffman.Decode(span, out string s);
+
                 throw new InvalidOperationException("Huffman encode not supported");
             }
             else

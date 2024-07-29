@@ -265,7 +265,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         Literal Header Field with Incremental Indexing — Indexed Name
                         */
 
-                        index = HPACKInteger.ReadInt(ref payload, 8);
+                        //index = HPACKInteger.ReadInt(ref payload, 8);
+                        
+                        payload = payload.Slice(1); 
 
                         // read from header tables
                         var valueLength = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);

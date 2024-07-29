@@ -31,7 +31,20 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         public static int ReadInt(ref ReadOnlySequence<byte> payload, int n)
         {
-            var hs = payload.Slice(0, 1).FirstSpan[0];
+            var mask = n switch
+            {
+                7 => 0b_0111_1111,
+                6 => 0b_0011_1111,
+                5 => 0b_0001_1111,
+                4 => 0b_0000_1111,
+                3 => 0b_0000_0111,
+                2 => 0b_0000_0011,
+                1 => 0b_0000_0001,
+                0 => 0b_0000_0000,
+                _ => 0b_1111_1111
+            };
+
+            var hs = payload.Slice(0, 1).FirstSpan[0] & mask;
             payload = payload.Slice(1);
             
             if (hs < Pow2(n) - 1)
