@@ -520,18 +520,40 @@ byte[] bitLengths =
         ];
 
 var tree = new ushort[15 * 255];
+/* node format
+ * LXXXXXXXYYYYYYYY where
+ * L: 1 if a leaf node, YYYYYYYY contains symbol
+ * XXXXXXX: bit length, middle nodes will always have bitlength = 8
+ * YYYYYYYY: symbol or node value if it is a middle node
+*/
+int lastNodeIndex = 0;
 
-for (var i = 0; i <= 256; i++)
+for (ushort i = 0; i <= 256; i++)
 {
     var code = codes[i];
     var bitLength = bitLengths[i];
+    ushort symbol = i;
+    ushort nodeLevel = 0;
 
-    if (bitLength <= 8)
+    while (bitLength > 0)
     {
+        if (bitLength <= 8)
+        {
+            tree[lastNodeIndex] = (ushort)(((0x80 | bitLength) << 8) | symbol);
+        }
+        else
+        {
+            var nodeIndex = nodeLevel << 8 | (ushort)(code >> 24 /* take the most left 8 bits */);
 
-    }
-    else
-    {
-        
+            if (tree[nodeIndex] == 0) // empty node
+            {
+            }
+            else
+            {
+            }
+
+            code <<= 8;
+            bitLength -= 8;
+        }
     }
 }
