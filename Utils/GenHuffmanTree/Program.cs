@@ -519,12 +519,12 @@ byte[] bitLengths =
             30
         ];
 
-var tree = new ushort[15 * 255];
+var tree = new ushort[15 * 256]; // each node has 256 children, and we have max 30 bit length so we have 4^2 - 1 nodes
 /* node format
  * LXXXXXXXYYYYYYYY where
  * L: 1 if a leaf node, YYYYYYYY contains symbol
  * XXXXXXX: bit length, middle nodes will always have bitlength = 8
- * YYYYYYYY: symbol or node value if it is a middle node
+ * YYYYYYYY: symbol or next index if it is a middle node
 */
 int lastNodeIndex = 0;
 
@@ -533,7 +533,7 @@ for (ushort i = 0; i <= 256; i++)
     var code = codes[i];
     var bitLength = bitLengths[i];
     ushort symbol = i;
-    ushort nodeLevel = 0;
+    int nodeLevel = 0;
 
     while (bitLength > 0)
     {
@@ -543,13 +543,17 @@ for (ushort i = 0; i <= 256; i++)
         }
         else
         {
-            var nodeIndex = nodeLevel << 8 | (ushort)(code >> 24 /* take the most left 8 bits */);
+            var nodeIndex = (ushort)(code >> 24 /* take the most left 8 bits */);
+            var nodeValue = tree[nodeLevel << 8 | nodeIndex];
 
-            if (tree[nodeIndex] == 0) // empty node
+            if (nodeValue == 0) // empty node
             {
+                nodeLevel++;
+                tree[nodeLevel << 8 | nodeIndex] = (ushort)((code >> 24) & 0xFF);
             }
             else
             {
+                nodeLevel = nodeValue & 0xFF;
             }
 
             code <<= 8;
