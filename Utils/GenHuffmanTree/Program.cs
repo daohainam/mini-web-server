@@ -1,4 +1,5 @@
-﻿uint[] codes = [
+﻿
+uint[] codes = [
     0b_11111111_11000000_00000000_00000000,
     0b_11111111_11111111_10110000_00000000,
     0b_11111111_11111111_11111110_00100000,
@@ -523,8 +524,8 @@ var tree = new ushort[15 * 256]; // each node has 256 children, and we have max 
 /* node format
  * LXXXXXXXYYYYYYYY where
  * L: 1 if a leaf node, YYYYYYYY contains symbol
- * XXXXXXX: bit length, middle nodes will always have bitlength = 8
- * YYYYYYYY: symbol or next index if it is a middle node
+ * XXXXXXX: bit length, middle nodes will always have bitlength = 8, or next index if it is a middle node
+ * YYYYYYYY: symbol or 0 if it is a middle node
 */
 int lastNodeIndex = 0;
 
@@ -532,32 +533,55 @@ for (ushort i = 0; i <= 256; i++)
 {
     var code = codes[i];
     var bitLength = bitLengths[i];
+
     ushort symbol = i;
-    int nodeLevel = 0;
+    int nodeTableIndex = 0;
+    int allocatedNodeTableIndex = 0;
 
     while (bitLength > 0)
     {
         if (bitLength <= 8)
         {
             tree[lastNodeIndex] = (ushort)(((0x80 | bitLength) << 8) | symbol);
+            bitLength = 0;
         }
         else
         {
             var nodeIndex = (ushort)(code >> 24 /* take the most left 8 bits */);
-            var nodeValue = tree[nodeLevel << 8 | nodeIndex];
+            var nodeValue = tree[nodeTableIndex << 8 | nodeIndex];
 
             if (nodeValue == 0) // empty node
             {
-                nodeLevel++;
-                tree[nodeLevel << 8 | nodeIndex] = (ushort)((code >> 24) & 0xFF);
+                allocatedNodeTableIndex++;
+                tree[nodeTableIndex << 8 | nodeIndex] = (ushort)((allocatedNodeTableIndex | 0x80) << 8);
+                nodeTableIndex = allocatedNodeTableIndex;
             }
             else
             {
-                nodeLevel = nodeValue & 0xFF;
+                nodeTableIndex = (nodeValue & 0x7F00) >> 8;
             }
 
             code <<= 8;
             bitLength -= 8;
         }
+    }
+}
+
+PrintTree();
+
+void PrintTree()
+{
+    foreach (var node in tree)
+    {
+        if (node == 0)
+        {
+            break;
+        }
+
+        var isLeaf = (node & 0x8000) != 0;
+        var bitLength = (node & 0x7F00) >> 8;
+        var symbol = node & 0xFF;
+
+        Console.WriteLine($"IsLeaf: {isLeaf}, BitLength: {bitLength}, Symbol: { char.ConvertFromUtf32(symbol)}");
     }
 }
