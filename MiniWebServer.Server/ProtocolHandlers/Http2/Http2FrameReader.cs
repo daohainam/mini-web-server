@@ -1,16 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
-using System;
 using System.Buffers;
-using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Reflection.PortableExecutable;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Hpack = global::Http2.Hpack;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
@@ -235,13 +226,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                         payload = payload.Slice(1);
 
                         var length = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
-                        var name = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
+                        var name = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
 
                         payload = payload.Slice(length);
                         length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
 
                         length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
-                        var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
+                        var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
 
 #if DEBUG
                         logger.LogDebug("New LwII header: {k}: {v}", name, value);
@@ -271,7 +262,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
                         // read from header tables
                         var valueLength = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
-                        var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, valueLength)));
+                        var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, valueLength));
 
                         if (headerTable.TryGetHeader(index, out var header))
                         {
@@ -306,13 +297,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                          */
 
                         var length = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
-                        var name = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
+                        var name = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
 
                         payload = payload.Slice(length);
                         length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
 
                         length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
-                        var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, length)));
+                        var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
 
 #if DEBUG
                         logger.LogDebug("New LwoII header: {k}: {v}", name, value);
@@ -340,7 +331,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
                         // read from header tables
                         var valueLength = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
-                        var value = HPACKString.Decode(isHuffmanEncoded, GetSpan(payload.Slice(0, valueLength)));
+                        var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, valueLength));
 
                         if (headerTable.TryGetHeader(index, out var header))
                         {
