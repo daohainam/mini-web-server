@@ -520,14 +520,13 @@ byte[] bitLengths =
             30
         ];
 
-var tree = new ushort[15 * 256]; // each node has 256 children, and we have max 30 bit length so we have 4^2 - 1 nodes
+var tree = new TreeNode?[15 * 256]; // each node has 256 children, and we have max 30 bit length so we have 4^2 - 1 nodes
 /* node format
  * LXXXXXXXYYYYYYYY where
  * L: 1 if a leaf node, YYYYYYYY contains symbol
- * XXXXXXX: bit length, middle nodes will always have bitlength = 8, or next index if it is a middle node
+ * XXXXXXX: bit length, or next index if it is a middle node
  * YYYYYYYY: symbol or 0 if it is a middle node
 */
-int lastNodeIndex = 0;
 
 for (ushort i = 0; i <= 256; i++)
 {
@@ -540,25 +539,26 @@ for (ushort i = 0; i <= 256; i++)
 
     while (bitLength > 0)
     {
+        var nodeIndex = (ushort)(code >> 24 /* take the most left 8 bits */);
+
         if (bitLength <= 8)
         {
-            tree[lastNodeIndex] = (ushort)(((0x80 | bitLength) << 8) | symbol);
+            tree[(nodeTableIndex << 8) | nodeIndex] = new TreeNode();
             bitLength = 0;
         }
         else
         {
-            var nodeIndex = (ushort)(code >> 24 /* take the most left 8 bits */);
             var nodeValue = tree[nodeTableIndex << 8 | nodeIndex];
 
-            if (nodeValue == 0) // empty node
+            if (nodeValue == null) // empty node
             {
                 allocatedNodeTableIndex++;
-                tree[nodeTableIndex << 8 | nodeIndex] = (ushort)((allocatedNodeTableIndex | 0x80) << 8);
+                tree[nodeTableIndex << 8 | nodeIndex] = new TreeNode(false, 0, (byte)allocatedNodeTableIndex, (byte)nodeIndex);
                 nodeTableIndex = allocatedNodeTableIndex;
             }
             else
             {
-                nodeTableIndex = (nodeValue & 0x7F00) >> 8;
+                nodeTableIndex = nodeValue.Value.NodeTableIndex;
             }
 
             code <<= 8;
@@ -573,15 +573,22 @@ void PrintTree()
 {
     foreach (var node in tree)
     {
-        if (node == 0)
-        {
-            break;
-        }
+        
+    }
+}
 
-        var isLeaf = (node & 0x8000) != 0;
-        var bitLength = (node & 0x7F00) >> 8;
-        var symbol = node & 0xFF;
+struct TreeNode
+{
+    public bool IsLeaf;
+    public byte Symbol;
+    public byte NodeTableIndex;
+    public byte NodeChildIndex;
 
-        Console.WriteLine($"IsLeaf: {isLeaf}, BitLength: {bitLength}, Symbol: { char.ConvertFromUtf32(symbol)}");
+    public TreeNode(bool isLeaf, byte symbol, byte nodeIndex, byte nodeChildIndex)
+    {
+        IsLeaf = isLeaf;
+        Symbol = symbol;
+        NodeTableIndex = nodeIndex;
+        NodeChildIndex = nodeChildIndex;
     }
 }

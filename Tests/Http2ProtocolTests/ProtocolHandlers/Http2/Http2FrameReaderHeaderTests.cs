@@ -60,5 +60,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2.Tests
         {
             Assert.AreEqual(expectedV, HPACKInteger.Decode(v, n));
         }
+
+        [TestMethod()]
+        public void TryReadHEADERSFramePayloadTest()
+        {
+            Assert.Fail();
+        }
     }
 }
