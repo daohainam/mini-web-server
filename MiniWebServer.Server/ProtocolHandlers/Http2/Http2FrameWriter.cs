@@ -1,4 +1,5 @@
 ﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions.Http;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2
 {
@@ -79,6 +80,20 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             Array.Copy(opaqueData, 0, writePayload, 9, PING_OPAQUE_DATA_SIZE);
 
             return 9 + PING_OPAQUE_DATA_SIZE; // header size + opaque data size
+        }
+
+        internal static int SerializeHEADERFrame(Http2Frame frame, IEnumerable<HttpHeader> headers, byte[] writePayload)
+        {
+            ArgumentNullException.ThrowIfNull(nameof(frame));
+            ArgumentNullException.ThrowIfNull(nameof(headers));
+            ArgumentNullException.ThrowIfNull(nameof(writePayload));
+
+            int payLoadLength = 0;
+            foreach (HttpHeader header in headers) { 
+
+            }
+
+            WritePayloadLength(writePayload, payLoadLength);
         }
     }
 }

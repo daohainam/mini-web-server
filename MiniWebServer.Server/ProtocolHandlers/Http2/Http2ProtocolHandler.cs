@@ -351,34 +351,34 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
         private async Task WriteResponseAsync(uint streamId, IHttpResponse response, Stream stream)
         {
-            foreach (var headerFrame in SerializationHeader(streamId, response, maxFrameSize))
+            var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
+            foreach (var header in response.Headers)
             {
-                
+
             }
+            ArrayPool<byte>.Shared.Return(writePayload);
+
+            //var headerFrame = new Http2Frame()
+            //{
+            //    FrameType = Http2FrameType.HEADERS,
+            //    StreamIdentifier = streamId,
+            //    Flags = Http2FrameFlags.END_HEADERS
+            //};
+
+            //var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
+
+            //int length = Http2FrameWriter.SerializeHEADERFrame(headerFrame, response.Headers, writePayload);
+            //if (length > 0)
+            //{
+            //    protocolHandlerContext.Stream.Write(writePayload, 0, length);
+            //}
+
+            //ArrayPool<byte>.Shared.Return(writePayload);
 
             //if (!await Http2FrameWriter.SerializeHeaderFrames(streamId, response, stream))
             //{
 
             //}
-        }
-
-        private IEnumerable<Http2Frame> SerializationHeader(uint streamId, IHttpResponse response, uint maxPayloadSize)
-        {
-            var frame = new Http2Frame()
-            {
-                FrameType = Http2FrameType.HEADERS,
-                StreamIdentifier = streamId,
-            };
-            var headers = new List<HttpHeader>(response.Headers);
-
-            var payload = ArrayPool<byte>.Shared.Rent((int)maxPayloadSize);
-
-            SerializeHeaderFramePayload(response, ref payload, out int length);
-
-            // build frame payload
-
-            // now we return first frame
-            yield return frame;
         }
 
         private void SerializeHeaderFramePayload(IHttpResponse response, ref byte[] payload, out int length)
