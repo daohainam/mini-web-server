@@ -77,6 +77,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{A1A53C1C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenHuffmanTree", "Utils\GenHuffmanTree\GenHuffmanTree.csproj", "{BF8B98F8-85F8-4905-9B7C-B43FAF00DB43}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Http2FrameReaderTests", "Http2FrameReaderTests\Http2FrameReaderTests.csproj", "{0C5CF53D-43E3-4E2A-ADD9-1DCC82399EAF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -211,6 +213,10 @@ Global
 		{BF8B98F8-85F8-4905-9B7C-B43FAF00DB43}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF8B98F8-85F8-4905-9B7C-B43FAF00DB43}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF8B98F8-85F8-4905-9B7C-B43FAF00DB43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C5CF53D-43E3-4E2A-ADD9-1DCC82399EAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C5CF53D-43E3-4E2A-ADD9-1DCC82399EAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C5CF53D-43E3-4E2A-ADD9-1DCC82399EAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C5CF53D-43E3-4E2A-ADD9-1DCC82399EAF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -238,6 +244,7 @@ Global
 		{9C40937F-6DD2-4D76-ACF8-821EF19D3DF3} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
 		{A39294D3-7EC1-4FD2-AA19-71913E8759E2} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
 		{BF8B98F8-85F8-4905-9B7C-B43FAF00DB43} = {A1A53C1C-50AE-4F9A-8DB7-5502CE4AC41F}
+		{0C5CF53D-43E3-4E2A-ADD9-1DCC82399EAF} = {E2BF560E-AB82-44C5-B990-32F2F5CEB8F8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D1843708-76D1-4698-A487-8D1531533306}

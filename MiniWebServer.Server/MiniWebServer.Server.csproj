@@ -43,4 +43,7 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+	<ItemGroup>
+		<InternalsVisibleTo Include="Http2FrameReaderTests" />
+	</ItemGroup>
 </Project>

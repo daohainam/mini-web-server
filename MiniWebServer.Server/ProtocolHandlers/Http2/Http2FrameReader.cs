@@ -45,13 +45,13 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return true;
         }
 
-        private static uint GetStreamIdentifier(ReadOnlySpan<byte> header)
+        internal static uint GetStreamIdentifier(ReadOnlySpan<byte> header)
         {
             // first bit is always 0 so it is always a positive number
             return (uint)((header[5] & 0b_0111_1111) << 24 | header[6] << 16 | header[7] << 8 | header[8]);
         }
 
-        private static Http2FrameType GetFrameType(byte b) => b switch
+        internal static Http2FrameType GetFrameType(byte b) => b switch
         {
             0 => Http2FrameType.DATA,
             1 => Http2FrameType.HEADERS,
