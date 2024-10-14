@@ -295,13 +295,12 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                             +-------------------------------+
                             Literal Header Field without Indexing — New Name
                          */
+                        payload = payload.Slice(1);
 
                         var length = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
                         var name = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
 
                         payload = payload.Slice(length);
-                        length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
-
                         length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
                         var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
 

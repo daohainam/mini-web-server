@@ -44,6 +44,6 @@
     </None>
   </ItemGroup>
 	<ItemGroup>
-		<InternalsVisibleTo Include="Http2FrameReaderTests" />
+		<InternalsVisibleTo Include="Http2Tests" />
 	</ItemGroup>
 </Project>

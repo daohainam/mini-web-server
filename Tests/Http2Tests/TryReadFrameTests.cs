@@ -2,31 +2,19 @@ using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.Server.ProtocolHandlers.Http2;
 using System.Buffers;
 
-namespace Http2FrameReaderTests
+namespace Http2Tests
 {
-    public class TryReadHEADERSFrameTests
+    public class TryReadFrameTests
     {
         public class Http2FrameReaderTests
-        {
+        { 
             // some of the test data are from https://github.com/http2jp/http2-frame-test-case
-
-
-            private static byte[] String2ByteArray(string s)
-            {
-                byte[] byteArray = new byte[s.Length / 2];
-                for (int i = 0; i < byteArray.Length; i++)
-                {
-                    byteArray[i] = Convert.ToByte(s.Substring(i * 2, 2), 16);
-                }
-                return byteArray;
-            }
-
 
             [Fact]
             public void TryReadFrame_SETTINGS_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("00000C040000000000000100002000000300001388"));
+                var buffer = new ReadOnlySequence<byte>("00000C040000000000000100002000000300001388".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -46,7 +34,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_HEADERS_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("00000D010400000001746869732069732064756D6D79"));
+                var buffer = new ReadOnlySequence<byte>("00000D010400000001746869732069732064756D6D79".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -66,7 +54,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_HEADERS_PRIORITY_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("000023012C00000003108000001409746869732069732064756D6D79546869732069732070616464696E672E"));
+                var buffer = new ReadOnlySequence<byte>("000023012C00000003108000001409746869732069732064756D6D79546869732069732070616464696E672E".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -86,7 +74,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_DATA_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("0000140008000000020648656C6C6F2C20776F726C6421486F77647921"));
+                var buffer = new ReadOnlySequence<byte>("0000140008000000020648656C6C6F2C20776F726C6421486F77647921".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -106,7 +94,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_GOAWAY_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("0000170700000000000000001E00000009687061636B2069732062726F6B656E"));
+                var buffer = new ReadOnlySequence<byte>("0000170700000000000000001E00000009687061636B2069732062726F6B656E".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -126,7 +114,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_CONTINUATION_HEADER_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("00000D090000000032746869732069732064756D6D79"));
+                var buffer = new ReadOnlySequence<byte>("00000D090000000032746869732069732064756D6D79".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -146,7 +134,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_CONTINUATION_NORMAL_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("000000090000000032"));
+                var buffer = new ReadOnlySequence<byte>("000000090000000032".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -166,7 +154,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_RST_STREAM_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("00000403000000000500000008"));
+                var buffer = new ReadOnlySequence<byte>("00000403000000000500000008".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -186,7 +174,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_WINDOW_UPDATE_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("000004080000000032000003E8"));
+                var buffer = new ReadOnlySequence<byte>("000004080000000032000003E8".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -206,7 +194,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_PUSH_PROMISE_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("000018050C0000000A060000000C746869732069732064756D6D79486F77647921"));
+                var buffer = new ReadOnlySequence<byte>("000018050C0000000A060000000C746869732069732064756D6D79486F77647921".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -226,7 +214,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_PRIORITY_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("0000050200000000090000000B07"));
+                var buffer = new ReadOnlySequence<byte>("0000050200000000090000000B07".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -246,7 +234,7 @@ namespace Http2FrameReaderTests
             public void TryReadFrame_PING_ReturnsTrueAndPayload()
             {
                 // Arrange
-                var buffer = new ReadOnlySequence<byte>(String2ByteArray("0000080600000000006465616462656566"));
+                var buffer = new ReadOnlySequence<byte>("0000080600000000006465616462656566".ToByteArray());
                 var frame = new Http2Frame();
                 var maxFrameSize = 1024u;
 
@@ -262,6 +250,25 @@ namespace Http2FrameReaderTests
                 Assert.Equal(frame.Length, payload.Length);
             }
 
+            [Fact]
+            public void TryReadFrame_HEADER_ReturnsTrueAndPayload()
+            {
+                // Arrange
+                var buffer = new ReadOnlySequence<byte>([0x0, 0x0, 0x27, 0x1, 0x5, 0x0, 0x0, 0x0, 0x1, 0x82, 0x86, 0x1, 0xe, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x68, 0x6f, 0x73, 0x74, 0x3a, 0x39, 0x36, 0x35, 0x32, 0x84, 0xf, 0x1, 0x11, 0x67, 0x7a, 0x69, 0x70, 0x2c, 0x20, 0x64, 0x65, 0x66, 0x6c, 0x61, 0x74, 0x65, 0x2c, 0x20, 0x62, 0x72]);
+                var frame = new Http2Frame();
+                var maxFrameSize = 1024u;
+
+                // Act
+                var result = Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload);
+
+                // Assert
+                Assert.True(result);
+                Assert.Equal(Http2FrameType.HEADERS, frame.FrameType);
+                Assert.Equal(Http2FrameFlags.END_STREAM | Http2FrameFlags.END_HEADERS, frame.Flags);
+                Assert.Equal(39, frame.Length);
+                Assert.Equal(1u, frame.StreamIdentifier);
+                Assert.Equal(frame.Length, payload.Length);
+            }
 
             //------------------------------------------------------------------
 
@@ -315,32 +322,6 @@ namespace Http2FrameReaderTests
                 Assert.Equal(expectedStreamIdentifier, streamIdentifier);
             }
 
-            [Fact]
-            public void TryReadHEADERSFramePayload_ValidPayload_ReturnsTrueAndHeadersPayload()
-            {
-                // Arrange
-                var frame = new Http2Frame();
-                var payload = new ReadOnlySequence<byte>([0x82, 0x86, 0x84, 0x41, 0x8c, 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff]);
-                var headerTable = new HPACKHeaderTable();
-                var logger = NullLogger.Instance;
-                Http2FrameHEADERSPayload headersPayload;
-
-                // Act
-                var result = Http2FrameReader.TryReadHEADERSFramePayload(ref frame, payload, headerTable, out headersPayload, logger);
-
-                // Assert
-                Assert.True(result);
-                Assert.NotNull(headersPayload);
-                Assert.Equal(4, headersPayload.Headers.Count);
-                Assert.Equal(":method", headersPayload.Headers[0].Name);
-                Assert.Equal("GET", headersPayload.Headers[0].Value);
-                Assert.Equal(":scheme", headersPayload.Headers[1].Name);
-                Assert.Equal("http", headersPayload.Headers[1].Value);
-                Assert.Equal(":path", headersPayload.Headers[2].Name);
-                Assert.Equal("/", headersPayload.Headers[2].Value);
-                Assert.Equal(":authority", headersPayload.Headers[3].Name);
-                Assert.Equal("www.example.com", headersPayload.Headers[3].Value);
-            }
         }
     }
 }

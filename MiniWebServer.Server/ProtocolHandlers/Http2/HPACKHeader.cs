@@ -21,6 +21,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         //public byte[] NameAsBytes { get; } = name.Length > 0 ? Encoding.ASCII.GetBytes(name) : [];
         //public byte[] ValueAsBytes { get; } = value.Length > 0 ? Encoding.ASCII.GetBytes(value) : [];
         public HPACKHeaderTypes HeaderType { get; } = headerType;
+
+        public override string ToString()
+        {
+            return $"{Name}: {Value}";
+        }
     }
 
     public enum HPACKHeaderTypes
