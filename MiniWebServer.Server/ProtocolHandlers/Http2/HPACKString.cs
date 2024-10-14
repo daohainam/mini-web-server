@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Http2.Hpack;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,10 +15,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         {
             if (isHuffmanEncoded)
             {
-                var decoder = new Hpack.StringDecoder(4096, ArrayPool<byte>.Shared);
-                var n = decoder.Decode(new ArraySegment<byte>(span.ToArray()));
+                var n = Huffman.Decode(new ArraySegment<byte>(span.ToArray()), ArrayPool<byte>.Shared);
 
-                return decoder.Result;
+                return n;
 
                 //throw new InvalidOperationException("Huffman encode not supported");
             }

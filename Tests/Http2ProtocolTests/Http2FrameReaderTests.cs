@@ -14,7 +14,7 @@ namespace MiniWebServer.Server.Tests.ProtocolHandlers.Http2
             var frame = new Http2Frame();
 
             // from https://httpwg.org/specs/rfc7541.html#n-first-request_2
-            var payload = new ReadOnlySequence<byte>(new byte[] { 0x82, 0x86, 0x84, 0x41, 0x8c, 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff });
+            var payload = new ReadOnlySequence<byte>([0x82, 0x86, 0x84, 0x41, 0x8c, 0xf1, 0xe3, 0xc2, 0xe5, 0xf2, 0x3a, 0x6b, 0xa0, 0xab, 0x90, 0xf4, 0xff]);
             var headerTable = new HPACKHeaderTable();
             var logger = NullLogger.Instance;
 
@@ -24,11 +24,15 @@ namespace MiniWebServer.Server.Tests.ProtocolHandlers.Http2
             // Assert
             Assert.IsTrue(result);
             Assert.IsNotNull(headersPayload);
-            Assert.AreEqual(2, headersPayload.Headers.Count);
-            Assert.AreEqual("AB", headersPayload.Headers[0].Name);
-            Assert.AreEqual("C", headersPayload.Headers[0].Value);
-            Assert.AreEqual("ABC", headersPayload.Headers[1].Name);
-            Assert.AreEqual("", headersPayload.Headers[1].Value);
+            Assert.AreEqual(4, headersPayload.Headers.Count);
+            Assert.AreEqual(":method", headersPayload.Headers[0].Name);
+            Assert.AreEqual("GET", headersPayload.Headers[0].Value);
+            Assert.AreEqual(":scheme", headersPayload.Headers[1].Name);
+            Assert.AreEqual("http", headersPayload.Headers[1].Value);
+            Assert.AreEqual(":path", headersPayload.Headers[2].Name);
+            Assert.AreEqual("/", headersPayload.Headers[2].Value);
+            Assert.AreEqual(":authority", headersPayload.Headers[3].Name);
+            Assert.AreEqual("www.example.com", headersPayload.Headers[3].Value);
         }
 
         //[TestMethod()]
