@@ -82,18 +82,23 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             return 9 + PING_OPAQUE_DATA_SIZE; // header size + opaque data size
         }
 
-        internal static int SerializeHEADERFrame(Http2Frame frame, IEnumerable<HttpHeader> headers, byte[] writePayload)
+        //internal static int SerializeHEADERFrame(ulong streamId, IEnumerable<HttpHeader> headers, byte[] writePayload)
+        //{
+        //    ArgumentNullException.ThrowIfNull(nameof(frame));
+        //    ArgumentNullException.ThrowIfNull(nameof(headers));
+        //    ArgumentNullException.ThrowIfNull(nameof(writePayload));
+
+        //    int payLoadLength = 0;
+        //    foreach (HttpHeader header in headers) { 
+
+        //    }
+
+        //    WritePayloadLength(writePayload, payLoadLength);
+        //}
+
+        internal static int SerializeHEADERFrame(uint streamId, string key, IEnumerable<string> values, bool isContinuation, bool isEndOfHeader, byte[] writePayload)
         {
-            ArgumentNullException.ThrowIfNull(nameof(frame));
-            ArgumentNullException.ThrowIfNull(nameof(headers));
-            ArgumentNullException.ThrowIfNull(nameof(writePayload));
-
-            int payLoadLength = 0;
-            foreach (HttpHeader header in headers) { 
-
-            }
-
-            WritePayloadLength(writePayload, payLoadLength);
+            throw new NotImplementedException();
         }
     }
 }

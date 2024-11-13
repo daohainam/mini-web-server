@@ -344,19 +344,37 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             var streamId = GetNextStreamIdentifier();
             var stream = response.Stream ?? throw new InvalidOperationException("response.Stream should not be null");
 
-            await WriteResponseAsync(streamId, response, stream);
+            await WriteHeadersAsync(streamId, response, stream, cancellationToken);
 
             return true;
         }
 
-        private async Task WriteResponseAsync(uint streamId, IHttpResponse response, Stream stream)
+        private async Task WriteHeadersAsync(uint streamId, IHttpResponse response, Stream stream, CancellationToken cancellationToken)
         {
             var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-            foreach (var header in response.Headers)
-            {
 
+            try
+            {
+                int count = response.Headers.Count;
+                int i = 1;
+
+                foreach (var header in response.Headers)
+                {
+                    int length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, i == 1, i == count, writePayload);
+
+                    if (length > 0)
+                    {
+                        await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+                    }
+                }
+            } catch (Exception ex) {
+                logger.LogError(ex, "Error writing headers");
+
+                throw;
+            } finally
+            {
+                ArrayPool<byte>.Shared.Return(writePayload);
             }
-            ArrayPool<byte>.Shared.Return(writePayload);
 
             //var headerFrame = new Http2Frame()
             //{
