@@ -118,24 +118,70 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             if (nameIndex > 0)
             {
                 // Indexed name - Literal Header Field without Indexing
-                headerFieldBuffer[headerFieldLength++] = (byte)nameIndex;
+                // Pattern: 0000xxxx where xxxx is the index (using 4-bit prefix)
+                if (nameIndex < 15)
+                {
+                    headerFieldBuffer[headerFieldLength++] = (byte)nameIndex;
+                }
+                else
+                {
+                    // Use HPACK integer encoding for larger indices
+                    headerFieldBuffer[headerFieldLength++] = 0x0F; // Set lower 4 bits to 1111
+                    int remaining = nameIndex - 15;
+                    while (remaining >= 128)
+                    {
+                        headerFieldBuffer[headerFieldLength++] = (byte)(0x80 | (remaining % 128));
+                        remaining /= 128;
+                    }
+                    headerFieldBuffer[headerFieldLength++] = (byte)remaining;
+                }
             }
             else
             {
                 // New name - Literal Header Field without Indexing
                 headerFieldBuffer[headerFieldLength++] = 0x00;
                 
-                // Encode name as string
+                // Encode name as string (with length prefix)
                 byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(key.ToLower());
-                headerFieldBuffer[headerFieldLength++] = (byte)nameBytes.Length;
+                if (nameBytes.Length < 127)
+                {
+                    headerFieldBuffer[headerFieldLength++] = (byte)nameBytes.Length;
+                }
+                else
+                {
+                    // Use HPACK integer encoding for large strings
+                    headerFieldBuffer[headerFieldLength++] = 0x7F;
+                    int remaining = nameBytes.Length - 127;
+                    while (remaining >= 128)
+                    {
+                        headerFieldBuffer[headerFieldLength++] = (byte)(0x80 | (remaining % 128));
+                        remaining /= 128;
+                    }
+                    headerFieldBuffer[headerFieldLength++] = (byte)remaining;
+                }
                 Array.Copy(nameBytes, 0, headerFieldBuffer, headerFieldLength, nameBytes.Length);
                 headerFieldLength += nameBytes.Length;
             }
 
-            // Encode value as string
+            // Encode value as string (with length prefix)
             string value = string.Join(", ", values);
             byte[] valueBytes = System.Text.Encoding.ASCII.GetBytes(value);
-            headerFieldBuffer[headerFieldLength++] = (byte)valueBytes.Length;
+            if (valueBytes.Length < 127)
+            {
+                headerFieldBuffer[headerFieldLength++] = (byte)valueBytes.Length;
+            }
+            else
+            {
+                // Use HPACK integer encoding for large strings
+                headerFieldBuffer[headerFieldLength++] = 0x7F;
+                int remaining = valueBytes.Length - 127;
+                while (remaining >= 128)
+                {
+                    headerFieldBuffer[headerFieldLength++] = (byte)(0x80 | (remaining % 128));
+                    remaining /= 128;
+                }
+                headerFieldBuffer[headerFieldLength++] = (byte)remaining;
+            }
             Array.Copy(valueBytes, 0, headerFieldBuffer, headerFieldLength, valueBytes.Length);
             headerFieldLength += valueBytes.Length;
 

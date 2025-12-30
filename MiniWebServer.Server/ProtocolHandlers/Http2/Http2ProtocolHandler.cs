@@ -382,20 +382,39 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 {
                     // Use literal header field for non-standard status codes
                     string statusValue = ((int)response.StatusCode).ToString();
-                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, ":status", [statusValue], true, response.Headers.Count == 0, writePayload);
+                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, ":status", [statusValue], true, response.Headers.Count == 0 && response.Cookies.Count == 0, writePayload);
                     if (length > 0)
                     {
                         await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
                     }
                 }
 
-                // Then write regular headers
-                int count = response.Headers.Count;
+                // Add content headers to response headers
+                foreach (var header in response.Content.Headers)
+                {
+                    response.Headers.AddOrUpdate(header.Key, header.Value);
+                }
+
+                // Write regular headers
+                int count = response.Headers.Count + response.Cookies.Count;
                 int i = 1;
 
                 foreach (var header in response.Headers)
                 {
                     length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, false, i == count, writePayload);
+
+                    if (length > 0)
+                    {
+                        await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+                    }
+                    i++;
+                }
+
+                // Write cookies as set-cookie headers
+                foreach (var cookie in response.Cookies)
+                {
+                    string cookieValue = $"{cookie.Key}={string.Join("; ", cookie.Value.Value)}";
+                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, "set-cookie", [cookieValue], false, i == count, writePayload);
 
                     if (length > 0)
                     {
