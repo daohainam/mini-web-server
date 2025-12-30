@@ -359,6 +359,15 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
             try
             {
+                // Add content headers to response headers first (before counting)
+                foreach (var header in response.Content.Headers)
+                {
+                    response.Headers.AddOrUpdate(header.Key, header.Value);
+                }
+
+                // Calculate total header count for END_HEADERS flag
+                int totalHeaderCount = response.Headers.Count + response.Cookies.Count;
+
                 // First, write the :status pseudo-header
                 int statusIndex = GetStaticHeaderIndex(response.StatusCode);
                 int length;
@@ -368,7 +377,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                     // Use indexed header field representation for status
                     SerializeStatusHeader(statusIndex, writePayload, out length);
                     writePayload[3] = (byte)Http2FrameType.HEADERS;
-                    writePayload[4] = (byte)Http2FrameFlags.NONE; // First header frame, not the last
+                    writePayload[4] = (byte)(totalHeaderCount == 0 ? Http2FrameFlags.END_HEADERS : Http2FrameFlags.NONE);
                     
                     // Write stream identifier
                     writePayload[5] = (byte)((streamId >> 24) & 0x7F);
@@ -382,26 +391,19 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 {
                     // Use literal header field for non-standard status codes
                     string statusValue = ((int)response.StatusCode).ToString();
-                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, ":status", [statusValue], true, response.Headers.Count == 0 && response.Cookies.Count == 0, writePayload);
+                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, ":status", [statusValue], true, totalHeaderCount == 0, writePayload);
                     if (length > 0)
                     {
                         await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
                     }
                 }
 
-                // Add content headers to response headers
-                foreach (var header in response.Content.Headers)
-                {
-                    response.Headers.AddOrUpdate(header.Key, header.Value);
-                }
-
                 // Write regular headers
-                int count = response.Headers.Count + response.Cookies.Count;
                 int i = 1;
 
                 foreach (var header in response.Headers)
                 {
-                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, false, i == count, writePayload);
+                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, false, i == totalHeaderCount, writePayload);
 
                     if (length > 0)
                     {
@@ -413,8 +415,8 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
                 // Write cookies as set-cookie headers
                 foreach (var cookie in response.Cookies)
                 {
-                    string cookieValue = $"{cookie.Key}={string.Join("; ", cookie.Value.Value)}";
-                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, "set-cookie", [cookieValue], false, i == count, writePayload);
+                    string cookieValue = cookie.Value.ToString();
+                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, "set-cookie", [cookieValue], false, i == totalHeaderCount, writePayload);
 
                     if (length > 0)
                     {
@@ -441,7 +443,9 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             // Write indexed header field representation
             // Pattern: 1xxxxxxx where xxxxxxx is the index
             length = 0;
-            HPACKInteger.WriteInt(statusIndex, payload.AsSpan(9).ToArray(), 7, out length);
+            var tempBuffer = new byte[16]; // Small temporary buffer for integer encoding
+            HPACKInteger.WriteInt(statusIndex, tempBuffer, 7, out length);
+            Array.Copy(tempBuffer, 0, payload, 9, length);
             payload[9] |= 0b_1000_0000; // Set the indexed bit
             
             // Write payload length in frame header

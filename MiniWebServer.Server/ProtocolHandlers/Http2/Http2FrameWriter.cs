@@ -269,7 +269,10 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
         internal static int SerializeDATAFrame(uint streamId, byte[] data, int offset, int length, bool endStream, byte[] writePayload)
         {
             ArgumentNullException.ThrowIfNull(writePayload);
-            ArgumentNullException.ThrowIfNull(data);
+            if (data == null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
 
             if (writePayload.Length < 9 + length)
             {
@@ -295,7 +298,7 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             writePayload[8] = (byte)(streamId & 0xFF);
 
             // Copy data
-            if (length > 0)
+            if (length > 0 && data.Length > 0)
             {
                 Array.Copy(data, offset, writePayload, 9, length);
             }
