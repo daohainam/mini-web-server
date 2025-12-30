@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Mvc.LocalAction
+namespace MiniWebServer.Mvc.LocalAction;
+
+internal interface IActionRegistry
 {
-    internal interface IActionRegistry
-    {
-        void Register(string route, LocalAction action);
-    }
+    void Register(string route, LocalAction action);
 }

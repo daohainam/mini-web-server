@@ -1,9 +1,8 @@
-﻿namespace MiniWebServer.Configuration
+namespace MiniWebServer.Configuration;
+
+public class ServerOptions
 {
-    public class ServerOptions
-    {
-        public HostOptions[] HostOptions { get; set; } = [];
-        public BindingOptions[] BindingOptions { get; set; } = [];
-        public ServerFeatureOptions FeatureOptions { get; set; } = new();
-    }
+    public HostOptions[] HostOptions { get; set; } = [];
+    public BindingOptions[] BindingOptions { get; set; } = [];
+    public ServerFeatureOptions FeatureOptions { get; set; } = new();
 }

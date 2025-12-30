@@ -1,18 +1,17 @@
-﻿namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+internal class FilteredRequestDelegate(ICallable requestDelegate, ICallableFilter filter) : ICallable
 {
-    internal class FilteredRequestDelegate(ICallable requestDelegate, ICallableFilter filter) : ICallable
+    private readonly ICallable requestDelegate = requestDelegate ?? throw new ArgumentNullException(nameof(requestDelegate));
+    private readonly ICallableFilter filter = filter ?? throw new ArgumentNullException(nameof(filter));
+
+    public async Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
     {
-        private readonly ICallable requestDelegate = requestDelegate ?? throw new ArgumentNullException(nameof(requestDelegate));
-        private readonly ICallableFilter filter = filter ?? throw new ArgumentNullException(nameof(filter));
+        ArgumentNullException.ThrowIfNull(context);
 
-        public async Task InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken = default)
+        if (await filter.InvokeAsync(context, cancellationToken))
         {
-            ArgumentNullException.ThrowIfNull(context);
-
-            if (await filter.InvokeAsync(context, cancellationToken))
-            {
-                await requestDelegate.InvokeAsync(context, cancellationToken);
-            }
+            await requestDelegate.InvokeAsync(context, cancellationToken);
         }
     }
 }

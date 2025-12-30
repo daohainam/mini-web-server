@@ -1,67 +1,66 @@
-﻿using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp;
 
-namespace MiniWebServer.Session
+namespace MiniWebServer.Session;
+
+public class SessionMiddleware : IMiddleware
 {
-    public class SessionMiddleware : IMiddleware
+    private readonly SessionOptions options;
+    private readonly ISessionIdGenerator sessionIdGenerator;
+    private readonly ISessionStore sessionStore;
+
+    public SessionMiddleware(SessionOptions options, ISessionIdGenerator? sessionIdGenerator, ISessionStore? sessionStore)
     {
-        private readonly SessionOptions options;
-        private readonly ISessionIdGenerator sessionIdGenerator;
-        private readonly ISessionStore sessionStore;
+        ArgumentNullException.ThrowIfNull(options);
 
-        public SessionMiddleware(SessionOptions options, ISessionIdGenerator? sessionIdGenerator, ISessionStore? sessionStore)
+        this.options = options;
+        this.sessionIdGenerator = sessionIdGenerator ?? throw new ArgumentNullException(nameof(sessionIdGenerator));
+        this.sessionStore = sessionStore ?? throw new ArgumentNullException(nameof(sessionStore));
+    }
+
+    public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
+    {
+        if (context.Request.Cookies.TryGetValue(options.SessionIdKey, out var cookie) && cookie != null)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            var sessionId = cookie.Value;
 
-            this.options = options;
-            this.sessionIdGenerator = sessionIdGenerator ?? throw new ArgumentNullException(nameof(sessionIdGenerator));
-            this.sessionStore = sessionStore ?? throw new ArgumentNullException(nameof(sessionStore));
-        }
-
-        public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
-        {
-            if (context.Request.Cookies.TryGetValue(options.SessionIdKey, out var cookie) && cookie != null)
+            if (IsValidSessionId(sessionId))
             {
-                var sessionId = cookie.Value;
+                var session = sessionStore.Create(sessionId);
 
-                if (IsValidSessionId(sessionId))
+                // we store session data in a dictionary
+                if (session != null)
                 {
-                    var session = sessionStore.Create(sessionId);
-
-                    // we store session data in a dictionary
-                    if (session != null)
-                    {
-                        context.Session = session;
-                    }
-
-                    context.Response.Cookies.Add(
-                        options.SessionIdKey,
-                        new Abstractions.Http.HttpCookie(options.SessionIdKey, sessionId)
-                        );
+                    context.Session = session;
                 }
-                else
-                {
-                    //sessionId = null;
-                }
-            }
-            else // session key not found, create one
-            {
+
                 context.Response.Cookies.Add(
                     options.SessionIdKey,
-                    new Abstractions.Http.HttpCookie(
-                        options.SessionIdKey,
-                        sessionIdGenerator.GenerateNewId(),
-                        httpOnly: true,
-                        path: "/"
-                        )
+                    new Abstractions.Http.HttpCookie(options.SessionIdKey, sessionId)
                     );
             }
-
-            await next.InvokeAsync(context, cancellationToken);
+            else
+            {
+                //sessionId = null;
+            }
         }
-
-        private static bool IsValidSessionId(string sessionId)
+        else // session key not found, create one
         {
-            return !string.IsNullOrEmpty(sessionId); // at least not empty
+            context.Response.Cookies.Add(
+                options.SessionIdKey,
+                new Abstractions.Http.HttpCookie(
+                    options.SessionIdKey,
+                    sessionIdGenerator.GenerateNewId(),
+                    httpOnly: true,
+                    path: "/"
+                    )
+                );
         }
+
+        await next.InvokeAsync(context, cancellationToken);
+    }
+
+    private static bool IsValidSessionId(string sessionId)
+    {
+        return !string.IsNullOrEmpty(sessionId); // at least not empty
     }
 }

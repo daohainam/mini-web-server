@@ -1,9 +1,8 @@
-﻿using System.IO.Pipelines;
+using System.IO.Pipelines;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IRequestBodyManager
 {
-    public interface IRequestBodyManager
-    {
-        PipeReader? GetReader();
-    }
+    PipeReader? GetReader();
 }

@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Mvc.RazorLightTemplateParser
+namespace MiniWebServer.Mvc.RazorLightTemplateParser;
+
+public class RazorLightTemplateParserOptions
 {
-    public class RazorLightTemplateParserOptions
-    {
-        public string[] DefaultNamespaces { get; set; } = [];
-    }
+    public string[] DefaultNamespaces { get; set; } = [];
 }

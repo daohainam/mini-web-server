@@ -1,10 +1,9 @@
-﻿using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Abstractions.Http;
 
-namespace MiniWebServer.Server.Abstractions.Parsers
+namespace MiniWebServer.Server.Abstractions.Parsers;
+
+public interface ICookieValueParser
 {
-    public interface ICookieValueParser
-    {
-        IEnumerable<HttpCookie>? ParseCookieHeader(string value);
+    IEnumerable<HttpCookie>? ParseCookieHeader(string value);
 
-    }
 }

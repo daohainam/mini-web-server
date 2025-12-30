@@ -1,4 +1,4 @@
-﻿using Http11ProtocolTests;
+using Http11ProtocolTests;
 using Http11ProtocolTests.ProtocolHandlers.Http11;
 using Microsoft.Extensions.Logging;
 using MiniWebServer.HttpParser.Http11;
@@ -7,16 +7,16 @@ using MiniWebServer.Server.Cookie;
 using MiniWebServer.Server.Http;
 using HttpMethod = global::MiniWebServer.Abstractions.Http.HttpMethod;
 
-namespace MiniWebServer.Server.ProtocolHandlers.Http11.Tests
+namespace MiniWebServer.Server.ProtocolHandlers.Http11.Tests;
+
+[TestClass()]
+public class ReadRequestTests
 {
-    [TestClass()]
-    public class ReadRequestTests
+    [TestMethod()]
+    public async Task ReadRequestTestAsync()
     {
-        [TestMethod()]
-        public async Task ReadRequestTestAsync()
-        {
-            string requestContent =
-                @"GET /index.html?id1=1&id2=2&t1=Mini%20Web%20Server HTTP/1.1
+        string requestContent =
+            @"GET /index.html?id1=1&id2=2&t1=Mini%20Web%20Server HTTP/1.1
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36
 Host: localhost:8443
 Connection: keep-alive
@@ -28,59 +28,58 @@ Cache-Control:no-cache
 
 ";
 
-            var result = await ReadRequestAsync(requestContent);
+        var result = await ReadRequestAsync(requestContent);
 
-            Assert.AreEqual(true, result.Success);
+        Assert.AreEqual(true, result.Success);
 
-            var request = result.HttpWebRequestBuilder.Build();
-            Assert.AreEqual(HttpMethod.Get, request.Method);
-            Assert.AreEqual(request.Url, "/index.html");
-            Assert.AreEqual(request.Host, "localhost");
-            Assert.AreEqual(request.Port, 8443);
-            Assert.AreEqual(request.Headers.Connection, "keep-alive");
-            Assert.AreEqual(request.Headers.AcceptLanguage, "vi,en-US;q=0.9,en;q=0.8,nb;q=0.7");
-            Assert.AreEqual(request.Headers.CacheControl, "no-cache");
-        }
+        var request = result.HttpWebRequestBuilder.Build();
+        Assert.AreEqual(HttpMethod.Get, request.Method);
+        Assert.AreEqual(request.Url, "/index.html");
+        Assert.AreEqual(request.Host, "localhost");
+        Assert.AreEqual(request.Port, 8443);
+        Assert.AreEqual(request.Headers.Connection, "keep-alive");
+        Assert.AreEqual(request.Headers.AcceptLanguage, "vi,en-US;q=0.9,en;q=0.8,nb;q=0.7");
+        Assert.AreEqual(request.Headers.CacheControl, "no-cache");
+    }
 
-        [TestMethod()]
-        [DataRow(@"GET /index.html?id1=1&id2=2&t1=Mini%20Web%20Server HTTP/1.1
+    [TestMethod()]
+    [DataRow(@"GET /index.html?id1=1&id2=2&t1=Mini%20Web%20Server HTTP/1.1
 Host: localhost:8443
 
 ", "GET", "/index.html")]
-        [DataRow(@"GET /this/is/a/path? HTTP/1.1
+    [DataRow(@"GET /this/is/a/path? HTTP/1.1
 Host: localhost:8443
 
 ", "GET", "/this/is/a/path")]
-        public async Task RequestLineParserTestAsync(string requestLine, string method, string url)
-        {
-            var result = await ReadRequestAsync(requestLine);
+    public async Task RequestLineParserTestAsync(string requestLine, string method, string url)
+    {
+        var result = await ReadRequestAsync(requestLine);
 
-            Assert.AreEqual(true, result.Success);
+        Assert.AreEqual(true, result.Success);
 
-            var request = result.HttpWebRequestBuilder.Build();
-            Assert.AreEqual(method, request.Method.Method);
-            Assert.AreEqual(url, request.Url);
-        }
-
-
-        private static async Task<ReadRequestTestResult> ReadRequestAsync(string requestContent)
-        {
-            var reader = PipeUtils.String2Reader(requestContent);
-            var loggerFactory = new LoggerFactory();
-
-            var httpParser = new ByteSequenceHttpParser(loggerFactory);
-            var handler = new Http11ProtocolHandler(new ProtocolHandlerConfiguration(global::MiniWebServer.Abstractions.HttpVersions.Http11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser(), 
-                new ProtocolHandlerContext() { 
-                    PipeReader = reader, Stream = new MemoryStream()
-                });
-
-            var requestBuilder = new HttpWebRequestBuilder();
-
-            var result = await handler.ReadRequestAsync(requestBuilder, CancellationToken.None);
-
-            return new ReadRequestTestResult(result, requestBuilder);
-        }
-
-
+        var request = result.HttpWebRequestBuilder.Build();
+        Assert.AreEqual(method, request.Method.Method);
+        Assert.AreEqual(url, request.Url);
     }
+
+
+    private static async Task<ReadRequestTestResult> ReadRequestAsync(string requestContent)
+    {
+        var reader = PipeUtils.String2Reader(requestContent);
+        var loggerFactory = new LoggerFactory();
+
+        var httpParser = new ByteSequenceHttpParser(loggerFactory);
+        var handler = new Http11ProtocolHandler(new ProtocolHandlerConfiguration(global::MiniWebServer.Abstractions.HttpVersions.Http11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser(), 
+            new ProtocolHandlerContext() { 
+                PipeReader = reader, Stream = new MemoryStream()
+            });
+
+        var requestBuilder = new HttpWebRequestBuilder();
+
+        var result = await handler.ReadRequestAsync(requestBuilder, CancellationToken.None);
+
+        return new ReadRequestTestResult(result, requestBuilder);
+    }
+
+
 }

@@ -1,6 +1,5 @@
-﻿namespace MiniWebServer.Server.Abstractions.Http
+namespace MiniWebServer.Server.Abstractions.Http;
+
+public interface IHttpBodyParser
 {
-    public interface IHttpBodyParser
-    {
-    }
 }

@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+public interface ICallableService
 {
-    public interface ICallableService
-    {
-        ICallable? Find(IMiniAppRequestContext request);
-    }
+    ICallable? Find(IMiniAppRequestContext request);
 }

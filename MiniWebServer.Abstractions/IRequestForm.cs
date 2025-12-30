@@ -1,12 +1,11 @@
-﻿using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Primitives;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IRequestForm : IEnumerable<KeyValuePair<string, StringValues>>
 {
-    public interface IRequestForm : IEnumerable<KeyValuePair<string, StringValues>>
-    {
-        public int Count { get; }
-        ICollection<string> Keys { get; }
-        StringValues this[string key] { get; }
-        bool TryGetValue(string key, out StringValues values);
-    }
+    public int Count { get; }
+    ICollection<string> Keys { get; }
+    StringValues this[string key] { get; }
+    bool TryGetValue(string key, out StringValues values);
 }

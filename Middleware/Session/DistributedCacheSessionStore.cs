@@ -1,37 +1,36 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using MiniWebServer.MiniApp;
 
-namespace MiniWebServer.Session
+namespace MiniWebServer.Session;
+
+public class DistributedCacheSessionStore : ISessionStore
 {
-    public class DistributedCacheSessionStore : ISessionStore
+    private readonly IDistributedCache cache;
+    private readonly ILoggerFactory? loggerFactory;
+    private readonly ILogger logger;
+    private readonly DistributedCacheSessionStoreOptions options;
+
+    public DistributedCacheSessionStore(IDistributedCache? cache, ILoggerFactory? loggerFactory = default, DistributedCacheSessionStoreOptions? options = default)
     {
-        private readonly IDistributedCache cache;
-        private readonly ILoggerFactory? loggerFactory;
-        private readonly ILogger logger;
-        private readonly DistributedCacheSessionStoreOptions options;
+        this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        this.loggerFactory = loggerFactory;
 
-        public DistributedCacheSessionStore(IDistributedCache? cache, ILoggerFactory? loggerFactory = default, DistributedCacheSessionStoreOptions? options = default)
+        if (loggerFactory != null)
         {
-            this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
-            this.loggerFactory = loggerFactory;
-
-            if (loggerFactory != null)
-            {
-                logger = loggerFactory.CreateLogger(nameof(DistributedCacheSession));
-            }
-            else
-            {
-                logger = NullLogger<DistributedCacheSession>.Instance;
-            }
-
-            this.options = options ?? new();
+            logger = loggerFactory.CreateLogger(nameof(DistributedCacheSession));
+        }
+        else
+        {
+            logger = NullLogger<DistributedCacheSession>.Instance;
         }
 
-        public ISession Create(string sessionId)
-        {
-            return new DistributedCacheSession(sessionId, cache, loggerFactory, options.LockWaitTimeoutMs);
-        }
+        this.options = options ?? new();
+    }
+
+    public ISession Create(string sessionId)
+    {
+        return new DistributedCacheSession(sessionId, cache, loggerFactory, options.LockWaitTimeoutMs);
     }
 }

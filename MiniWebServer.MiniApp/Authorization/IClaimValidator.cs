@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.MiniApp.Authorization
+namespace MiniWebServer.MiniApp.Authorization;
+
+public interface IClaimValidator
 {
-    public interface IClaimValidator
-    {
-        bool Validate(IMiniAppRequestContext context);
-    }
+    bool Validate(IMiniAppRequestContext context);
 }

@@ -1,12 +1,11 @@
-﻿using System.IO.Pipelines;
+using System.IO.Pipelines;
 
-namespace MiniWebServer.Abstractions.Http
+namespace MiniWebServer.Abstractions.Http;
+
+public class RequestBodyManager(PipeReader? reader) : IRequestBodyManager
 {
-    public class RequestBodyManager(PipeReader? reader) : IRequestBodyManager
+    public PipeReader? GetReader()
     {
-        public PipeReader? GetReader()
-        {
-            return reader;
-        }
+        return reader;
     }
 }

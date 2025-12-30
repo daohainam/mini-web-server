@@ -1,21 +1,20 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MiniWebServer.MiniApp.Builders;
 
-namespace MiniWebServer.HstsMiddleware
+namespace MiniWebServer.HstsMiddleware;
+
+public static class HstsMiddlewareExtensions
 {
-    public static class HstsMiddlewareExtensions
+    public static void UseHttpsRedirection(this IMiniAppBuilder appBuilder, Action<HstsOptions>? action = default)
     {
-        public static void UseHttpsRedirection(this IMiniAppBuilder appBuilder, Action<HstsOptions>? action = default)
-        {
-            var options = new HstsOptions();
-            action?.Invoke(options);
+        var options = new HstsOptions();
+        action?.Invoke(options);
 
-            appBuilder.Services.AddTransient(services => new HstsMiddleware(
-                options
-                )
-            );
+        appBuilder.Services.AddTransient(services => new HstsMiddleware(
+            options
+            )
+        );
 
-            appBuilder.UseMiddleware<HstsMiddleware>();
-        }
+        appBuilder.UseMiddleware<HstsMiddleware>();
     }
 }

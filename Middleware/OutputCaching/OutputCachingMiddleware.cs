@@ -1,76 +1,75 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using MiniWebServer.MiniApp;
 
-namespace MiniWebServer.OutputCaching
+namespace MiniWebServer.OutputCaching;
+
+internal class OutputCachingMiddleware : IMiddleware
 {
-    internal class OutputCachingMiddleware : IMiddleware
+    private readonly ILogger<OutputCachingMiddleware> logger;
+    private readonly OutputCachingOptions options;
+    private readonly IOutputCacheKeyGenerator outputCacheKeyGenerator;
+    private readonly IOutputCacheStorage outputCacheStorage;
+
+    public OutputCachingMiddleware(OutputCachingOptions options, IOutputCacheKeyGenerator outputCacheKeyGenerator, IOutputCacheStorage outputCacheStorage, ILogger<OutputCachingMiddleware> logger)
     {
-        private readonly ILogger<OutputCachingMiddleware> logger;
-        private readonly OutputCachingOptions options;
-        private readonly IOutputCacheKeyGenerator outputCacheKeyGenerator;
-        private readonly IOutputCacheStorage outputCacheStorage;
+        ArgumentNullException.ThrowIfNull(options);
 
-        public OutputCachingMiddleware(OutputCachingOptions options, IOutputCacheKeyGenerator outputCacheKeyGenerator, IOutputCacheStorage outputCacheStorage, ILogger<OutputCachingMiddleware> logger)
+        this.options = options;
+        this.outputCacheKeyGenerator = outputCacheKeyGenerator ?? throw new ArgumentNullException(nameof(outputCacheKeyGenerator));
+        this.outputCacheStorage = outputCacheStorage ?? throw new ArgumentNullException(nameof(outputCacheStorage));
+
+        this.logger = logger;
+    }
+    public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
+        string url = context.Request.Url;
+
+        IOutputCachePolicy? policy = null;
+
+        foreach (var p in options.Policies)
         {
-            ArgumentNullException.ThrowIfNull(options);
-
-            this.options = options;
-            this.outputCacheKeyGenerator = outputCacheKeyGenerator ?? throw new ArgumentNullException(nameof(outputCacheKeyGenerator));
-            this.outputCacheStorage = outputCacheStorage ?? throw new ArgumentNullException(nameof(outputCacheStorage));
-
-            this.logger = logger;
-        }
-        public async Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default)
-        {
-            ArgumentNullException.ThrowIfNull(context);
-            ArgumentNullException.ThrowIfNull(next);
-
-            string url = context.Request.Url;
-
-            IOutputCachePolicy? policy = null;
-
-            foreach (var p in options.Policies)
+            try
             {
-                try
-                {
-                    var matched = p.PathMatching(url)
-                        && p.Methods.Contains(context.Request.Method);
+                var matched = p.PathMatching(url)
+                    && p.Methods.Contains(context.Request.Method);
 
-                    if (matched)
-                    {
-                        policy = p;
-                        break;
-                    }
-
-                }
-                catch (Exception ex)
+                if (matched)
                 {
-                    logger.LogError(ex, "Error matching: {url}", url);
+                    policy = p;
+                    break;
                 }
+
             }
-
-            if (policy != null)
+            catch (Exception ex)
             {
-                var cacheKey = outputCacheKeyGenerator.GenerateCacheKey(context);
-                var cachedStream = outputCacheStorage.GetCachedStream(cacheKey);
+                logger.LogError(ex, "Error matching: {url}", url);
+            }
+        }
 
-                if (cachedStream != null)
-                {
-                    context.Response.Content = cachedStream.Content;
-                    context.Response.StatusCode = cachedStream.StatusCode;
-                    context.Response.Headers.AddOrUpdate(cachedStream.Headers);
-                }
-                else
-                {
-                    await next.InvokeAsync(context, cancellationToken);
+        if (policy != null)
+        {
+            var cacheKey = outputCacheKeyGenerator.GenerateCacheKey(context);
+            var cachedStream = outputCacheStorage.GetCachedStream(cacheKey);
 
-                    // now we will store output to cache storage
-                }
+            if (cachedStream != null)
+            {
+                context.Response.Content = cachedStream.Content;
+                context.Response.StatusCode = cachedStream.StatusCode;
+                context.Response.Headers.AddOrUpdate(cachedStream.Headers);
             }
             else
             {
                 await next.InvokeAsync(context, cancellationToken);
+
+                // now we will store output to cache storage
             }
+        }
+        else
+        {
+            await next.InvokeAsync(context, cancellationToken);
         }
     }
 }

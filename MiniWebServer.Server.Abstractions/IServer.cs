@@ -1,10 +1,9 @@
-﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting;
 
-namespace MiniWebServer.Server.Abstractions
+namespace MiniWebServer.Server.Abstractions;
+
+public interface IServer : IHostedService, IDisposable
 {
-    public interface IServer : IHostedService, IDisposable
-    {
-        Task Start(CancellationToken? cancellationToken = default);
-        void Stop(CancellationToken? cancellationToken = default);
-    }
+    Task Start(CancellationToken? cancellationToken = default);
+    void Stop(CancellationToken? cancellationToken = default);
 }

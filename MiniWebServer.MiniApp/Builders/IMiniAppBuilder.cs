@@ -1,12 +1,11 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace MiniWebServer.MiniApp.Builders
+namespace MiniWebServer.MiniApp.Builders;
+
+public interface IMiniAppBuilder
 {
-    public interface IMiniAppBuilder
-    {
-        IMiniApp Build();
-        IServiceCollection Services { get; }
-        IMiniAppBuilder UseMiddleware(Type middlewareType);
-        IMiniAppBuilder UseMiddleware<TMiddleware>();
-    }
+    IMiniApp Build();
+    IServiceCollection Services { get; }
+    IMiniAppBuilder UseMiddleware(Type middlewareType);
+    IMiniAppBuilder UseMiddleware<TMiddleware>();
 }

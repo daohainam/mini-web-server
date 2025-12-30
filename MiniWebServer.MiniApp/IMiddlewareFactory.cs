@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+public interface IMiddlewareFactory
 {
-    public interface IMiddlewareFactory
-    {
-        IMiddleware Create(Type middlewareType);
-    }
+    IMiddleware Create(Type middlewareType);
 }

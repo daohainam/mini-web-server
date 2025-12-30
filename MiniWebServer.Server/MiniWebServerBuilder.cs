@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MiniWebServer.Configuration;
 using MiniWebServer.MiniApp;
 using MiniWebServer.MiniWebServer.MimeMapping;
@@ -7,207 +7,206 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
-namespace MiniWebServer.Server
+namespace MiniWebServer.Server;
+
+public class MiniWebServerBuilder : IServerBuilder
 {
-    public class MiniWebServerBuilder : IServerBuilder
+    private readonly List<MiniWebServerBindingConfiguration> bindings = [];
+    private readonly Dictionary<string, HostConfiguration> hosts = [];
+    private readonly List<IMimeTypeMapping> mimeTypeMappings = [];
+    private int connectionTimeout;
+    private int readBufferSize;
+    private long maxRequestBodySize;
+    private int readRequestTimeout;
+    private int sendResponseTimeout;
+
+    public MiniWebServerBuilder()
     {
-        private readonly List<MiniWebServerBindingConfiguration> bindings = [];
-        private readonly Dictionary<string, HostConfiguration> hosts = [];
-        private readonly List<IMimeTypeMapping> mimeTypeMappings = [];
-        private int connectionTimeout;
-        private int readBufferSize;
-        private long maxRequestBodySize;
-        private int readRequestTimeout;
-        private int sendResponseTimeout;
+        Services = new ServiceCollection();
+    }
 
-        public MiniWebServerBuilder()
+    public IServiceCollection Services { get; }
+
+    public IServerBuilder UseOptions(ServerOptions serverOptions)
+    {
+        ArgumentNullException.ThrowIfNull(serverOptions);
+
+        if (serverOptions.BindingOptions.Length != 0)
         {
-            Services = new ServiceCollection();
-        }
-
-        public IServiceCollection Services { get; }
-
-        public IServerBuilder UseOptions(ServerOptions serverOptions)
-        {
-            ArgumentNullException.ThrowIfNull(serverOptions);
-
-            if (serverOptions.BindingOptions.Length != 0)
+            foreach (var bindingOptions in serverOptions.BindingOptions)
             {
-                foreach (var bindingOptions in serverOptions.BindingOptions)
+                if (bindingOptions.Enable && bindingOptions.Port > 0 && !string.IsNullOrEmpty(bindingOptions.Address))
                 {
-                    if (bindingOptions.Enable && bindingOptions.Port > 0 && !string.IsNullOrEmpty(bindingOptions.Address))
+                    if (bindingOptions.SSL && !string.IsNullOrEmpty(bindingOptions.Certificate))
                     {
-                        if (bindingOptions.SSL && !string.IsNullOrEmpty(bindingOptions.Certificate))
-                        {
-                            // note that a certificate might have empty password
-                            BindToHttps(bindingOptions.Address, bindingOptions.Port, bindingOptions.Certificate, bindingOptions.CertificatePrivateKey, bindingOptions.CertificatePassword);
-                        }
-                        else
-                        {
-                            BindToHttp(bindingOptions.Address, bindingOptions.Port);
-                        }
+                        // note that a certificate might have empty password
+                        BindToHttps(bindingOptions.Address, bindingOptions.Port, bindingOptions.Certificate, bindingOptions.CertificatePrivateKey, bindingOptions.CertificatePassword);
+                    }
+                    else
+                    {
+                        BindToHttp(bindingOptions.Address, bindingOptions.Port);
                     }
                 }
-                if (serverOptions.FeatureOptions != null)
-                {
-                    SetConnectionTimeout(serverOptions.FeatureOptions.ConnectionTimeout);
-                    SetSendResponseTimeout(serverOptions.FeatureOptions.SendResponseTimeout);
-                    SetReadRequestTimeout(serverOptions.FeatureOptions.ReadRequestTimeout);
-                    SetReadBufferSize(serverOptions.FeatureOptions.ReadBufferSize);
-                    SetMaxRequestBodySize(serverOptions.FeatureOptions.MaxRequestBodySize);
-                }
             }
-
-            return this;
+            if (serverOptions.FeatureOptions != null)
+            {
+                SetConnectionTimeout(serverOptions.FeatureOptions.ConnectionTimeout);
+                SetSendResponseTimeout(serverOptions.FeatureOptions.SendResponseTimeout);
+                SetReadRequestTimeout(serverOptions.FeatureOptions.ReadRequestTimeout);
+                SetReadBufferSize(serverOptions.FeatureOptions.ReadBufferSize);
+                SetMaxRequestBodySize(serverOptions.FeatureOptions.MaxRequestBodySize);
+            }
         }
 
-        public IServerBuilder SetMaxRequestBodySize(long maxRequestBodySize)
+        return this;
+    }
+
+    public IServerBuilder SetMaxRequestBodySize(long maxRequestBodySize)
+    {
+        this.maxRequestBodySize = maxRequestBodySize;
+
+        return this;
+    }
+
+    public IServerBuilder SetReadBufferSize(int readBufferSize)
+    {
+        this.readBufferSize = readBufferSize;
+
+        return this;
+    }
+
+    public IServerBuilder SetReadRequestTimeout(int readRequestTimeout)
+    {
+        this.readRequestTimeout = readRequestTimeout;
+
+        return this;
+    }
+
+    public IServerBuilder SetSendResponseTimeout(int sendResponseTimeout)
+    {
+        this.sendResponseTimeout = sendResponseTimeout;
+
+        return this;
+    }
+
+    public IServerBuilder SetConnectionTimeout(int connectionTimeout)
+    {
+        this.connectionTimeout = connectionTimeout;
+
+        return this;
+    }
+
+    public IServerBuilder BindToHttp(string address, int port)
+    {
+        if (!IPAddress.TryParse(address, out IPAddress? ip))
+            throw new ArgumentException(null, nameof(address));
+
+        bindings.Add(new(
+                new IPEndPoint(ip, port)
+            ));
+
+        return this;
+    }
+
+    public IServerBuilder BindToHttps(string address, int port, string certificate, string certificatePrivateKey, string certificatePassword)
+    {
+        if (!IPAddress.TryParse(address, out IPAddress? ip))
+            throw new ArgumentException(null, nameof(address));
+
+        if (File.Exists(certificate))
         {
-            this.maxRequestBodySize = maxRequestBodySize;
-
-            return this;
-        }
-
-        public IServerBuilder SetReadBufferSize(int readBufferSize)
-        {
-            this.readBufferSize = readBufferSize;
-
-            return this;
-        }
-
-        public IServerBuilder SetReadRequestTimeout(int readRequestTimeout)
-        {
-            this.readRequestTimeout = readRequestTimeout;
-
-            return this;
-        }
-
-        public IServerBuilder SetSendResponseTimeout(int sendResponseTimeout)
-        {
-            this.sendResponseTimeout = sendResponseTimeout;
-
-            return this;
-        }
-
-        public IServerBuilder SetConnectionTimeout(int connectionTimeout)
-        {
-            this.connectionTimeout = connectionTimeout;
-
-            return this;
-        }
-
-        public IServerBuilder BindToHttp(string address, int port)
-        {
-            if (!IPAddress.TryParse(address, out IPAddress? ip))
-                throw new ArgumentException(null, nameof(address));
+            var cert = ".pem".Equals(Path.GetExtension(certificate)) ? GenerateCertOnWindows(X509Certificate2.CreateFromPemFile(certificate, certificatePrivateKey)) : new X509Certificate2(certificate, certificatePassword);
 
             bindings.Add(new(
-                    new IPEndPoint(ip, port)
+                    new IPEndPoint(ip, port), cert
                 ));
 
             return this;
         }
-
-        public IServerBuilder BindToHttps(string address, int port, string certificate, string certificatePrivateKey, string certificatePassword)
+        else
         {
-            if (!IPAddress.TryParse(address, out IPAddress? ip))
-                throw new ArgumentException(null, nameof(address));
+            throw new FileNotFoundException(certificate);
+        }
 
-            if (File.Exists(certificate))
+        static X509Certificate2 GenerateCertOnWindows(X509Certificate2 cert) // this function works as a workaround for a bug on Windows (https://github.com/dotnet/runtime/issues/23749)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var cert = ".pem".Equals(Path.GetExtension(certificate)) ? GenerateCertOnWindows(X509Certificate2.CreateFromPemFile(certificate, certificatePrivateKey)) : new X509Certificate2(certificate, certificatePassword);
-
-                bindings.Add(new(
-                        new IPEndPoint(ip, port), cert
-                    ));
-
-                return this;
+                return new X509Certificate2(
+                     cert.Export(
+                        X509ContentType.Pkcs12
+                     ));
             }
             else
             {
-                throw new FileNotFoundException(certificate);
-            }
-
-            static X509Certificate2 GenerateCertOnWindows(X509Certificate2 cert) // this function works as a workaround for a bug on Windows (https://github.com/dotnet/runtime/issues/23749)
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return new X509Certificate2(
-                         cert.Export(
-                            X509ContentType.Pkcs12
-                         ));
-                }
-                else
-                {
-                    return cert;
-                }
+                return cert;
             }
         }
+    }
 
-        public IServerBuilder AddHost(string hostName, IMiniApp app)
+    public IServerBuilder AddHost(string hostName, IMiniApp app)
+    {
+        hosts[hostName] = new HostConfiguration(hostName, app);
+
+        return this;
+    }
+
+    public IServerBuilder AddMimeTypeMapping(IMimeTypeMapping mimeTypeMapping)
+    {
+        mimeTypeMappings.Add(mimeTypeMapping);
+
+        return this;
+    }
+
+    public IServer Build()
+    {
+        var serviceProvider = Services.BuildServiceProvider();
+
+        Validate();
+        AddDefaultValuesIfRequired(serviceProvider);
+
+        Dictionary<string, Host.Host> hostContainers = [];
+        foreach (var host in hosts.Values)
         {
-            hosts[hostName] = new HostConfiguration(hostName, app);
-
-            return this;
+            hostContainers.Add(host.HostName, new Host.Host(host.HostName, host.App));
         }
 
-        public IServerBuilder AddMimeTypeMapping(IMimeTypeMapping mimeTypeMapping)
+        var server = new MiniWebServer(new MiniWebServerConfiguration()
         {
-            mimeTypeMappings.Add(mimeTypeMapping);
+            Bindings = bindings,
+            Hosts = [.. hosts.Values],
+            MaxRequestBodySize = maxRequestBodySize,
+            ConnectionTimeout = connectionTimeout,
+            ReadBufferSize = readBufferSize,
+            ReadRequestTimeout = readRequestTimeout,
+            SendResponseTimeout = sendResponseTimeout,
+        },
+            serviceProvider,
+            serviceProvider.GetService<IProtocolHandlerFactory>(),
+            hostContainers
+        );
 
-            return this;
+        return server;
+    }
+
+    private void AddDefaultValuesIfRequired(ServiceProvider serviceProvider)
+    {
+        if (hosts.Count == 0)
+        {
+            hosts.Add(string.Empty, new HostConfiguration(string.Empty, new DefaultMiniApp(serviceProvider)));
         }
 
-        public IServer Build()
+        if (mimeTypeMappings.Count == 0) // we always need a mime type mapping
         {
-            var serviceProvider = Services.BuildServiceProvider();
-
-            Validate();
-            AddDefaultValuesIfRequired(serviceProvider);
-
-            Dictionary<string, Host.Host> hostContainers = [];
-            foreach (var host in hosts.Values)
-            {
-                hostContainers.Add(host.HostName, new Host.Host(host.HostName, host.App));
-            }
-
-            var server = new MiniWebServer(new MiniWebServerConfiguration()
-            {
-                Bindings = bindings,
-                Hosts = [.. hosts.Values],
-                MaxRequestBodySize = maxRequestBodySize,
-                ConnectionTimeout = connectionTimeout,
-                ReadBufferSize = readBufferSize,
-                ReadRequestTimeout = readRequestTimeout,
-                SendResponseTimeout = sendResponseTimeout,
-            },
-                serviceProvider,
-                serviceProvider.GetService<IProtocolHandlerFactory>(),
-                hostContainers
-            );
-
-            return server;
+            mimeTypeMappings.Add(StaticMimeMapping.Instance);
         }
+    }
 
-        private void AddDefaultValuesIfRequired(ServiceProvider serviceProvider)
+    private void Validate() // move validating routines here so we can make Build function cleaner 
+    {
+        if (bindings.Count == 0)
         {
-            if (hosts.Count == 0)
-            {
-                hosts.Add(string.Empty, new HostConfiguration(string.Empty, new DefaultMiniApp(serviceProvider)));
-            }
-
-            if (mimeTypeMappings.Count == 0) // we always need a mime type mapping
-            {
-                mimeTypeMappings.Add(StaticMimeMapping.Instance);
-            }
-        }
-
-        private void Validate() // move validating routines here so we can make Build function cleaner 
-        {
-            if (bindings.Count == 0)
-            {
-                throw new InvalidOperationException("No bindings found");
-            }
+            throw new InvalidOperationException("No bindings found");
         }
     }
 }

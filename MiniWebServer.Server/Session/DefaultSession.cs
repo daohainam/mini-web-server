@@ -1,57 +1,56 @@
-﻿using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp;
 
-namespace MiniWebServer.Server.Session
+namespace MiniWebServer.Server.Session;
+
+internal class DefaultSession : ISession
 {
-    internal class DefaultSession : ISession
+    private DefaultSession() { } // no one else can create 
+
+    private readonly string sessionId = Guid.Empty.ToString();
+
+    public string Id => sessionId;
+
+    public bool IsAvaiable => false;
+
+    public byte[]? Get(string key)
     {
-        private DefaultSession() { } // no one else can create 
-
-        private readonly string sessionId = Guid.Empty.ToString();
-
-        public string Id => sessionId;
-
-        public bool IsAvaiable => false;
-
-        public byte[]? Get(string key)
-        {
-            return null;
-        }
-
-        public byte[] Set(string key, byte[] value)
-        {
-            return value;
-        }
-
-        public bool Clear()
-        {
-            return true;
-        }
-
-        bool ISession.Remove(string key)
-        {
-            return true;
-        }
-
-        Task<bool> ISession.LoadAsync()
-        {
-            return Task.FromResult(true);
-        }
-
-        Task<bool> ISession.SaveAsync()
-        {
-            return Task.FromResult(true);
-        }
-
-        public string? GetString(string key)
-        {
-            return null;
-        }
-
-        public string? SetString(string key, string value)
-        {
-            return value;
-        }
-
-        public static readonly DefaultSession Instance = new();
+        return null;
     }
+
+    public byte[] Set(string key, byte[] value)
+    {
+        return value;
+    }
+
+    public bool Clear()
+    {
+        return true;
+    }
+
+    bool ISession.Remove(string key)
+    {
+        return true;
+    }
+
+    Task<bool> ISession.LoadAsync()
+    {
+        return Task.FromResult(true);
+    }
+
+    Task<bool> ISession.SaveAsync()
+    {
+        return Task.FromResult(true);
+    }
+
+    public string? GetString(string key)
+    {
+        return null;
+    }
+
+    public string? SetString(string key, string value)
+    {
+        return value;
+    }
+
+    public static readonly DefaultSession Instance = new();
 }

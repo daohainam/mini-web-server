@@ -1,9 +1,8 @@
-﻿using System.Security.Principal;
+using System.Security.Principal;
 
-namespace MiniWebServer.Authentication
+namespace MiniWebServer.Authentication;
+
+public interface IPrincipalKeyGenerator
 {
-    public interface IPrincipalKeyGenerator
-    {
-        string? GeneratePrincipalKey(IPrincipal principal);
-    }
+    string? GeneratePrincipalKey(IPrincipal principal);
 }

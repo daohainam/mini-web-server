@@ -1,10 +1,9 @@
-﻿using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp;
 using MiniWebServer.Mvc.Abstraction;
 
-namespace MiniWebServer.Mvc
+namespace MiniWebServer.Mvc;
+
+public interface IActionFinder
 {
-    public interface IActionFinder
-    {
-        ActionInfo? Find(IMiniAppRequestContext context);
-    }
+    ActionInfo? Find(IMiniAppRequestContext context);
 }

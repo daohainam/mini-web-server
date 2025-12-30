@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+public interface IMiniApp : ICallableService, ICallable
 {
-    public interface IMiniApp : ICallableService, ICallable
-    {
-        ICallableBuilder Map(string route, ICallable action, params Abstractions.Http.HttpMethod[] methods);
-    }
+    ICallableBuilder Map(string route, ICallable action, params Abstractions.Http.HttpMethod[] methods);
 }

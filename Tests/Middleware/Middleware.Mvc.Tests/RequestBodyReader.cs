@@ -1,14 +1,13 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 
-namespace MvcMiddlewareTests
+namespace MvcMiddlewareTests;
+
+internal class RequestBodyReader(string body) : IRequestBodyReader
 {
-    internal class RequestBodyReader(string body) : IRequestBodyReader
-    {
-        private readonly string body = body ?? string.Empty;
+    private readonly string body = body ?? string.Empty;
 
-        public Task<string> ReadAsStringAsync(CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(body);
-        }
+    public Task<string> ReadAsStringAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(body);
     }
 }

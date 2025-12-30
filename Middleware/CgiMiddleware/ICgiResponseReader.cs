@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Cgi
+namespace MiniWebServer.Cgi;
+
+public interface ICgiResponseReader
 {
-    public interface ICgiResponseReader
-    {
-        Task<CgiResponse?> ReadAsync();
-    }
+    Task<CgiResponse?> ReadAsync();
 }

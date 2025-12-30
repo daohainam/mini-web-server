@@ -1,4 +1,4 @@
-﻿using Http2.Hpack;
+using Http2.Hpack;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -7,24 +7,23 @@ using System.Text;
 using System.Threading.Tasks;
 using Hpack = global::Http2.Hpack;
 
-namespace MiniWebServer.Server.ProtocolHandlers.Http2
+namespace MiniWebServer.Server.ProtocolHandlers.Http2;
+
+internal class HPACKString
 {
-    internal class HPACKString
+    public static string Decode(bool isHuffmanEncoded, ReadOnlySequence<byte> span)
     {
-        public static string Decode(bool isHuffmanEncoded, ReadOnlySequence<byte> span)
+        if (isHuffmanEncoded)
         {
-            if (isHuffmanEncoded)
-            {
-                var n = Huffman.Decode(new ArraySegment<byte>(span.ToArray()), ArrayPool<byte>.Shared);
+            var n = Huffman.Decode(new ArraySegment<byte>(span.ToArray()), ArrayPool<byte>.Shared);
 
-                return n;
+            return n;
 
-                //throw new InvalidOperationException("Huffman encode not supported");
-            }
-            else
-            {
-                return Encoding.ASCII.GetString(span);
-            }
+            //throw new InvalidOperationException("Huffman encode not supported");
+        }
+        else
+        {
+            return Encoding.ASCII.GetString(span);
         }
     }
 }

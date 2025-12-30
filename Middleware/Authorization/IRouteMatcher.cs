@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Authorization
+namespace MiniWebServer.Authorization;
+
+public interface IRouteMatcher
 {
-    public interface IRouteMatcher
-    {
-        bool IsMatched(string routeUrl, string url);
-    }
+    bool IsMatched(string routeUrl, string url);
 }

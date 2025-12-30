@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Mvc.Abstraction
+namespace MiniWebServer.Mvc.Abstraction;
+
+[AttributeUsage(AttributeTargets.Method)]
+public class NonActionAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Method)]
-    public class NonActionAttribute : Attribute
-    {
-    }
 }

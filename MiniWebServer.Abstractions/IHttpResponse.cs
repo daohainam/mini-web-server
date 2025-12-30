@@ -1,14 +1,13 @@
-﻿using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Abstractions.Http;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IHttpResponse
 {
-    public interface IHttpResponse
-    {
-        HttpResponseCodes StatusCode { get; set; }
-        string ReasonPhrase { get; set; }
-        HttpResponseHeaders Headers { get; }
-        IHttpContent Content { get; set; }
-        HttpCookies Cookies { get; }
-        Stream Stream { get; set; }
-    }
+    HttpResponseCodes StatusCode { get; set; }
+    string ReasonPhrase { get; set; }
+    HttpResponseHeaders Headers { get; }
+    IHttpContent Content { get; set; }
+    HttpCookies Cookies { get; }
+    Stream Stream { get; set; }
 }

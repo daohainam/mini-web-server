@@ -1,10 +1,9 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 
-namespace MvcMiddlewareTests
+namespace MvcMiddlewareTests;
+
+internal class RequestHeadersContainer : IRequestHeadersContainer
 {
-    internal class RequestHeadersContainer : IRequestHeadersContainer
-    {
-        public required HttpRequestHeaders Headers { get; init; }
-    }
+    public required HttpRequestHeaders Headers { get; init; }
 }

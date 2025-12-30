@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 using MiniWebServer.Abstractions.Http.Header;
@@ -22,514 +22,513 @@ using System.Text;
 using System.Threading.Tasks;
 using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
-namespace MiniWebServer.Server.ProtocolHandlers.Http2
+namespace MiniWebServer.Server.ProtocolHandlers.Http2;
+
+/* 
+ * protocol handler for http2 based on RFC 9113 (https://datatracker.ietf.org/doc/html/rfc9113)
+ * 
+ * Some problems we must solve before going online:
+ * - find a way to switch between HTTP11 and HTTP2 (will it be handled in protocol handler factory in or internally inside HTTP2 protocol handler?)
+ * - how do we handle frame buffers effectively? will it need to be shared between threads?
+ * - a buffer will be controlled inside or outside protocol handlers?
+ * 
+ * Note:
+ * - use buffer pools 
+ * 
+ */
+
+public partial class Http2ProtocolHandler(ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser, ProtocolHandlerContext protocolHandlerContext) : IProtocolHandler
 {
-    /* 
-     * protocol handler for http2 based on RFC 9113 (https://datatracker.ietf.org/doc/html/rfc9113)
-     * 
-     * Some problems we must solve before going online:
-     * - find a way to switch between HTTP11 and HTTP2 (will it be handled in protocol handler factory in or internally inside HTTP2 protocol handler?)
-     * - how do we handle frame buffers effectively? will it need to be shared between threads?
-     * - a buffer will be controlled inside or outside protocol handlers?
-     * 
-     * Note:
-     * - use buffer pools 
-     * 
-     */
+    private const uint DefaultMaxFrameSize = 16_384; // frame size = 2^14 unless when you change it with a SETTINGS frame
+    private const uint DefaultInitialWindowSize = 65_535;
+    private const uint DefaultHeaderTableSize = 4_096;
 
-    public partial class Http2ProtocolHandler(ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser, ProtocolHandlerContext protocolHandlerContext) : IProtocolHandler
+    private readonly ILogger<Http2ProtocolHandler> logger = loggerFactory.CreateLogger<Http2ProtocolHandler>();
+
+    public int ProtocolVersion => 20;
+
+    // connection settings
+    private uint maxFrameSize = DefaultMaxFrameSize;
+    private uint initialWindowSize = DefaultInitialWindowSize;
+    private uint headerTableSize = DefaultHeaderTableSize;
+    private uint maxConcurrentStreams = 100; // can be changed by SETTINGS_MAX_CONCURRENT_STREAMS parameter in SETTINGS frame
+    private uint windowSizeIncrement;
+
+    // streams
+    private readonly Http2StreamContainer inputStreamContainer = [];
+    private readonly HPACKHeaderTable headerTable = new();
+    private uint nextOutputStreamId = 0; // do not change this value directly, call GetNextSTreamIdentifier() when you want to get an new Id
+
+    // for analytics
+    private ulong frameCount = 0Lu; // for "telemetry"
+    public Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken)
     {
-        private const uint DefaultMaxFrameSize = 16_384; // frame size = 2^14 unless when you change it with a SETTINGS frame
-        private const uint DefaultInitialWindowSize = 65_535;
-        private const uint DefaultHeaderTableSize = 4_096;
+        // throw new NotImplementedException();
 
-        private readonly ILogger<Http2ProtocolHandler> logger = loggerFactory.CreateLogger<Http2ProtocolHandler>();
+        return Task.CompletedTask;
+    }
 
-        public int ProtocolVersion => 20;
-
-        // connection settings
-        private uint maxFrameSize = DefaultMaxFrameSize;
-        private uint initialWindowSize = DefaultInitialWindowSize;
-        private uint headerTableSize = DefaultHeaderTableSize;
-        private uint maxConcurrentStreams = 100; // can be changed by SETTINGS_MAX_CONCURRENT_STREAMS parameter in SETTINGS frame
-        private uint windowSizeIncrement;
-
-        // streams
-        private readonly Http2StreamContainer inputStreamContainer = [];
-        private readonly HPACKHeaderTable headerTable = new();
-        private uint nextOutputStreamId = 0; // do not change this value directly, call GetNextSTreamIdentifier() when you want to get an new Id
-
-        // for analytics
-        private ulong frameCount = 0Lu; // for "telemetry"
-        public Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken)
+    public async Task<bool> ReadRequestAsync(IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
+    {
+        try
         {
-            // throw new NotImplementedException();
+            bool isCompleted = false;
 
-            return Task.CompletedTask;
-        }
-
-        public async Task<bool> ReadRequestAsync(IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
-        {
-            try
+            while (!isCompleted && !cancellationToken.IsCancellationRequested)
             {
-                bool isCompleted = false;
+                ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAtLeastAsync(9, cancellationToken); // 9 = Frame header size
+                //logger.LogDebug("Read result: IsCompleted={r}, Buffer.Length={l}", readResult.IsCompleted, readResult.Buffer.Length);
 
-                while (!isCompleted && !cancellationToken.IsCancellationRequested)
+                ReadOnlySequence<byte> buffer = readResult.Buffer;
+
+                //requestBuilder.SetBodyPipeline(new Pipe());
+
+                var httpMethod = HttpMethod.Get;
+
+                var frame = new Http2Frame(); // can we reuse?
+
+                // HTTP2 connections always start with a SETTINGS frame
+                while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload))
                 {
-                    ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAtLeastAsync(9, cancellationToken); // 9 = Frame header size
-                    //logger.LogDebug("Read result: IsCompleted={r}, Buffer.Length={l}", readResult.IsCompleted, readResult.Buffer.Length);
-
-                    ReadOnlySequence<byte> buffer = readResult.Buffer;
-
-                    //requestBuilder.SetBodyPipeline(new Pipe());
-
-                    var httpMethod = HttpMethod.Get;
-
-                    var frame = new Http2Frame(); // can we reuse?
-
-                    // HTTP2 connections always start with a SETTINGS frame
-                    while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload))
-                    {
 #if DEBUG
-                        if (logger.IsEnabled(LogLevel.Debug))
-                        {
-                            logger.LogDebug("Frame found: {ft}, Stream Id: {sid}, payload length: {pll}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
-                        }
+                    if (logger.IsEnabled(LogLevel.Debug))
+                    {
+                        logger.LogDebug("Frame found: {ft}, Stream Id: {sid}, payload length: {pll}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
+                    }
 #endif
 
-                        if (frameCount == 0)
+                    if (frameCount == 0)
+                    {
+                        if (frame.FrameType != Http2FrameType.SETTINGS)
                         {
-                            if (frame.FrameType != Http2FrameType.SETTINGS)
-                            {
-                                logger.LogError("First frame must be a SETTINGS frame");
-                                return false;
-                            }
-
-                            var settingFrame = new Http2Frame()
-                            {
-                                FrameType = Http2FrameType.SETTINGS,
-                            };
-
-                            // send first SETTINGS frame
-                            var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-                            Http2FrameSETTINGSItem[] settings = [
-                                new () {
-                                    Identifier = Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE,
-                                    Value = initialWindowSize,
-                                },
-                                new () {
-                                    Identifier = Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE,
-                                    Value = maxFrameSize,
-                                },
-                                ];
-                            int length = Http2FrameWriter.SerializeSETTINGSFrame(settingFrame, settings, writePayload);
-                            if (length > 0)
-                            {
-                                protocolHandlerContext.Stream.Write(writePayload, 0, length);
-                                await protocolHandlerContext.Stream.FlushAsync();
-                            }
-
-                            ArrayPool<byte>.Shared.Return(writePayload);
-                        }
-
-                        if (!ProcessFrame(ref frame, ref payload, logger))
-                        {
+                            logger.LogError("First frame must be a SETTINGS frame");
                             return false;
                         }
 
-                        frameCount = Interlocked.Increment(ref frameCount);
-
-                        protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
-
-                        // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
-                        //if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
-                        //{
-                        //    // parse header frames
-                        //    if (!streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
-                        //    {
-                        //        logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
-                        //    }
-                        //    else
-                        //    {
-                        //        var headers = BuildHeaders(stream);
-
-                        //    }
-                        //}
-
-                        if ((frame.FrameType == Http2FrameType.HEADERS || frame.FrameType == Http2FrameType.DATA) && frame.Flags.HasFlag(Http2FrameFlags.END_STREAM))
+                        var settingFrame = new Http2Frame()
                         {
-                            // start building a request
+                            FrameType = Http2FrameType.SETTINGS,
+                        };
 
-                            if (!inputStreamContainer.Remove(frame.StreamIdentifier, out var stream))
-                            {
-                                logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
-                                return false;
-                            }
-
-                            var b = BuildRequestFromStream(stream!, requestBuilder);
-
-                            return b;
+                        // send first SETTINGS frame
+                        var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
+                        Http2FrameSETTINGSItem[] settings = [
+                            new () {
+                                Identifier = Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE,
+                                Value = initialWindowSize,
+                            },
+                            new () {
+                                Identifier = Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE,
+                                Value = maxFrameSize,
+                            },
+                            ];
+                        int length = Http2FrameWriter.SerializeSETTINGSFrame(settingFrame, settings, writePayload);
+                        if (length > 0)
+                        {
+                            protocolHandlerContext.Stream.Write(writePayload, 0, length);
+                            await protocolHandlerContext.Stream.FlushAsync();
                         }
+
+                        ArrayPool<byte>.Shared.Return(writePayload);
                     }
 
-                    isCompleted = readResult.IsCompleted;
-                }
-
-
-                return false;
-            }
-            catch (OperationCanceledException)
-            {
-                logger.LogInformation("Connection expired");
-                return false;
-            }
-            catch (IOException ex)
-            {
-                logger.LogError(ex, "I/O error");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error reading request");
-                return false;
-            }
-        }
-
-        private static List<HPACKHeader> BuildHeaders(Http2Stream stream)
-        {
-            ArgumentNullException.ThrowIfNull(stream);
-
-            var headers = new List<HPACKHeader>();
-            foreach (var headerFrame in stream.HeaderPayloads)
-            {
-                headers.AddRange(headerFrame.Headers);
-            }
-
-            return headers;
-        }
-
-        private bool BuildRequestFromStream(Http2Stream stream, IHttpRequestBuilder requestBuilder)
-        {
-            requestBuilder.SetHttpVersion(HttpVersions.Http20);
-
-            var hpackHeaders = BuildHeaders(stream);
-
-            if (!DecodeHeaders(hpackHeaders, requestBuilder))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool DecodeHeaders(IEnumerable<HPACKHeader> hpackHeaders, IHttpRequestBuilder requestBuilder)
-        {
-            // convert encoded headers from a frame to HTTP regular headers
-
-            foreach (var hpackHeader in hpackHeaders)
-            {
-                if (hpackHeader.HeaderType == HPACKHeaderTypes.Static)
-                {
-                    var staticHeader = HPACKStaticTable.GetHeader(hpackHeader.StaticTableIndex) ?? throw new InvalidOperationException("Invalid HPACK static index");
-                    switch (staticHeader.StaticTableIndex) // https://httpwg.org/specs/rfc7541.html#static.table.definition, refer HPACKStaticTable for more information
+                    if (!ProcessFrame(ref frame, ref payload, logger))
                     {
-                        case 1:
-                            if (HostHeader.TryParse(hpackHeader.Value, out var host))
-                            {
-                                requestBuilder.RequestHeaders.Host = host;
-                                requestBuilder.SetHost(host!.Host);
-                                requestBuilder.SetPort(host!.Port);
-                            }
-                            else
-                            {
-                                throw new InvalidHeaderException(new HttpHeader("Host", hpackHeader.Value));
-                            }
-                            break;
-                        case 2:
-                            requestBuilder.SetMethod(HttpMethod.Get);
-                            break;
-                        case 3:
-                            requestBuilder.SetMethod(HttpMethod.Post);
-                            break;
-                        case 4:
-                            if (hpackHeader.Value.Length == 0)
-                            {
-                                logger.LogError("Header 4 cannot be empty");
-                                return false;
-                            }
-                            if (httpComponentParser.TryParseUrl(new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(hpackHeader.Value)), out string? url, out string? hash, out string? queryString, out string[]? segments, out HttpParameters? parameters))
-                            {
-                                requestBuilder.SetUrl(url!);
-                                requestBuilder.SetHash(hash!);
-                                requestBuilder.SetQueryString(queryString!);
-                                requestBuilder.SetSegments(segments!);
-                                requestBuilder.SetParameters(parameters!);
-                            }
-                            else
-                            {
-                                logger.LogError("Error parsing header 4: {p}", hpackHeader.Value);
-                                return false;
-                            }
-                            break;
-                        case 5:
-                            requestBuilder.SetUrl(staticHeader.Value);
-                            break;
-                        case 6:
-                            requestBuilder.SetHttps(false);
-                            break;
-                        case 7:
-                            requestBuilder.SetHttps(true);
-                            break;
-                        case >= 8 and <= 14:
-                            // from 8-14 are response statuses
-                            break;
-                        case 15:
-                            // Accept-Charset: Do not use this header. Browsers omit this header and servers should ignore it. (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Charset)
-                            break;
-                        case 16:
-                            requestBuilder.AddHeader(staticHeader.Name, staticHeader.Value);
-                            break;
-                        case >= 17:
-                            requestBuilder.AddHeader(staticHeader.Name, hpackHeader.Value);
-                            break;
-                        default:
-                            throw new NotImplementedException($"Header index not supported: {staticHeader.StaticTableIndex}"); // TODO: this should not happen, I made this to remind myself about this incompletion
+                        return false;
+                    }
+
+                    frameCount = Interlocked.Increment(ref frameCount);
+
+                    protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
+
+                    // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
+                    //if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
+                    //{
+                    //    // parse header frames
+                    //    if (!streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
+                    //    {
+                    //        logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
+                    //    }
+                    //    else
+                    //    {
+                    //        var headers = BuildHeaders(stream);
+
+                    //    }
+                    //}
+
+                    if ((frame.FrameType == Http2FrameType.HEADERS || frame.FrameType == Http2FrameType.DATA) && frame.Flags.HasFlag(Http2FrameFlags.END_STREAM))
+                    {
+                        // start building a request
+
+                        if (!inputStreamContainer.Remove(frame.StreamIdentifier, out var stream))
+                        {
+                            logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
+                            return false;
+                        }
+
+                        var b = BuildRequestFromStream(stream!, requestBuilder);
+
+                        return b;
                     }
                 }
-                else if (hpackHeader.HeaderType == HPACKHeaderTypes.Literal)
-                {
-                    requestBuilder.AddHeader(hpackHeader.Name, hpackHeader.Value);
-                }
+
+                isCompleted = readResult.IsCompleted;
             }
 
-            return true;
+
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogInformation("Connection expired");
+            return false;
+        }
+        catch (IOException ex)
+        {
+            logger.LogError(ex, "I/O error");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error reading request");
+            return false;
+        }
+    }
+
+    private static List<HPACKHeader> BuildHeaders(Http2Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        var headers = new List<HPACKHeader>();
+        foreach (var headerFrame in stream.HeaderPayloads)
+        {
+            headers.AddRange(headerFrame.Headers);
         }
 
-        private bool ProcessFrame(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, ILogger logger)
-        {
-            var b = false;
+        return headers;
+    }
 
-            switch (frame.FrameType)
+    private bool BuildRequestFromStream(Http2Stream stream, IHttpRequestBuilder requestBuilder)
+    {
+        requestBuilder.SetHttpVersion(HttpVersions.Http20);
+
+        var hpackHeaders = BuildHeaders(stream);
+
+        if (!DecodeHeaders(hpackHeaders, requestBuilder))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool DecodeHeaders(IEnumerable<HPACKHeader> hpackHeaders, IHttpRequestBuilder requestBuilder)
+    {
+        // convert encoded headers from a frame to HTTP regular headers
+
+        foreach (var hpackHeader in hpackHeaders)
+        {
+            if (hpackHeader.HeaderType == HPACKHeaderTypes.Static)
             {
-                case Http2FrameType.HEADERS:
-                    b = ProcessHEADERSFrame(ref frame, ref payload, logger);
-                    break;
-                case Http2FrameType.SETTINGS:
-                    b = ProcessSETTINGSFrame(ref frame, ref payload, out var settings);
-                    break;
-                case Http2FrameType.WINDOW_UPDATE:
-                    b = ProcessWINDOW_UPDATEFrame(ref frame, ref payload);
-                    break;
-                case Http2FrameType.PRIORITY:
-                    b = ProcessPRIORITYFrame(ref frame, ref payload, out var priorityPayload);
-                    break;
-                case Http2FrameType.PING:
-                    b = ProcessPINGFrame(ref frame, ref payload);
-                    break;
-                default:
-                    logger.LogError("Unknown frame type: {ft}, stream: {sid}", frame.FrameType, frame.StreamIdentifier);
-                    break;
+                var staticHeader = HPACKStaticTable.GetHeader(hpackHeader.StaticTableIndex) ?? throw new InvalidOperationException("Invalid HPACK static index");
+                switch (staticHeader.StaticTableIndex) // https://httpwg.org/specs/rfc7541.html#static.table.definition, refer HPACKStaticTable for more information
+                {
+                    case 1:
+                        if (HostHeader.TryParse(hpackHeader.Value, out var host))
+                        {
+                            requestBuilder.RequestHeaders.Host = host;
+                            requestBuilder.SetHost(host!.Host);
+                            requestBuilder.SetPort(host!.Port);
+                        }
+                        else
+                        {
+                            throw new InvalidHeaderException(new HttpHeader("Host", hpackHeader.Value));
+                        }
+                        break;
+                    case 2:
+                        requestBuilder.SetMethod(HttpMethod.Get);
+                        break;
+                    case 3:
+                        requestBuilder.SetMethod(HttpMethod.Post);
+                        break;
+                    case 4:
+                        if (hpackHeader.Value.Length == 0)
+                        {
+                            logger.LogError("Header 4 cannot be empty");
+                            return false;
+                        }
+                        if (httpComponentParser.TryParseUrl(new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(hpackHeader.Value)), out string? url, out string? hash, out string? queryString, out string[]? segments, out HttpParameters? parameters))
+                        {
+                            requestBuilder.SetUrl(url!);
+                            requestBuilder.SetHash(hash!);
+                            requestBuilder.SetQueryString(queryString!);
+                            requestBuilder.SetSegments(segments!);
+                            requestBuilder.SetParameters(parameters!);
+                        }
+                        else
+                        {
+                            logger.LogError("Error parsing header 4: {p}", hpackHeader.Value);
+                            return false;
+                        }
+                        break;
+                    case 5:
+                        requestBuilder.SetUrl(staticHeader.Value);
+                        break;
+                    case 6:
+                        requestBuilder.SetHttps(false);
+                        break;
+                    case 7:
+                        requestBuilder.SetHttps(true);
+                        break;
+                    case >= 8 and <= 14:
+                        // from 8-14 are response statuses
+                        break;
+                    case 15:
+                        // Accept-Charset: Do not use this header. Browsers omit this header and servers should ignore it. (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Charset)
+                        break;
+                    case 16:
+                        requestBuilder.AddHeader(staticHeader.Name, staticHeader.Value);
+                        break;
+                    case >= 17:
+                        requestBuilder.AddHeader(staticHeader.Name, hpackHeader.Value);
+                        break;
+                    default:
+                        throw new NotImplementedException($"Header index not supported: {staticHeader.StaticTableIndex}"); // TODO: this should not happen, I made this to remind myself about this incompletion
+                }
             }
-
-            return b;
-        }
-
-        public void Reset()
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
-        {
-            var streamId = GetNextStreamIdentifier();
-            var stream = response.Stream ?? throw new InvalidOperationException("response.Stream should not be null");
-
-            // Write headers (including :status pseudo-header)
-            await WriteHeadersAsync(streamId, response, stream, cancellationToken);
-
-            // Write response body as DATA frame(s)
-            await WriteDataAsync(streamId, response, stream, cancellationToken);
-
-            return true;
-        }
-
-        private async Task WriteHeadersAsync(uint streamId, IHttpResponse response, Stream stream, CancellationToken cancellationToken)
-        {
-            var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-
-            try
+            else if (hpackHeader.HeaderType == HPACKHeaderTypes.Literal)
             {
-                // Add content headers to response headers first (before counting)
-                foreach (var header in response.Content.Headers)
-                {
-                    response.Headers.AddOrUpdate(header.Key, header.Value);
-                }
-
-                // Calculate total header count for END_HEADERS flag
-                int totalHeaderCount = response.Headers.Count + response.Cookies.Count;
-
-                // First, write the :status pseudo-header
-                int statusIndex = GetStaticHeaderIndex(response.StatusCode);
-                int length;
-                
-                if (statusIndex > 0)
-                {
-                    // Use indexed header field representation for status
-                    SerializeStatusHeader(statusIndex, writePayload, out length);
-                    writePayload[3] = (byte)Http2FrameType.HEADERS;
-                    writePayload[4] = (byte)(totalHeaderCount == 0 ? Http2FrameFlags.END_HEADERS : Http2FrameFlags.NONE);
-                    
-                    // Write stream identifier
-                    writePayload[5] = (byte)((streamId >> 24) & 0x7F);
-                    writePayload[6] = (byte)((streamId >> 16) & 0xFF);
-                    writePayload[7] = (byte)((streamId >> 8) & 0xFF);
-                    writePayload[8] = (byte)(streamId & 0xFF);
-
-                    await stream.WriteAsync(writePayload.AsMemory(0, 9 + length), cancellationToken);
-                }
-                else
-                {
-                    // Use literal header field for non-standard status codes
-                    string statusValue = ((int)response.StatusCode).ToString();
-                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, ":status", [statusValue], true, totalHeaderCount == 0, writePayload);
-                    if (length > 0)
-                    {
-                        await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
-                    }
-                }
-
-                // Write regular headers
-                int i = 1;
-
-                foreach (var header in response.Headers)
-                {
-                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, false, i == totalHeaderCount, writePayload);
-
-                    if (length > 0)
-                    {
-                        await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
-                    }
-                    i++;
-                }
-
-                // Write cookies as set-cookie headers
-                foreach (var cookie in response.Cookies)
-                {
-                    string cookieValue = cookie.Value.ToString();
-                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, "set-cookie", [cookieValue], false, i == totalHeaderCount, writePayload);
-
-                    if (length > 0)
-                    {
-                        await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
-                    }
-                    i++;
-                }
-                
-                await stream.FlushAsync(cancellationToken);
-            } 
-            catch (Exception ex) 
-            {
-                logger.LogError(ex, "Error writing headers");
-                throw;
-            } 
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(writePayload);
+                requestBuilder.AddHeader(hpackHeader.Name, hpackHeader.Value);
             }
         }
 
-        private void SerializeStatusHeader(int statusIndex, byte[] payload, out int length)
+        return true;
+    }
+
+    private bool ProcessFrame(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, ILogger logger)
+    {
+        var b = false;
+
+        switch (frame.FrameType)
         {
-            // Write indexed header field representation
-            // Pattern: 1xxxxxxx where xxxxxxx is the index
-            length = 0;
-            var tempBuffer = new byte[16]; // Small temporary buffer for integer encoding
-            HPACKInteger.WriteInt(statusIndex, tempBuffer, 7, out length);
-            Array.Copy(tempBuffer, 0, payload, 9, length);
-            payload[9] |= 0b_1000_0000; // Set the indexed bit
+            case Http2FrameType.HEADERS:
+                b = ProcessHEADERSFrame(ref frame, ref payload, logger);
+                break;
+            case Http2FrameType.SETTINGS:
+                b = ProcessSETTINGSFrame(ref frame, ref payload, out var settings);
+                break;
+            case Http2FrameType.WINDOW_UPDATE:
+                b = ProcessWINDOW_UPDATEFrame(ref frame, ref payload);
+                break;
+            case Http2FrameType.PRIORITY:
+                b = ProcessPRIORITYFrame(ref frame, ref payload, out var priorityPayload);
+                break;
+            case Http2FrameType.PING:
+                b = ProcessPINGFrame(ref frame, ref payload);
+                break;
+            default:
+                logger.LogError("Unknown frame type: {ft}, stream: {sid}", frame.FrameType, frame.StreamIdentifier);
+                break;
+        }
+
+        return b;
+    }
+
+    public void Reset()
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
+    {
+        var streamId = GetNextStreamIdentifier();
+        var stream = response.Stream ?? throw new InvalidOperationException("response.Stream should not be null");
+
+        // Write headers (including :status pseudo-header)
+        await WriteHeadersAsync(streamId, response, stream, cancellationToken);
+
+        // Write response body as DATA frame(s)
+        await WriteDataAsync(streamId, response, stream, cancellationToken);
+
+        return true;
+    }
+
+    private async Task WriteHeadersAsync(uint streamId, IHttpResponse response, Stream stream, CancellationToken cancellationToken)
+    {
+        var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
+
+        try
+        {
+            // Add content headers to response headers first (before counting)
+            foreach (var header in response.Content.Headers)
+            {
+                response.Headers.AddOrUpdate(header.Key, header.Value);
+            }
+
+            // Calculate total header count for END_HEADERS flag
+            int totalHeaderCount = response.Headers.Count + response.Cookies.Count;
+
+            // First, write the :status pseudo-header
+            int statusIndex = GetStaticHeaderIndex(response.StatusCode);
+            int length;
             
-            // Write payload length in frame header
-            payload[0] = (byte)((length >> 16) & 0xFF);
-            payload[1] = (byte)((length >> 8) & 0xFF);
-            payload[2] = (byte)(length & 0xFF);
-        }
-
-        private async Task WriteDataAsync(uint streamId, IHttpResponse response, Stream stream, CancellationToken cancellationToken)
-        {
-            var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-
-            try
+            if (statusIndex > 0)
             {
-                // Get the response content
-                using var contentStream = new MemoryStream();
-                await response.Content.WriteToAsync(contentStream, cancellationToken);
-                byte[] contentData = contentStream.ToArray();
+                // Use indexed header field representation for status
+                SerializeStatusHeader(statusIndex, writePayload, out length);
+                writePayload[3] = (byte)Http2FrameType.HEADERS;
+                writePayload[4] = (byte)(totalHeaderCount == 0 ? Http2FrameFlags.END_HEADERS : Http2FrameFlags.NONE);
+                
+                // Write stream identifier
+                writePayload[5] = (byte)((streamId >> 24) & 0x7F);
+                writePayload[6] = (byte)((streamId >> 16) & 0xFF);
+                writePayload[7] = (byte)((streamId >> 8) & 0xFF);
+                writePayload[8] = (byte)(streamId & 0xFF);
 
-                if (contentData.Length == 0)
+                await stream.WriteAsync(writePayload.AsMemory(0, 9 + length), cancellationToken);
+            }
+            else
+            {
+                // Use literal header field for non-standard status codes
+                string statusValue = ((int)response.StatusCode).ToString();
+                length = Http2FrameWriter.SerializeHEADERFrame(streamId, ":status", [statusValue], true, totalHeaderCount == 0, writePayload);
+                if (length > 0)
                 {
-                    // Send empty DATA frame with END_STREAM flag
-                    int length = Http2FrameWriter.SerializeDATAFrame(streamId, [], 0, 0, true, writePayload);
                     await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
                 }
-                else
+            }
+
+            // Write regular headers
+            int i = 1;
+
+            foreach (var header in response.Headers)
+            {
+                length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, false, i == totalHeaderCount, writePayload);
+
+                if (length > 0)
                 {
-                    // Send data in chunks if needed (respecting maxFrameSize)
-                    int maxDataPerFrame = (int)maxFrameSize - 9; // Frame header is 9 bytes
-                    int offset = 0;
-
-                    while (offset < contentData.Length)
-                    {
-                        int chunkSize = Math.Min(maxDataPerFrame, contentData.Length - offset);
-                        bool isLastChunk = (offset + chunkSize) >= contentData.Length;
-
-                        int length = Http2FrameWriter.SerializeDATAFrame(streamId, contentData, offset, chunkSize, isLastChunk, writePayload);
-                        await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
-
-                        offset += chunkSize;
-                    }
+                    await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
                 }
-                
-                await stream.FlushAsync(cancellationToken);
+                i++;
             }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error writing data frames");
-                throw;
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(writePayload);
-            }
-        }
 
-        private void SerializeHeaderFramePayload(IHttpResponse response, ref byte[] payload, out int length)
+            // Write cookies as set-cookie headers
+            foreach (var cookie in response.Cookies)
+            {
+                string cookieValue = cookie.Value.ToString();
+                length = Http2FrameWriter.SerializeHEADERFrame(streamId, "set-cookie", [cookieValue], false, i == totalHeaderCount, writePayload);
+
+                if (length > 0)
+                {
+                    await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+                }
+                i++;
+            }
+            
+            await stream.FlushAsync(cancellationToken);
+        } 
+        catch (Exception ex) 
         {
-            int index = GetStaticHeaderIndex(response.StatusCode);
-            length = 0;
-
-            if (index > 0)
-            {
-                HPACKInteger.WriteInt(index, payload, 7, out length);
-                payload[0] |= 0b_1000_0000;
-            }
-        }
-
-        private static int GetStaticHeaderIndex(HttpResponseCodes code) => code switch
-        { 
-            // return index in static table, refer to HPACK docs: https://httpwg.org/specs/rfc7541.html#static.table.definition
-            HttpResponseCodes.OK => 8,
-            HttpResponseCodes.NoContent => 9,
-            HttpResponseCodes.PartialContent => 10,
-            HttpResponseCodes.NotModified => 11,
-            HttpResponseCodes.BadRequest => 12,
-            HttpResponseCodes.NotFound => 13,
-            HttpResponseCodes.InternalServerError => 14,
-            _ => -1
-        };
-
-        private uint GetNextStreamIdentifier()
+            logger.LogError(ex, "Error writing headers");
+            throw;
+        } 
+        finally
         {
-            return Interlocked.Add(ref nextOutputStreamId, 2); // an Id initiated by server is always an even 31-bit number 
+            ArrayPool<byte>.Shared.Return(writePayload);
         }
+    }
+
+    private void SerializeStatusHeader(int statusIndex, byte[] payload, out int length)
+    {
+        // Write indexed header field representation
+        // Pattern: 1xxxxxxx where xxxxxxx is the index
+        length = 0;
+        var tempBuffer = new byte[16]; // Small temporary buffer for integer encoding
+        HPACKInteger.WriteInt(statusIndex, tempBuffer, 7, out length);
+        Array.Copy(tempBuffer, 0, payload, 9, length);
+        payload[9] |= 0b_1000_0000; // Set the indexed bit
+        
+        // Write payload length in frame header
+        payload[0] = (byte)((length >> 16) & 0xFF);
+        payload[1] = (byte)((length >> 8) & 0xFF);
+        payload[2] = (byte)(length & 0xFF);
+    }
+
+    private async Task WriteDataAsync(uint streamId, IHttpResponse response, Stream stream, CancellationToken cancellationToken)
+    {
+        var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
+
+        try
+        {
+            // Get the response content
+            using var contentStream = new MemoryStream();
+            await response.Content.WriteToAsync(contentStream, cancellationToken);
+            byte[] contentData = contentStream.ToArray();
+
+            if (contentData.Length == 0)
+            {
+                // Send empty DATA frame with END_STREAM flag
+                int length = Http2FrameWriter.SerializeDATAFrame(streamId, [], 0, 0, true, writePayload);
+                await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+            }
+            else
+            {
+                // Send data in chunks if needed (respecting maxFrameSize)
+                int maxDataPerFrame = (int)maxFrameSize - 9; // Frame header is 9 bytes
+                int offset = 0;
+
+                while (offset < contentData.Length)
+                {
+                    int chunkSize = Math.Min(maxDataPerFrame, contentData.Length - offset);
+                    bool isLastChunk = (offset + chunkSize) >= contentData.Length;
+
+                    int length = Http2FrameWriter.SerializeDATAFrame(streamId, contentData, offset, chunkSize, isLastChunk, writePayload);
+                    await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+
+                    offset += chunkSize;
+                }
+            }
+            
+            await stream.FlushAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error writing data frames");
+            throw;
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(writePayload);
+        }
+    }
+
+    private void SerializeHeaderFramePayload(IHttpResponse response, ref byte[] payload, out int length)
+    {
+        int index = GetStaticHeaderIndex(response.StatusCode);
+        length = 0;
+
+        if (index > 0)
+        {
+            HPACKInteger.WriteInt(index, payload, 7, out length);
+            payload[0] |= 0b_1000_0000;
+        }
+    }
+
+    private static int GetStaticHeaderIndex(HttpResponseCodes code) => code switch
+    { 
+        // return index in static table, refer to HPACK docs: https://httpwg.org/specs/rfc7541.html#static.table.definition
+        HttpResponseCodes.OK => 8,
+        HttpResponseCodes.NoContent => 9,
+        HttpResponseCodes.PartialContent => 10,
+        HttpResponseCodes.NotModified => 11,
+        HttpResponseCodes.BadRequest => 12,
+        HttpResponseCodes.NotFound => 13,
+        HttpResponseCodes.InternalServerError => 14,
+        _ => -1
+    };
+
+    private uint GetNextStreamIdentifier()
+    {
+        return Interlocked.Add(ref nextOutputStreamId, 2); // an Id initiated by server is always an even 31-bit number 
     }
 }

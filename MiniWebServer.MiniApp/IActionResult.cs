@@ -1,8 +1,7 @@
-﻿namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+public interface IActionResult
 {
-    public interface IActionResult
-    {
-        int StatusCode { get; }
-        string ReasonPhrase { get; }
-    }
+    int StatusCode { get; }
+    string ReasonPhrase { get; }
 }
