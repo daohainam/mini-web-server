@@ -1,10 +1,9 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 using MiniWebServer.Abstractions.Http;
 
-namespace MvcMiddlewareTests
+namespace MvcMiddlewareTests;
+
+internal class ParametersContainer : IParametersContainer
 {
-    internal class ParametersContainer : IParametersContainer
-    {
-        public required HttpParameters QueryParameters { get; init; }
-    }
+    public required HttpParameters QueryParameters { get; init; }
 }

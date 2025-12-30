@@ -1,21 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>MiniWebServer.$(MSBuildProjectName)</AssemblyName>
     <RootNamespace>MiniWebServer.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Net.WebSockets" Version="4.3.0" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\MiniWebServer.MiniApp\MiniWebServer.MiniApp.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <None Update="README.md">
       <PackagePath>\</PackagePath>
@@ -26,5 +19,4 @@
       <Pack>True</Pack>
     </None>
   </ItemGroup>
-
 </Project>

@@ -1,77 +1,76 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace MiniWebServer.MiniApp.Builders
+namespace MiniWebServer.MiniApp.Builders;
+
+public class MiniAppBuilder : IMiniAppBuilder
 {
-    public class MiniAppBuilder : IMiniAppBuilder
+    public IServiceCollection Services { get; }
+
+    private readonly List<Type> middlewareTypes = [];
+
+    public MiniAppBuilder(IServiceCollection? services = default)
     {
-        public IServiceCollection Services { get; }
-
-        private readonly List<Type> middlewareTypes = [];
-
-        public MiniAppBuilder(IServiceCollection? services = default)
+        if (services == null)
         {
-            if (services == null)
-            {
-                Services = new ServiceCollection();
-            }
-            else
-            {
-                Services = services;
-            }
+            Services = new ServiceCollection();
         }
-
-        public virtual IMiniApp Build()
+        else
         {
-            var services = Services.BuildServiceProvider();
-            var middlewares = new List<IMiddleware>();
+            Services = services;
+        }
+    }
 
-            if (middlewareTypes.Count != 0)
+    public virtual IMiniApp Build()
+    {
+        var services = Services.BuildServiceProvider();
+        var middlewares = new List<IMiddleware>();
+
+        if (middlewareTypes.Count != 0)
+        {
+            var middlewareFactory = services.GetService<IMiddlewareFactory>();
+
+            foreach (var type in middlewareTypes)
             {
-                var middlewareFactory = services.GetService<IMiddlewareFactory>();
+                IMiddleware? middleware = null;
 
-                foreach (var type in middlewareTypes)
+                if (middlewareFactory != null)
                 {
-                    IMiddleware? middleware = null;
-
-                    if (middlewareFactory != null)
-                    {
-                        middleware = middlewareFactory.Create(type);
-                    }
-
-                    middleware ??= services.GetService(type) as IMiddleware;
-
-                    if (middleware == null)
-                    {
-                        throw new InvalidOperationException($"Middleware not registered: {type}");
-                    }
-
-                    middlewares.Add(middleware);
+                    middleware = middlewareFactory.Create(type);
                 }
-            }
 
-            var app = new BaseMiniApp(services, middlewares);
-            return app;
+                middleware ??= services.GetService(type) as IMiddleware;
+
+                if (middleware == null)
+                {
+                    throw new InvalidOperationException($"Middleware not registered: {type}");
+                }
+
+                middlewares.Add(middleware);
+            }
         }
 
-        public IMiniAppBuilder UseMiddleware(Type middlewareType)
+        var app = new BaseMiniApp(services, middlewares);
+        return app;
+    }
+
+    public IMiniAppBuilder UseMiddleware(Type middlewareType)
+    {
+        ArgumentNullException.ThrowIfNull(middlewareType);
+
+        if (typeof(IMiddleware).IsAssignableFrom(middlewareType))
         {
-            ArgumentNullException.ThrowIfNull(middlewareType);
-
-            if (typeof(IMiddleware).IsAssignableFrom(middlewareType))
-            {
-                middlewareTypes.Insert(0, middlewareType); // LIFO: last added middleware will be called first
-            }
-            else
-            {
-                throw new InvalidOperationException("middlewareType must be a IMiddleware");
-            }
-
-            return this;
+            middlewareTypes.Insert(0, middlewareType); // LIFO: last added middleware will be called first
         }
-
-        public IMiniAppBuilder UseMiddleware<TMiddleware>()
+        else
         {
-            return UseMiddleware(typeof(TMiddleware));
+            throw new InvalidOperationException("middlewareType must be a IMiddleware");
         }
+
+        return this;
+    }
+
+    public IMiniAppBuilder UseMiddleware<TMiddleware>()
+    {
+        return UseMiddleware(typeof(TMiddleware));
     }
 }

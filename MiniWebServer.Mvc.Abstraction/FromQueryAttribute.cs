@@ -1,8 +1,7 @@
-﻿namespace MiniWebServer.Mvc.Abstraction
+namespace MiniWebServer.Mvc.Abstraction;
+
+[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
+public class FromQueryAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
-    public class FromQueryAttribute : Attribute
-    {
-        public FromQueryAttribute() { }
-    }
+    public FromQueryAttribute() { }
 }

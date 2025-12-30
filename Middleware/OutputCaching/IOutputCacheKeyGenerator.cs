@@ -1,9 +1,8 @@
-﻿using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp;
 
-namespace MiniWebServer.OutputCaching
+namespace MiniWebServer.OutputCaching;
+
+public interface IOutputCacheKeyGenerator
 {
-    public interface IOutputCacheKeyGenerator
-    {
-        string GenerateCacheKey(IMiniAppRequestContext context);
-    }
+    string GenerateCacheKey(IMiniAppRequestContext context);
 }

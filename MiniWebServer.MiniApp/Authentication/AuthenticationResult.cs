@@ -1,12 +1,11 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 
-namespace MiniWebServer.MiniApp.Authentication
+namespace MiniWebServer.MiniApp.Authentication;
+
+public class AuthenticationResult(bool succeeded, ClaimsPrincipal? principal)
 {
-    public class AuthenticationResult(bool succeeded, ClaimsPrincipal? principal)
-    {
-        public bool IsSucceeded { get; } = succeeded;
-        public ClaimsPrincipal? Principal { get; } = principal;
+    public bool IsSucceeded { get; } = succeeded;
+    public ClaimsPrincipal? Principal { get; } = principal;
 
-        public static readonly AuthenticationResult Failed = new(false, null);
-    }
+    public static readonly AuthenticationResult Failed = new(false, null);
 }

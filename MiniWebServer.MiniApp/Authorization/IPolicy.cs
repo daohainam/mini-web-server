@@ -1,9 +1,8 @@
-﻿namespace MiniWebServer.MiniApp.Authorization
+namespace MiniWebServer.MiniApp.Authorization;
+
+public interface IPolicy
 {
-    public interface IPolicy
-    {
-        bool IsValid(IMiniAppRequestContext context);
-        IPolicy RequireClaim(string claim);
-        IPolicy RequireClaimValue(string claim, string value, StringComparison? stringComparison = default);
-    }
+    bool IsValid(IMiniAppRequestContext context);
+    IPolicy RequireClaim(string claim);
+    IPolicy RequireClaimValue(string claim, string value, StringComparison? stringComparison = default);
 }

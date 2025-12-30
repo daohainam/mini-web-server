@@ -1,19 +1,18 @@
-﻿using System.Net;
+using System.Net;
 
-namespace MiniWebServer.Helpers
+namespace MiniWebServer.Helpers;
+
+public class UrlHelpers
 {
-    public class UrlHelpers
+    // I will use WebUtility class for now 
+
+    public static string UrlDecode(string encodedString)
     {
-        // I will use WebUtility class for now 
+        return WebUtility.UrlDecode(encodedString);
+    }
 
-        public static string UrlDecode(string encodedString)
-        {
-            return WebUtility.UrlDecode(encodedString);
-        }
-
-        public static string UrlDecode(byte[] encodedBytes, int offset, int count)
-        {
-            return UrlDecode(encodedBytes, offset, count);
-        }
+    public static string UrlDecode(byte[] encodedBytes, int offset, int count)
+    {
+        return UrlDecode(encodedBytes, offset, count);
     }
 }

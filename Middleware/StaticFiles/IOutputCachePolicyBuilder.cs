@@ -1,6 +1,5 @@
-﻿namespace MiniWebServer.StaticFiles
+namespace MiniWebServer.StaticFiles;
+
+public interface IOutputCachePolicyBuilder
 {
-    public interface IOutputCachePolicyBuilder
-    {
-    }
 }

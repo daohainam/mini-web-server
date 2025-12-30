@@ -1,12 +1,11 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 using MiniWebServer.WebSocket.Abstractions;
 using System.Security.Claims;
 
-namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+public interface IMiniAppRequestContext: IMiniAppContext
 {
-    public interface IMiniAppRequestContext: IMiniAppContext
-    {
-        IHttpRequest Request { get; }
-        IHttpResponse Response { get; }
-    }
+    IHttpRequest Request { get; }
+    IHttpResponse Response { get; }
 }

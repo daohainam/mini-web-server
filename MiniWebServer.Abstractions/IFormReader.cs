@@ -1,9 +1,8 @@
-﻿using System.IO.Pipelines;
+using System.IO.Pipelines;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IFormReader
 {
-    public interface IFormReader
-    {
-        Task<IRequestForm?> ReadAsync(PipeReader pipeReader, CancellationToken cancellationToken = default);
-    }
+    Task<IRequestForm?> ReadAsync(PipeReader pipeReader, CancellationToken cancellationToken = default);
 }

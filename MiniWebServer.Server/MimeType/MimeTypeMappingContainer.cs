@@ -1,24 +1,23 @@
-﻿using MiniWebServer.Server.Abstractions;
+using MiniWebServer.Server.Abstractions;
 
-namespace MiniWebServer.Server.MimeType
+namespace MiniWebServer.Server.MimeType;
+
+// this class uses Decorator pattern
+public class MimeTypeMappingContainer(IEnumerable<IMimeTypeMapping> mappings) : IMimeTypeMapping
 {
-    // this class uses Decorator pattern
-    public class MimeTypeMappingContainer(IEnumerable<IMimeTypeMapping> mappings) : IMimeTypeMapping
+    private readonly IEnumerable<IMimeTypeMapping> mappings = mappings ?? throw new ArgumentNullException(nameof(mappings));
+
+    public string GetMimeMapping(string fileExt)
     {
-        private readonly IEnumerable<IMimeTypeMapping> mappings = mappings ?? throw new ArgumentNullException(nameof(mappings));
-
-        public string GetMimeMapping(string fileExt)
+        foreach (var mapping in mappings)
         {
-            foreach (var mapping in mappings)
+            var mimeType = mapping.GetMimeMapping(fileExt);
+            if (mimeType != null)
             {
-                var mimeType = mapping.GetMimeMapping(fileExt);
-                if (mimeType != null)
-                {
-                    return mimeType;
-                }
+                return mimeType;
             }
-
-            return "application/octet-stream";
         }
+
+        return "application/octet-stream";
     }
 }

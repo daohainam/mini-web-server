@@ -1,8 +1,7 @@
-﻿namespace MiniWebServer.Mvc.Abstraction
+namespace MiniWebServer.Mvc.Abstraction;
+
+[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
+public class FromFormAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
-    public class FromFormAttribute : Attribute
-    {
-        public FromFormAttribute() { }
-    }
+    public FromFormAttribute() { }
 }

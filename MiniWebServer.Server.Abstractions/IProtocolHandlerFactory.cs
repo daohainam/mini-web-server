@@ -1,7 +1,8 @@
-﻿namespace MiniWebServer.Server.Abstractions
+using MiniWebServer.Abstractions;
+
+namespace MiniWebServer.Server.Abstractions;
+
+public interface IProtocolHandlerFactory
 {
-    public interface IProtocolHandlerFactory
-    {
-        IProtocolHandler Create(ProtocolHandlerConfiguration config);
-    }
+    IProtocolHandler Create(HttpVersions httpVersion, ProtocolHandlerConfiguration config, ProtocolHandlerContext protocolHandlerContext);
 }

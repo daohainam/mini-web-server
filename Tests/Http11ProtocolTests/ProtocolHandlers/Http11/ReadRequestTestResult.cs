@@ -1,10 +1,9 @@
-﻿using MiniWebServer.Server.Http;
+using MiniWebServer.Server.Http;
 
-namespace Http11ProtocolTests.ProtocolHandlers.Http11
+namespace Http11ProtocolTests.ProtocolHandlers.Http11;
+
+internal class ReadRequestTestResult(bool success, HttpWebRequestBuilder httpWebRequestBuilder)
 {
-    internal class ReadRequestTestResult(bool success, HttpWebRequestBuilder httpWebRequestBuilder)
-    {
-        public bool Success { get; set; } = success;
-        public HttpWebRequestBuilder HttpWebRequestBuilder { get; set; } = httpWebRequestBuilder;
-    }
+    public bool Success { get; set; } = success;
+    public HttpWebRequestBuilder HttpWebRequestBuilder { get; set; } = httpWebRequestBuilder;
 }

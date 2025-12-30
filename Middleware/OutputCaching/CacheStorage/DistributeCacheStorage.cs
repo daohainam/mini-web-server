@@ -1,20 +1,19 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Distributed;
 
-namespace MiniWebServer.OutputCaching.CacheStorage
+namespace MiniWebServer.OutputCaching.CacheStorage;
+
+public class DistributeCacheStorage : IOutputCacheStorage
 {
-    public class DistributeCacheStorage : IOutputCacheStorage
+    private readonly IDistributedCache cache;
+
+    public DistributeCacheStorage(IDistributedCache cache)
     {
-        private readonly IDistributedCache cache;
+        ArgumentNullException.ThrowIfNull(cache);
 
-        public DistributeCacheStorage(IDistributedCache cache)
-        {
-            ArgumentNullException.ThrowIfNull(cache);
-
-            this.cache = cache;
-        }
-        public OutputCacheStreamInfo GetCachedStream(string cacheKey)
-        {
-            throw new NotImplementedException();
-        }
+        this.cache = cache;
+    }
+    public OutputCacheStreamInfo GetCachedStream(string cacheKey)
+    {
+        throw new NotImplementedException();
     }
 }

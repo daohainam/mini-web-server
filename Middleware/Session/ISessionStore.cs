@@ -1,9 +1,8 @@
-﻿using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp;
 
-namespace MiniWebServer.Session
+namespace MiniWebServer.Session;
+
+public interface ISessionStore
 {
-    public interface ISessionStore
-    {
-        ISession Create(string sessionId);
-    }
+    ISession Create(string sessionId);
 }

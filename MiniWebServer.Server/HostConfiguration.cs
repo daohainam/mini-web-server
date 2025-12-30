@@ -1,10 +1,9 @@
-﻿using MiniWebServer.MiniApp;
+using MiniWebServer.MiniApp;
 
-namespace MiniWebServer.Server
+namespace MiniWebServer.Server;
+
+public class HostConfiguration(string hostName, IMiniApp app)
 {
-    public class HostConfiguration(string hostName, IMiniApp app)
-    {
-        public string HostName { get; } = hostName;
-        public IMiniApp App { get; } = app;
-    }
+    public string HostName { get; } = hostName;
+    public IMiniApp App { get; } = app;
 }

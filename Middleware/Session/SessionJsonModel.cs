@@ -1,6 +1,5 @@
-﻿namespace MiniWebServer.Session
+namespace MiniWebServer.Session;
+
+internal class SessionJsonModel : Dictionary<string, string>
 {
-    internal class SessionJsonModel : Dictionary<string, string>
-    {
-    }
 }

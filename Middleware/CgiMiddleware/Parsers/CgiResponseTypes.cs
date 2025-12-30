@@ -1,16 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniWebServer.Cgi.Parsers
+namespace MiniWebServer.Cgi.Parsers;
+
+internal enum CgiResponseTypes
 {
-    internal enum CgiResponseTypes
-    {
-        DocumentResponse,
-        LocalRedirectResponse,
-        ClientRedirectResponse,
-        ClientRedirectResponseWithDocument
-    }
+    DocumentResponse,
+    LocalRedirectResponse,
+    ClientRedirectResponse,
+    ClientRedirectResponseWithDocument
 }

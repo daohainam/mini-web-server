@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+public interface IMiddleware
 {
-    public interface IMiddleware
-    {
-        Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default);
-    }
+    Task InvokeAsync(IMiniAppRequestContext context, ICallable next, CancellationToken cancellationToken = default);
 }

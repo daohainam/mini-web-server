@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Quote
+namespace MiniWebServer.Quote;
+
+public interface IQuoteService
 {
-    public interface IQuoteService
-    {
-        Task<string> GetRandomAsync();
-    }
+    Task<string> GetRandomAsync();
 }

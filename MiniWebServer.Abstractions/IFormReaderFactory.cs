@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IFormReaderFactory
 {
-    public interface IFormReaderFactory
-    {
-        IFormReader? CreateFormReader(string contentType, long contentLength);
-    }
+    IFormReader? CreateFormReader(string contentType, long contentLength);
 }

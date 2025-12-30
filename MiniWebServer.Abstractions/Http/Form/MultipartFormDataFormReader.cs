@@ -1,66 +1,65 @@
-﻿using HttpMultipartParser;
+using HttpMultipartParser;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.IO.Pipelines;
 
-namespace MiniWebServer.Abstractions.Http.Form
+namespace MiniWebServer.Abstractions.Http.Form;
+
+public class MultipartFormDataFormReader : IFormReader
 {
-    public class MultipartFormDataFormReader : IFormReader
+    private readonly string boundary;
+    private readonly ILogger<MultipartFormDataFormReader> logger;
+    private RequestForm? form;
+
+    public MultipartFormDataFormReader(string boundary, ILoggerFactory? loggerFactory)
     {
-        private readonly string boundary;
-        private readonly ILogger<MultipartFormDataFormReader> logger;
-        private RequestForm? form;
+        this.boundary = boundary;
 
-        public MultipartFormDataFormReader(string boundary, ILoggerFactory? loggerFactory)
+        if (loggerFactory != null)
         {
-            this.boundary = boundary;
+            logger = loggerFactory.CreateLogger<MultipartFormDataFormReader>();
+        }
+        else
+        {
+            logger = NullLogger<MultipartFormDataFormReader>.Instance;
+        }
+    }
 
-            if (loggerFactory != null)
-            {
-                logger = loggerFactory.CreateLogger<MultipartFormDataFormReader>();
-            }
-            else
-            {
-                logger = NullLogger<MultipartFormDataFormReader>.Instance;
-            }
+    public async Task<IRequestForm?> ReadAsync(PipeReader pipeReader, CancellationToken cancellationToken = default)
+    {
+        form = new RequestForm();
+        var parser = new StreamingMultipartFormDataParser(
+            pipeReader.AsStream(),
+            boundary: boundary
+            );
+
+        parser.ParameterHandler += this.OnParameterFound;
+        parser.FileHandler += this.OnFilePartFound;
+
+        await parser.RunAsync(cancellationToken);
+
+        return form;
+    }
+
+    private void OnFilePartFound(string name, string fileName, string contentType, string contentDisposition, byte[] buffer, int bytes, int partNumber, IDictionary<string, string> additionalProperties)
+    {
+        if (form == null)
+        {
+            throw new NullReferenceException("form must be not null");
         }
 
-        public async Task<IRequestForm?> ReadAsync(PipeReader pipeReader, CancellationToken cancellationToken = default)
+        logger.LogDebug("Found file: {p}, fileName: {fn}", name, fileName);
+    }
+
+    private void OnParameterFound(ParameterPart part)
+    {
+        if (form == null)
         {
-            form = new RequestForm();
-            var parser = new StreamingMultipartFormDataParser(
-                pipeReader.AsStream(),
-                boundary: boundary
-                );
-
-            parser.ParameterHandler += this.OnParameterFound;
-            parser.FileHandler += this.OnFilePartFound;
-
-            await parser.RunAsync(cancellationToken);
-
-            return form;
+            throw new NullReferenceException("form must be not null");
         }
 
-        private void OnFilePartFound(string name, string fileName, string contentType, string contentDisposition, byte[] buffer, int bytes, int partNumber, IDictionary<string, string> additionalProperties)
-        {
-            if (form == null)
-            {
-                throw new NullReferenceException("form must be not null");
-            }
+        logger.LogDebug("Found parameter: {p}={v}", part.Name, part.Data);
 
-            logger.LogDebug("Found file: {p}, fileName: {fn}", name, fileName);
-        }
-
-        private void OnParameterFound(ParameterPart part)
-        {
-            if (form == null)
-            {
-                throw new NullReferenceException("form must be not null");
-            }
-
-            logger.LogDebug("Found parameter: {p}={v}", part.Name, part.Data);
-
-            form[part.Name] = part.Data;
-        }
+        form[part.Name] = part.Data;
     }
 }

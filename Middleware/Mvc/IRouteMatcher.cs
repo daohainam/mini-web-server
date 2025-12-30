@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Mvc
+namespace MiniWebServer.Mvc;
+
+public interface IRouteMatcher
 {
-    public interface IRouteMatcher
-    {
-        bool IsMatched(string requestUrl, string route);
-    }
+    bool IsMatched(string requestUrl, string route);
 }

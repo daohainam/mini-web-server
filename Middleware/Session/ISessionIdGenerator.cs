@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Session
+namespace MiniWebServer.Session;
+
+public interface ISessionIdGenerator
 {
-    public interface ISessionIdGenerator
-    {
-        string GenerateNewId();
-    }
+    string GenerateNewId();
 }

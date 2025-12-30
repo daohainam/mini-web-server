@@ -1,24 +1,23 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 using System.Text.Json;
 
-namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+public static class RequestBodyHelpers
 {
-    public static class RequestBodyHelpers
+    public static async Task<T?> ReadAsJsonAsync<T>(this IHttpRequest request, CancellationToken cancellationToken = default)
     {
-        public static async Task<T?> ReadAsJsonAsync<T>(this IHttpRequest request, CancellationToken cancellationToken = default)
+        var jsonString = await request.ReadAsStringAsync(cancellationToken);
+
+        if (!string.IsNullOrEmpty(jsonString))
         {
-            var jsonString = await request.ReadAsStringAsync(cancellationToken);
+            T? result = JsonSerializer.Deserialize<T?>(jsonString);
 
-            if (!string.IsNullOrEmpty(jsonString))
-            {
-                T? result = JsonSerializer.Deserialize<T?>(jsonString);
-
-                return result;
-            }
-            else
-            {
-                return default;
-            }
+            return result;
+        }
+        else
+        {
+            return default;
         }
     }
 }

@@ -1,8 +1,7 @@
-﻿namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IContentWriter
 {
-    public interface IContentWriter
-    {
-        void Write(ReadOnlySpan<byte> value);
-        void Complete();
-    }
+    void Write(ReadOnlySpan<byte> value);
+    void Complete();
 }

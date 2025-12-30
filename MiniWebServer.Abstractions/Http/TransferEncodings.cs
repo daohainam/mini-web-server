@@ -1,11 +1,10 @@
-﻿namespace MiniWebServer.Abstractions.Http
+namespace MiniWebServer.Abstractions.Http;
+
+public enum TransferEncodings
 {
-    public enum TransferEncodings
-    {
-        None,
-        Chunked,
-        Compress,
-        Deflate,
-        Gzip
-    }
+    None,
+    Chunked,
+    Compress,
+    Deflate,
+    Gzip
 }
