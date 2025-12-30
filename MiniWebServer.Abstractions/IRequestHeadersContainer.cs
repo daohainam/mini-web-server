@@ -1,9 +1,8 @@
-﻿using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Abstractions.Http;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IRequestHeadersContainer
 {
-    public interface IRequestHeadersContainer
-    {
-        HttpRequestHeaders Headers { get; }
-    }
+    HttpRequestHeaders Headers { get; }
 }

@@ -1,13 +1,12 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 
-namespace MiniWebServer.Server.Http.Helpers
+namespace MiniWebServer.Server.Http.Helpers;
+
+public class StandardResponseBuilderHelpers
 {
-    public class StandardResponseBuilderHelpers
+    public static void NotFound(IHttpResponse response)
     {
-        public static void NotFound(IHttpResponse response)
-        {
-            response.StatusCode = HttpResponseCodes.NotFound;
-            response.Headers.ContentLength = 0;
-        }
+        response.StatusCode = HttpResponseCodes.NotFound;
+        response.Headers.ContentLength = 0;
     }
 }

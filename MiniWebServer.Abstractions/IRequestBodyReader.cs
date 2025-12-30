@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IRequestBodyReader
 {
-    public interface IRequestBodyReader
-    {
-        Task<string> ReadAsStringAsync(CancellationToken cancellationToken = default);
-    }
+    Task<string> ReadAsStringAsync(CancellationToken cancellationToken = default);
 }

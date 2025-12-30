@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Server.ProtocolHandlers.Http11
+namespace MiniWebServer.Server.ProtocolHandlers.Http11;
+
+public interface IHeaderValidator
 {
-    public interface IHeaderValidator
-    {
-        bool Validate(string name, IEnumerable<string> value);
-    }
+    bool Validate(string name, IEnumerable<string> value);
 }

@@ -1,9 +1,8 @@
-﻿using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Abstractions.Http;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IParametersContainer
 {
-    public interface IParametersContainer
-    {
-        HttpParameters QueryParameters { get; }
-    }
+    HttpParameters QueryParameters { get; }
 }

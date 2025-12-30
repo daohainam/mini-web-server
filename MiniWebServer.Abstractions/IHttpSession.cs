@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IHttpSession
 {
-    public interface IHttpSession
-    {
-        string SessionId { get; }
-    }
+    string SessionId { get; }
 }

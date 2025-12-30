@@ -1,10 +1,9 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 
-namespace MiniWebServer.HttpsRedirection
+namespace MiniWebServer.HttpsRedirection;
+
+public class HttpsRedirectionOptions
 {
-    public class HttpsRedirectionOptions
-    {
-        public int HttpsPort { get; set; } = 443;
-        public HttpResponseCodes HttpResponseCode { get; set; } = HttpResponseCodes.TemporaryRedirect;
-    }
+    public int HttpsPort { get; set; } = 443;
+    public HttpResponseCodes HttpResponseCode { get; set; } = HttpResponseCodes.TemporaryRedirect;
 }

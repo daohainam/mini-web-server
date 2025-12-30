@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Authentication
+namespace MiniWebServer.Authentication;
+
+public sealed class JwtBearerDefaults
 {
-    public sealed class JwtBearerDefaults
-    {
-        public const string AuthenticationScheme = "JwtBearer";
-    }
+    public const string AuthenticationScheme = "JwtBearer";
 }

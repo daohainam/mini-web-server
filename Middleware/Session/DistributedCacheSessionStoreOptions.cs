@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Session
+namespace MiniWebServer.Session;
+
+public class DistributedCacheSessionStoreOptions
 {
-    public class DistributedCacheSessionStoreOptions
-    {
-        public int LockWaitTimeoutMs { get; set; } = Timeout.Infinite;
-    }
+    public int LockWaitTimeoutMs { get; set; } = Timeout.Infinite;
 }

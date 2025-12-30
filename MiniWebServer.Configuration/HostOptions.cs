@@ -1,8 +1,7 @@
-﻿namespace MiniWebServer.Configuration
+namespace MiniWebServer.Configuration;
+
+public class HostOptions
 {
-    public class HostOptions
-    {
-        public string HostName { get; set; } = string.Empty;
-        public string HostDirectory { get; set; } = string.Empty;
-    }
+    public string HostName { get; set; } = string.Empty;
+    public string HostDirectory { get; set; } = string.Empty;
 }

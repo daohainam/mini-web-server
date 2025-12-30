@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Server
+namespace MiniWebServer.Server;
+
+public interface IRequestIdManager
 {
-    public interface IRequestIdManager
-    {
-        ulong GetNext();
-    }
+    ulong GetNext();
 }

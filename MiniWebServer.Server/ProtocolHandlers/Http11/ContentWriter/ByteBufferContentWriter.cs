@@ -1,19 +1,18 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 using System.Buffers;
 
-namespace MiniWebServer.Server.ProtocolHandlers.Http11.ContentWriter
+namespace MiniWebServer.Server.ProtocolHandlers.Http11.ContentWriter;
+
+internal class ByteBufferContentWriter(IBufferWriter<byte> buffer) : IContentWriter
 {
-    internal class ByteBufferContentWriter(IBufferWriter<byte> buffer) : IContentWriter
+    private readonly IBufferWriter<byte> buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
+
+    public void Complete()
     {
-        private readonly IBufferWriter<byte> buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
+    }
 
-        public void Complete()
-        {
-        }
-
-        public void Write(ReadOnlySpan<byte> value)
-        {
-            buffer.Write(value);
-        }
+    public void Write(ReadOnlySpan<byte> value)
+    {
+        buffer.Write(value);
     }
 }

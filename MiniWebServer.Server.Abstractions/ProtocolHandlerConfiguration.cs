@@ -1,10 +1,9 @@
-﻿using MiniWebServer.Abstractions;
+using MiniWebServer.Abstractions;
 
-namespace MiniWebServer.Server.Abstractions
+namespace MiniWebServer.Server.Abstractions;
+
+public class ProtocolHandlerConfiguration(HttpVersions protocolVersion, long maxRequestBodySize)
 {
-    public class ProtocolHandlerConfiguration(HttpVersions protocolVersion, long maxRequestBodySize)
-    {
-        public HttpVersions ProtocolVersion { get; } = protocolVersion;
-        public long MaxRequestBodySize { get; } = maxRequestBodySize;
-    }
+    public HttpVersions ProtocolVersion { get; } = protocolVersion;
+    public long MaxRequestBodySize { get; } = maxRequestBodySize;
 }

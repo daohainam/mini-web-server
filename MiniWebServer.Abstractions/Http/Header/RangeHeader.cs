@@ -1,20 +1,19 @@
-﻿namespace MiniWebServer.Abstractions.Http.Header
+namespace MiniWebServer.Abstractions.Http.Header;
+
+public class RangeHeader(RangeUnits unit, params RangePart[] parts)
 {
-    public class RangeHeader(RangeUnits unit, params RangePart[] parts)
+    public RangeUnits Unit { get; } = unit;
+    public RangePart[] Parts { get; } = parts ?? throw new ArgumentNullException(nameof(parts));
+
+    public override bool Equals(object? obj)
     {
-        public RangeUnits Unit { get; } = unit;
-        public RangePart[] Parts { get; } = parts ?? throw new ArgumentNullException(nameof(parts));
+        if (obj is not RangeHeader rangeHeader) return false;
 
-        public override bool Equals(object? obj)
-        {
-            if (obj is not RangeHeader rangeHeader) return false;
+        return rangeHeader.Unit == Unit && rangeHeader.Parts.SequenceEqual(Parts);
+    }
 
-            return rangeHeader.Unit == Unit && rangeHeader.Parts.SequenceEqual(Parts);
-        }
-
-        public override int GetHashCode()
-        {
-            return Unit.GetHashCode() ^ Parts.GetHashCode();
-        }
+    public override int GetHashCode()
+    {
+        return Unit.GetHashCode() ^ Parts.GetHashCode();
     }
 }

@@ -1,10 +1,9 @@
-﻿using MiniWebServer.Abstractions.Http;
+using MiniWebServer.Abstractions.Http;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IHttpContent
 {
-    public interface IHttpContent
-    {
-        HttpHeaders Headers { get; }
-        Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken);
-    }
+    HttpHeaders Headers { get; }
+    Task<long> WriteToAsync(Stream stream, CancellationToken cancellationToken);
 }

@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Mvc.Abstraction
-{
-    public interface IController
-    {
+namespace MiniWebServer.Mvc.Abstraction;
 
-    }
+public interface IController
+{
+
 }

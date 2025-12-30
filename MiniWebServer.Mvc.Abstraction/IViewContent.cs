@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Mvc.Abstraction
+namespace MiniWebServer.Mvc.Abstraction;
+
+public interface IViewContent
 {
-    public interface IViewContent
-    {
-        Task RenderAsync(ActionResultContext context);
-    }
+    Task RenderAsync(ActionResultContext context);
 }

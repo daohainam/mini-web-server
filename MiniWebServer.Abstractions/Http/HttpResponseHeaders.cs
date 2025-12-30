@@ -1,109 +1,108 @@
-﻿namespace MiniWebServer.Abstractions.Http
+namespace MiniWebServer.Abstractions.Http;
+
+public class HttpResponseHeaders : HttpHeaders
 {
-    public class HttpResponseHeaders : HttpHeaders
+    public HttpResponseHeaders()
     {
-        public HttpResponseHeaders()
+        ContentLength = 0;
+    }
+    public long ContentLength
+    {
+        get
         {
-            ContentLength = 0;
-        }
-        public long ContentLength
-        {
-            get
-            {
-                var v = TryGetValueAsString("Content-Length");
-                if (v == null)
-                    return 0;
+            var v = TryGetValueAsString("Content-Length");
+            if (v == null)
+                return 0;
 
-                return long.Parse(v);
-            }
-            set
-            {
-                AddOrUpdate("Content-Length", value.ToString());
-            }
+            return long.Parse(v);
         }
+        set
+        {
+            AddOrUpdate("Content-Length", value.ToString());
+        }
+    }
 
-        public string? Connection
+    public string? Connection
+    {
+        get
         {
-            get
-            {
-                return TryGetValueAsString("Connection");
-            }
-            set
-            {
-                ArgumentNullException.ThrowIfNull(nameof(value));
-                if (value != null)
-                    AddOrUpdate("Connection", value);
-            }
+            return TryGetValueAsString("Connection");
         }
-        public string? ContentType
+        set
         {
-            get
-            {
-                return TryGetValueAsString("Content-Type");
-            }
-            set
-            {
-                ArgumentNullException.ThrowIfNull(nameof(value));
-                if (value != null)
-                    AddOrUpdate("Content-Type", value);
-            }
+            ArgumentNullException.ThrowIfNull(nameof(value));
+            if (value != null)
+                AddOrUpdate("Connection", value);
         }
-        public string? ContentEncoding
+    }
+    public string? ContentType
+    {
+        get
         {
-            get
-            {
-                return TryGetValueAsString("Content-Encoding");
-            }
-            set
-            {
-                ArgumentNullException.ThrowIfNull(nameof(value));
-                if (value != null)
-                    AddOrUpdate("Content-Encoding", value);
-            }
+            return TryGetValueAsString("Content-Type");
         }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(nameof(value));
+            if (value != null)
+                AddOrUpdate("Content-Type", value);
+        }
+    }
+    public string? ContentEncoding
+    {
+        get
+        {
+            return TryGetValueAsString("Content-Encoding");
+        }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(nameof(value));
+            if (value != null)
+                AddOrUpdate("Content-Encoding", value);
+        }
+    }
 
-        public string? Location
+    public string? Location
+    {
+        get
         {
-            get
-            {
-                return TryGetValueAsString("Location");
-            }
-            set
-            {
-                ArgumentNullException.ThrowIfNull(nameof(value));
-                if (value != null)
-                    AddOrUpdate("Location", value);
-            }
+            return TryGetValueAsString("Location");
         }
-
-        public string? SecWebSocketAccept
+        set
         {
-            get
-            {
-                return TryGetValueAsString("Sec-WebSocket-Accept");
-            }
-            set
-            {
-                ArgumentNullException.ThrowIfNull(nameof(value));
-                if (value != null)
-                    AddOrUpdate("Sec-WebSocket-Accept", value);
-            }
+            ArgumentNullException.ThrowIfNull(nameof(value));
+            if (value != null)
+                AddOrUpdate("Location", value);
         }
+    }
 
-        private string? TryGetValueAsString(string name, string? defaultValue = null)
+    public string? SecWebSocketAccept
+    {
+        get
         {
-            if (TryGetValue(name, out var value))
-            {
-                if (value == null)
-                    return defaultValue;
+            return TryGetValueAsString("Sec-WebSocket-Accept");
+        }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(nameof(value));
+            if (value != null)
+                AddOrUpdate("Sec-WebSocket-Accept", value);
+        }
+    }
 
-                return value.Value.FirstOrDefault(defaultValue);
-            }
-            else
-            {
+    private string? TryGetValueAsString(string name, string? defaultValue = null)
+    {
+        if (TryGetValue(name, out var value))
+        {
+            if (value == null)
                 return defaultValue;
-            }
 
+            return value.Value.FirstOrDefault(defaultValue);
         }
+        else
+        {
+            return defaultValue;
+        }
+
     }
 }

@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.Abstractions.Http.Header
+namespace MiniWebServer.Abstractions.Http.Header;
+
+public enum RangeUnits
 {
-    public enum RangeUnits
-    {
-        Bytes
-    }
+    Bytes
 }

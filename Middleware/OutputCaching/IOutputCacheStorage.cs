@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.OutputCaching
+namespace MiniWebServer.OutputCaching;
+
+public interface IOutputCacheStorage
 {
-    public interface IOutputCacheStorage
-    {
-        OutputCacheStreamInfo GetCachedStream(string cacheKey);
-    }
+    OutputCacheStreamInfo GetCachedStream(string cacheKey);
 }

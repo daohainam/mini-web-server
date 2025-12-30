@@ -1,286 +1,285 @@
-﻿using System.Collections;
+using System.Collections;
 
-namespace MiniWebServer.Abstractions.Http
+namespace MiniWebServer.Abstractions.Http;
+
+public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>>, IEnumerable<HttpHeader>
 {
-    public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>>, IEnumerable<HttpHeader>
+    // we have a list of header, but we use a dictionary because we will do a lot of search on this.
+    // using a List might save some memories, but slower
+    private readonly List<HttpHeader> headers = [];
+    public int Count => headers.Count;
+    public static bool IsReadOnly => false;
+
+    public delegate void HeaderAddedHandler(HttpHeader header);
+    public delegate void HeaderChangedHandler(HttpHeader header);
+    public delegate void HeaderRemovedHandler(HttpHeader header);
+
+    public event HeaderAddedHandler? HeaderAdded;
+    public event HeaderChangedHandler? HeaderChanged;
+    public event HeaderRemovedHandler? HeaderRemoved;
+
+    public HttpHeaders()
     {
-        // we have a list of header, but we use a dictionary because we will do a lot of search on this.
-        // using a List might save some memories, but slower
-        private readonly List<HttpHeader> headers = [];
-        public int Count => headers.Count;
-        public static bool IsReadOnly => false;
+    }
+    public HttpHeaders(string name, string value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
 
-        public delegate void HeaderAddedHandler(HttpHeader header);
-        public delegate void HeaderChangedHandler(HttpHeader header);
-        public delegate void HeaderRemovedHandler(HttpHeader header);
+        Add(name, value);
+    }
 
-        public event HeaderAddedHandler? HeaderAdded;
-        public event HeaderChangedHandler? HeaderChanged;
-        public event HeaderRemovedHandler? HeaderRemoved;
+    public HttpHeaders(IEnumerable<HttpHeader> headers)
+    {
+        ArgumentNullException.ThrowIfNull(headers);
 
-        public HttpHeaders()
+        foreach (var header in headers)
         {
-        }
-        public HttpHeaders(string name, string value)
-        {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(value);
-
-            Add(name, value);
-        }
-
-        public HttpHeaders(IEnumerable<HttpHeader> headers)
-        {
-            ArgumentNullException.ThrowIfNull(headers);
-
-            foreach (var header in headers)
-            {
-                Add(header);
-            }
-        }
-
-        public HttpHeaders(HttpHeader header, params HttpHeader[] headers)
-        {
-            ArgumentNullException.ThrowIfNull(header);
-
             Add(header);
-            foreach (var h in headers)
-            {
-                Add(h);
-            }
         }
+    }
 
-        public virtual HttpHeaders Add(string name, string value) // we return a HttpHeaders so we can make a chain of call, for example: headers.Add("Connection", "Close").Add("ETag", "ABCD") ...
+    public HttpHeaders(HttpHeader header, params HttpHeader[] headers)
+    {
+        ArgumentNullException.ThrowIfNull(header);
+
+        Add(header);
+        foreach (var h in headers)
         {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(value);
+            Add(h);
+        }
+    }
 
+    public virtual HttpHeaders Add(string name, string value) // we return a HttpHeaders so we can make a chain of call, for example: headers.Add("Connection", "Close").Add("ETag", "ABCD") ...
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var header = new HttpHeader(name, value);
+
+        headers.Add(header);
+        OnHeaderAdded(header);
+
+        return this;
+    }
+
+    public virtual HttpHeaders Add(string name, IEnumerable<string> value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var header = new HttpHeader(name, value);
+
+        headers.Add(header);
+        OnHeaderAdded(header);
+
+        return this;
+    }
+
+    public virtual HttpHeaders Add(HttpHeader header)
+    {
+        headers.Add(header);
+        OnHeaderAdded(header);
+
+        return this;
+    }
+
+    public virtual HttpHeaders AddOrUpdate(string name, string value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var idx = headers.FindIndex(x => x.Name == name);
+        if (idx != -1)
+        {
+            var header = new HttpHeader(name, value);
+
+            headers[idx] = header;
+            OnHeaderChanged(header);
+        }
+        else
+        {
             var header = new HttpHeader(name, value);
 
             headers.Add(header);
             OnHeaderAdded(header);
-
-            return this;
         }
 
-        public virtual HttpHeaders Add(string name, IEnumerable<string> value)
-        {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(value);
+        return this;
+    }
 
+    public virtual HttpHeaders AddOrUpdate(string name, IEnumerable<string> value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var idx = headers.FindIndex(x => x.Name == name);
+        if (idx != -1)
+        {
+            var header = new HttpHeader(name, value);
+
+            headers[idx] = header;
+            OnHeaderChanged(header);
+        }
+        else
+        {
             var header = new HttpHeader(name, value);
 
             headers.Add(header);
             OnHeaderAdded(header);
-
-            return this;
         }
 
-        public virtual HttpHeaders Add(HttpHeader header)
+        return this;
+    }
+
+    public virtual HttpHeaders AddOrUpdate(HttpHeader header)
+    {
+        ArgumentNullException.ThrowIfNull(header);
+
+        var idx = headers.FindIndex(x => x.Name == header.Name);
+        if (idx != -1)
+        {
+            headers[idx] = header;
+            OnHeaderChanged(header);
+        }
+        else
         {
             headers.Add(header);
             OnHeaderAdded(header);
-
-            return this;
         }
 
-        public virtual HttpHeaders AddOrUpdate(string name, string value)
-        {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(value);
+        return this;
+    }
 
-            var idx = headers.FindIndex(x => x.Name == name);
+    public virtual HttpHeaders AddOrUpdate(IEnumerable<HttpHeader> headers)
+    {
+        ArgumentNullException.ThrowIfNull(headers);
+
+        foreach (var header in headers)
+        {
+            var idx = this.headers.FindIndex(x => x.Name == header.Name);
             if (idx != -1)
             {
-                var header = new HttpHeader(name, value);
-
-                headers[idx] = header;
+                this.headers[idx] = header;
                 OnHeaderChanged(header);
             }
             else
             {
-                var header = new HttpHeader(name, value);
-
-                headers.Add(header);
+                this.headers.Add(header);
                 OnHeaderAdded(header);
             }
 
-            return this;
         }
 
-        public virtual HttpHeaders AddOrUpdate(string name, IEnumerable<string> value)
+        return this;
+    }
+
+    public virtual HttpHeaders AddOrSkip(string name, string value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var idx = headers.FindIndex(x => x.Name == name);
+        if (idx == -1)
         {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(value);
+            var header = new HttpHeader(name, value);
 
-            var idx = headers.FindIndex(x => x.Name == name);
-            if (idx != -1)
-            {
-                var header = new HttpHeader(name, value);
-
-                headers[idx] = header;
-                OnHeaderChanged(header);
-            }
-            else
-            {
-                var header = new HttpHeader(name, value);
-
-                headers.Add(header);
-                OnHeaderAdded(header);
-            }
-
-            return this;
+            headers.Add(header);
+            OnHeaderAdded(header);
         }
 
-        public virtual HttpHeaders AddOrUpdate(HttpHeader header)
+        return this;
+    }
+
+    public virtual HttpHeaders AddOrSkip(string name, IEnumerable<string> value)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var idx = headers.FindIndex(x => x.Name == name);
+        if (idx == -1)
         {
-            ArgumentNullException.ThrowIfNull(header);
+            var header = new HttpHeader(name, value);
 
-            var idx = headers.FindIndex(x => x.Name == header.Name);
-            if (idx != -1)
-            {
-                headers[idx] = header;
-                OnHeaderChanged(header);
-            }
-            else
-            {
-                headers.Add(header);
-                OnHeaderAdded(header);
-            }
-
-            return this;
+            headers.Add(header);
+            OnHeaderAdded(header);
         }
 
-        public virtual HttpHeaders AddOrUpdate(IEnumerable<HttpHeader> headers)
+        return this;
+    }
+
+    public virtual HttpHeaders AddOrSkip(HttpHeader header)
+    {
+        ArgumentNullException.ThrowIfNull(header);
+
+        var idx = headers.FindIndex(x => x.Name == header.Name);
+        if (idx == -1)
         {
-            ArgumentNullException.ThrowIfNull(headers);
-
-            foreach (var header in headers)
-            {
-                var idx = this.headers.FindIndex(x => x.Name == header.Name);
-                if (idx != -1)
-                {
-                    this.headers[idx] = header;
-                    OnHeaderChanged(header);
-                }
-                else
-                {
-                    this.headers.Add(header);
-                    OnHeaderAdded(header);
-                }
-
-            }
-
-            return this;
+            headers.Add(header);
+            OnHeaderAdded(header);
         }
 
-        public virtual HttpHeaders AddOrSkip(string name, string value)
+        return this;
+    }
+
+    public virtual HttpHeaders Remove(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        var idx = headers.FindIndex(header => header.Name == name);
+        var header = headers[idx];
+        headers.RemoveAt(idx);
+
+        OnHeaderRemoved(header);
+
+        return this;
+    }
+
+    public bool TryGetValue(string name, out HttpHeader? header)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        var h = headers.Where(h => name.Equals(h.Name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+        if (h != null)
         {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(value);
-
-            var idx = headers.FindIndex(x => x.Name == name);
-            if (idx == -1)
-            {
-                var header = new HttpHeader(name, value);
-
-                headers.Add(header);
-                OnHeaderAdded(header);
-            }
-
-            return this;
+            header = h;
+            return true;
         }
-
-        public virtual HttpHeaders AddOrSkip(string name, IEnumerable<string> value)
+        else
         {
-            ArgumentNullException.ThrowIfNull(name);
-            ArgumentNullException.ThrowIfNull(value);
-
-            var idx = headers.FindIndex(x => x.Name == name);
-            if (idx == -1)
-            {
-                var header = new HttpHeader(name, value);
-
-                headers.Add(header);
-                OnHeaderAdded(header);
-            }
-
-            return this;
+            header = null;
+            return false;
         }
+    }
 
-        public virtual HttpHeaders AddOrSkip(HttpHeader header)
-        {
-            ArgumentNullException.ThrowIfNull(header);
+    public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator()
+    {
+        var list = headers.Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Name, h.Value));
+        return list.GetEnumerator();
+    }
 
-            var idx = headers.FindIndex(x => x.Name == header.Name);
-            if (idx == -1)
-            {
-                headers.Add(header);
-                OnHeaderAdded(header);
-            }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return headers.GetEnumerator();
+    }
 
-            return this;
-        }
+    IEnumerator<HttpHeader> IEnumerable<HttpHeader>.GetEnumerator()
+    {
+        return headers.GetEnumerator();
+    }
 
-        public virtual HttpHeaders Remove(string name)
-        {
-            ArgumentNullException.ThrowIfNull(name);
+    protected virtual void OnHeaderAdded(HttpHeader header)
+    {
+        HeaderAdded?.Invoke(header);
+    }
 
-            var idx = headers.FindIndex(header => header.Name == name);
-            var header = headers[idx];
-            headers.RemoveAt(idx);
+    protected virtual void OnHeaderChanged(HttpHeader header)
+    {
+        HeaderChanged?.Invoke(header);
+    }
 
-            OnHeaderRemoved(header);
-
-            return this;
-        }
-
-        public bool TryGetValue(string name, out HttpHeader? header)
-        {
-            ArgumentNullException.ThrowIfNull(name);
-
-            var h = headers.Where(h => name.Equals(h.Name, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (h != null)
-            {
-                header = h;
-                return true;
-            }
-            else
-            {
-                header = null;
-                return false;
-            }
-        }
-
-        public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator()
-        {
-            var list = headers.Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Name, h.Value));
-            return list.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return headers.GetEnumerator();
-        }
-
-        IEnumerator<HttpHeader> IEnumerable<HttpHeader>.GetEnumerator()
-        {
-            return headers.GetEnumerator();
-        }
-
-        protected virtual void OnHeaderAdded(HttpHeader header)
-        {
-            HeaderAdded?.Invoke(header);
-        }
-
-        protected virtual void OnHeaderChanged(HttpHeader header)
-        {
-            HeaderChanged?.Invoke(header);
-        }
-
-        protected virtual void OnHeaderRemoved(HttpHeader header)
-        {
-            HeaderRemoved?.Invoke(header);
-        }
+    protected virtual void OnHeaderRemoved(HttpHeader header)
+    {
+        HeaderRemoved?.Invoke(header);
     }
 }

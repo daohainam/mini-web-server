@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer.MiniApp
+namespace MiniWebServer.MiniApp;
+
+public interface ICallableFilter
 {
-    public interface ICallableFilter
-    {
-        Task<bool> InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken);
-    }
+    Task<bool> InvokeAsync(IMiniAppRequestContext context, CancellationToken cancellationToken);
 }

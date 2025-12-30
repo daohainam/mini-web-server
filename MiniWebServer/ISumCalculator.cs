@@ -1,7 +1,6 @@
-﻿namespace MiniWebServer
+namespace MiniWebServer;
+
+public interface ISumCalculator
 {
-    public interface ISumCalculator
-    {
-        int Sum(params int[] nums);
-    }
+    int Sum(params int[] nums);
 }

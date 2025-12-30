@@ -1,9 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
-namespace MiniWebServer.Abstractions
+namespace MiniWebServer.Abstractions;
+
+public interface IFormContainer
 {
-    public interface IFormContainer
-    {
-        Task<IRequestForm> ReadFormAsync(ILoggerFactory? loggerFactory = null, CancellationToken cancellationToken = default);
-    }
+    Task<IRequestForm> ReadFormAsync(ILoggerFactory? loggerFactory = null, CancellationToken cancellationToken = default);
 }

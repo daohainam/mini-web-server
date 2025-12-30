@@ -1,8 +1,7 @@
-﻿namespace MiniWebServer.Mvc.Abstraction
+namespace MiniWebServer.Mvc.Abstraction;
+
+public interface IViewEngine
 {
-    public interface IViewEngine
-    {
-        // generate content data from a model using viewName to find templates
-        Task<IViewContent?> RenderAsync(ActionResultContext context, string viewName, object? model, IDictionary<string, object> viewData);
-    }
+    // generate content data from a model using viewName to find templates
+    Task<IViewContent?> RenderAsync(ActionResultContext context, string viewName, object? model, IDictionary<string, object> viewData);
 }

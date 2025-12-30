@@ -1,9 +1,8 @@
-﻿using MiniWebServer.Mvc.Abstraction;
+using MiniWebServer.Mvc.Abstraction;
 
-namespace MiniWebServer.Mvc.MiniRazorEngine.Parser
+namespace MiniWebServer.Mvc.MiniRazorEngine.Parser;
+
+public interface IViewFinder
 {
-    public interface IViewFinder
-    {
-        string? Find(ActionResultContext context, string viewName);
-    }
+    string? Find(ActionResultContext context, string viewName);
 }
