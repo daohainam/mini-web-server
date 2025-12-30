@@ -10,7 +10,7 @@
     <None Remove="Tests\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Superpower" Version="3.0.0" />
+    <PackageReference Include="Superpower" Version="3.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MiniWebServer.Mvc.Abstraction\MiniWebServer.Mvc.Abstraction.csproj" />
