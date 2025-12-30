@@ -344,7 +344,11 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
             var streamId = GetNextStreamIdentifier();
             var stream = response.Stream ?? throw new InvalidOperationException("response.Stream should not be null");
 
+            // Write headers (including :status pseudo-header)
             await WriteHeadersAsync(streamId, response, stream, cancellationToken);
+
+            // Write response body as DATA frame(s)
+            await WriteDataAsync(streamId, response, stream, cancellationToken);
 
             return true;
         }
@@ -355,48 +359,124 @@ namespace MiniWebServer.Server.ProtocolHandlers.Http2
 
             try
             {
-                int count = response.Headers.Count;
-                int i = 1;
-
-                foreach (var header in response.Headers)
+                // First, write the :status pseudo-header
+                int statusIndex = GetStaticHeaderIndex(response.StatusCode);
+                int length;
+                
+                if (statusIndex > 0)
                 {
-                    int length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, i == 1, i == count, writePayload);
+                    // Use indexed header field representation for status
+                    SerializeStatusHeader(statusIndex, writePayload, out length);
+                    writePayload[3] = (byte)Http2FrameType.HEADERS;
+                    writePayload[4] = (byte)Http2FrameFlags.NONE; // First header frame, not the last
+                    
+                    // Write stream identifier
+                    writePayload[5] = (byte)((streamId >> 24) & 0x7F);
+                    writePayload[6] = (byte)((streamId >> 16) & 0xFF);
+                    writePayload[7] = (byte)((streamId >> 8) & 0xFF);
+                    writePayload[8] = (byte)(streamId & 0xFF);
 
+                    await stream.WriteAsync(writePayload.AsMemory(0, 9 + length), cancellationToken);
+                }
+                else
+                {
+                    // Use literal header field for non-standard status codes
+                    string statusValue = ((int)response.StatusCode).ToString();
+                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, ":status", [statusValue], true, response.Headers.Count == 0, writePayload);
                     if (length > 0)
                     {
                         await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
                     }
                 }
-            } catch (Exception ex) {
-                logger.LogError(ex, "Error writing headers");
 
+                // Then write regular headers
+                int count = response.Headers.Count;
+                int i = 1;
+
+                foreach (var header in response.Headers)
+                {
+                    length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, false, i == count, writePayload);
+
+                    if (length > 0)
+                    {
+                        await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+                    }
+                    i++;
+                }
+                
+                await stream.FlushAsync(cancellationToken);
+            } 
+            catch (Exception ex) 
+            {
+                logger.LogError(ex, "Error writing headers");
                 throw;
-            } finally
+            } 
+            finally
             {
                 ArrayPool<byte>.Shared.Return(writePayload);
             }
+        }
 
-            //var headerFrame = new Http2Frame()
-            //{
-            //    FrameType = Http2FrameType.HEADERS,
-            //    StreamIdentifier = streamId,
-            //    Flags = Http2FrameFlags.END_HEADERS
-            //};
+        private void SerializeStatusHeader(int statusIndex, byte[] payload, out int length)
+        {
+            // Write indexed header field representation
+            // Pattern: 1xxxxxxx where xxxxxxx is the index
+            length = 0;
+            HPACKInteger.WriteInt(statusIndex, payload.AsSpan(9).ToArray(), 7, out length);
+            payload[9] |= 0b_1000_0000; // Set the indexed bit
+            
+            // Write payload length in frame header
+            payload[0] = (byte)((length >> 16) & 0xFF);
+            payload[1] = (byte)((length >> 8) & 0xFF);
+            payload[2] = (byte)(length & 0xFF);
+        }
 
-            //var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
+        private async Task WriteDataAsync(uint streamId, IHttpResponse response, Stream stream, CancellationToken cancellationToken)
+        {
+            var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
 
-            //int length = Http2FrameWriter.SerializeHEADERFrame(headerFrame, response.Headers, writePayload);
-            //if (length > 0)
-            //{
-            //    protocolHandlerContext.Stream.Write(writePayload, 0, length);
-            //}
+            try
+            {
+                // Get the response content
+                using var contentStream = new MemoryStream();
+                await response.Content.WriteToAsync(contentStream, cancellationToken);
+                byte[] contentData = contentStream.ToArray();
 
-            //ArrayPool<byte>.Shared.Return(writePayload);
+                if (contentData.Length == 0)
+                {
+                    // Send empty DATA frame with END_STREAM flag
+                    int length = Http2FrameWriter.SerializeDATAFrame(streamId, [], 0, 0, true, writePayload);
+                    await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+                }
+                else
+                {
+                    // Send data in chunks if needed (respecting maxFrameSize)
+                    int maxDataPerFrame = (int)maxFrameSize - 9; // Frame header is 9 bytes
+                    int offset = 0;
 
-            //if (!await Http2FrameWriter.SerializeHeaderFrames(streamId, response, stream))
-            //{
+                    while (offset < contentData.Length)
+                    {
+                        int chunkSize = Math.Min(maxDataPerFrame, contentData.Length - offset);
+                        bool isLastChunk = (offset + chunkSize) >= contentData.Length;
 
-            //}
+                        int length = Http2FrameWriter.SerializeDATAFrame(streamId, contentData, offset, chunkSize, isLastChunk, writePayload);
+                        await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+
+                        offset += chunkSize;
+                    }
+                }
+                
+                await stream.FlushAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error writing data frames");
+                throw;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(writePayload);
+            }
         }
 
         private void SerializeHeaderFramePayload(IHttpResponse response, ref byte[] payload, out int length)
