@@ -10,12 +10,9 @@ using MiniWebServer.Server.MiniApp;
 using MiniWebServer.Server.Session;
 using MiniWebServer.WebSocket.Abstractions;
 using System.Buffers;
-using System.IO;
 using System.IO.Pipelines;
 using System.Net;
-using System.Reflection.PortableExecutable;
 using System.Text;
-using System.Threading;
 
 namespace MiniWebServer.Server;
 
@@ -51,7 +48,7 @@ public class MiniWebClientConnection
 
     public async Task HandleRequestAsync()
     {
-        CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(this.cancellationToken); // we will use this to keep control on connection timeout
+        using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(this.cancellationToken); // we will use this to keep control on connection timeout
         CancellationToken cancellationToken = cancellationTokenSource.Token;
 
         bool isKeepAlive = true;
@@ -65,7 +62,6 @@ public class MiniWebClientConnection
             }
 
             PipeReader requestPipeReader = PipeReader.Create(config.ClientStream);
-            PipeWriter responsePipeWriter = PipeWriter.Create(config.ClientStream);
 
             ReadResult readResult = await requestPipeReader.ReadAsync(cancellationToken);
             ReadOnlySequence<byte> buffer = readResult.Buffer;
@@ -93,6 +89,8 @@ public class MiniWebClientConnection
             var protocolHandler = protocolHandlerFactory.Create(httpVersion, protocolConfig, protocolHandlerContext);
 
             MiniAppConnectionContext connectionContext = BuildMiniAppConnectionContext();
+
+            var dispatchTasks = new List<Task>();
 
             while (isKeepAlive)
             {
@@ -152,7 +150,7 @@ public class MiniWebClientConnection
 #endif
 
                                 // now we continue reading body part
-                                CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                                using CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                                 Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
                                 Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
 
@@ -197,7 +195,7 @@ public class MiniWebClientConnection
                             var request = requestBuilder.Build();
                             var response = new HttpResponse(HttpResponseCodes.NotFound, config.ClientStream);
 
-                            var dispatchTask = DispatchRequestAsync(connectionContext, request, response, requestPipeReader, protocolHandler, cancellationToken);
+                            dispatchTasks.Add(DispatchRequestAsync(connectionContext, request, response, requestPipeReader, protocolHandler, cancellationToken));
                         }
                     }
                 }
@@ -205,6 +203,11 @@ public class MiniWebClientConnection
                 {
                     isKeepAlive = false;
                 }
+            }
+
+            if (dispatchTasks.Count > 0)
+            {
+                await Task.WhenAll(dispatchTasks);
             }
         }
         catch (Exception ex)
@@ -228,7 +231,7 @@ public class MiniWebClientConnection
 #endif
 
             // now we continue reading body part
-            CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            using CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
             Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
 
@@ -248,9 +251,7 @@ public class MiniWebClientConnection
 
     private MiniAppConnectionContext BuildMiniAppConnectionContext()
     {
-        //var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-
-        var connectionContext = new MiniAppConnectionContext(serviceProvider.CreateScope().ServiceProvider);
+        var connectionContext = new MiniAppConnectionContext(serviceProvider);
 
         return connectionContext;
     }
