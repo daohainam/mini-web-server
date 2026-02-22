@@ -57,9 +57,10 @@ public class MiniWebServer : BackgroundService, IServer
         {
             Stream stream = tcpClient.GetStream();
             bool isHttps = false;
+            SslStream? sslStream = null;
             if (binding.Certificate != null)
             {
-                var sslStream = new SslStream(stream);
+                sslStream = new SslStream(stream);
 
                 SslServerAuthenticationOptions options = new()
                 {
@@ -74,7 +75,15 @@ public class MiniWebServer : BackgroundService, IServer
                     RemoteCertificateValidationCallback = ValidateClientCertificate
                 };
 
-                await sslStream.AuthenticateAsServerAsync(options);
+                try
+                {
+                    await sslStream.AuthenticateAsServerAsync(options);
+                }
+                catch
+                {
+                    await sslStream.DisposeAsync();
+                    throw;
+                }
 
                 stream = sslStream;
                 isHttps = true;
@@ -94,7 +103,7 @@ public class MiniWebServer : BackgroundService, IServer
                 requestIdManager,
                 TimeSpan.FromMilliseconds(config.ReadRequestTimeout),
                 TimeSpan.FromMilliseconds(config.SendResponseTimeout),
-                TimeSpan.FromMilliseconds(config.ConnectionTimeout),
+                TimeSpan.FromMilliseconds(config.ExecuteTimeout),
                 config.ReadBufferSize,
                 config.MaxRequestBodySize
                 ),
@@ -122,9 +131,19 @@ public class MiniWebServer : BackgroundService, IServer
 
     private bool ValidateClientCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
     {
-        logger.LogInformation("Validating certificate: {certificate}", certificate);
+        // ClientCertificateRequired = false, so no certificate from the client is acceptable
+        if (certificate == null)
+        {
+            return true;
+        }
 
-        return true; // accept all :D
+        if (sslPolicyErrors == SslPolicyErrors.None)
+        {
+            return true;
+        }
+
+        logger.LogWarning("Client certificate validation failed: {errors}", sslPolicyErrors);
+        return false;
     }
 
     private async Task ClientConnectionListeningProc(MiniWebServerBindingConfiguration binding, CancellationToken cancellationToken)

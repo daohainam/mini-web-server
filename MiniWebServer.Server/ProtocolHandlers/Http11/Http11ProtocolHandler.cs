@@ -17,6 +17,7 @@ public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerF
 {
     public const string HttpVersionString = "HTTP/1.1";
     public const int HttpMaxHeaderLineLength = 8 * 1024; // max 8KB each line
+    public const int HttpMaxHeaderCount = 100; // max 100 headers per request
 
     protected readonly ProtocolHandlerConfiguration config = config ?? throw new ArgumentNullException(nameof(config));
     protected readonly ILoggerFactory loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -84,6 +85,7 @@ public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerF
             }
 
             var headers = new List<HttpHeader>();
+            int headerCount = 0;
             // now we read headers
             while (TryReadLine(ref buffer, out line))
             {
@@ -108,6 +110,12 @@ public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerF
                 }
                 else
                 {
+                    if (++headerCount > HttpMaxHeaderCount)
+                    {
+                        logger.LogError("Too many headers: {headerCount} exceeds limit of {maxHeaderCount}", headerCount, HttpMaxHeaderCount);
+                        return false;
+                    }
+
                     var headerLineText = sb.ToString();
                     var header = httpComponentParser.ParseHeaderLine(line);
 
@@ -198,7 +206,10 @@ public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerF
             if (buffer.Length >= maxBytesToRead)
             {
                 var writingPart = buffer.Slice(0, maxBytesToRead);
-                await request.BodyPipeline.Writer.WriteAsync(writingPart.ToArray(), cancellationToken); // todo: use a better way than 'ToArray'
+                foreach (var segment in writingPart)
+                {
+                    await request.BodyPipeline.Writer.WriteAsync(segment, cancellationToken);
+                }
 
                 reader.AdvanceTo(buffer.GetPosition(maxBytesToRead));
 
@@ -208,8 +219,10 @@ public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerF
             }
             else if (buffer.Length > 0)
             {
-
-                await request.BodyPipeline.Writer.WriteAsync(buffer.ToArray(), cancellationToken); // todo: use a better way than 'ToArray'
+                foreach (var segment in buffer)
+                {
+                    await request.BodyPipeline.Writer.WriteAsync(segment, cancellationToken);
+                }
 
                 reader.AdvanceTo(buffer.GetPosition(buffer.Length));
 

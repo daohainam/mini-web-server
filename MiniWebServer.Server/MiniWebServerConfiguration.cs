@@ -11,5 +11,6 @@ public class MiniWebServerConfiguration
     public long MaxRequestBodySize { get; set; } = 1024 * 1024 * 10; // 10MB 
     public int ReadRequestTimeout { get; set; } = 2 * 1000; // 2 seconds are enough to read any request headers
     public int SendResponseTimeout { get; set; } = 300000;
+    public int ExecuteTimeout { get; set; } = 300000; // 300 seconds for request processing
     public int ConnectionTimeout { get; set; } = 180000;
 }
