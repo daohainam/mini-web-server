@@ -27,18 +27,18 @@ public partial class Http2ProtocolHandler
         if (logger.IsEnabled(LogLevel.Debug))
         {
             logger.LogDebug("Found {n} settings in payload", settings.Length);
+        }
 
-            foreach (var key in settings)
+        foreach (var key in settings)
+        {
+            if (logger.IsEnabled(LogLevel.Debug))
             {
-                if (logger.IsEnabled(LogLevel.Debug))
-                {
-                    logger.LogDebug("{id}: {v}", key.Identifier, key.Value);
-                }
+                logger.LogDebug("{id}: {v}", key.Identifier, key.Value);
+            }
 
-                if (!ProcessSETTINGSItem(key.Identifier, key.Value))
-                {
-                    return false;
-                }
+            if (!ProcessSETTINGSItem(key.Identifier, key.Value))
+            {
+                return false;
             }
         }
 
@@ -83,7 +83,7 @@ public partial class Http2ProtocolHandler
                 maxConcurrentStreams = value;
                 break;
             case Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE:
-                if (value >= 16_383 && value <= 16_777_215)
+                if (value >= 16_384 && value <= 16_777_215)
                 {
                     logger.LogInformation("MAX_FRAME_SIZE = {m}", value);
                     maxFrameSize = value;
@@ -95,7 +95,7 @@ public partial class Http2ProtocolHandler
                 }
                 break;
             case Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE:
-                if (value >= 65_535 && value <= 2_147_643_647) // Values above the maximum flow-control window size of (2^31)-1 MUST be treated as a connection error
+                if (value <= 2_147_483_647) // Values above the maximum flow-control window size of (2^31)-1 MUST be treated as a connection error
                 {
                     logger.LogInformation("INITIAL_WINDOW_SIZE = {m}", value);
                     initialWindowSize = value;
