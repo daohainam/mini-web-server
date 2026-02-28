@@ -89,7 +89,7 @@ public class HPACKInteger
         }
         else
         {
-            bytes[length] = (byte)pow;
+            bytes[length++] = (byte)pow;
             hs -= pow;
 
             while (hs >= 128)

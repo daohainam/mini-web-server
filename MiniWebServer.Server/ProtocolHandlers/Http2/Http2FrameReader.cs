@@ -230,8 +230,6 @@ public class Http2FrameReader
 
                     payload = payload.Slice(length);
                     length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
-
-                    length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
                     var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
 
 #if DEBUG

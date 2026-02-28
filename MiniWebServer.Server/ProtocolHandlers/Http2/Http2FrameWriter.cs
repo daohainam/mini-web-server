@@ -54,10 +54,10 @@ internal class Http2FrameWriter
             writePayload[idx++] = (byte)(((ushort)settingItem.Identifier >> 8) & 0xFF);
             writePayload[idx++] = (byte)((ushort)settingItem.Identifier & 0xFF);
 
-            writePayload[idx++] = (byte)(((ushort)settingItem.Value >> 24) & 0xFF);
-            writePayload[idx++] = (byte)(((ushort)settingItem.Value >> 16) & 0xFF);
-            writePayload[idx++] = (byte)(((ushort)settingItem.Value >> 8) & 0xFF);
-            writePayload[idx++] = (byte)((ushort)settingItem.Value & 0xFF);
+            writePayload[idx++] = (byte)((settingItem.Value >> 24) & 0xFF);
+            writePayload[idx++] = (byte)((settingItem.Value >> 16) & 0xFF);
+            writePayload[idx++] = (byte)((settingItem.Value >> 8) & 0xFF);
+            writePayload[idx++] = (byte)(settingItem.Value & 0xFF);
         }
 
         return idx;

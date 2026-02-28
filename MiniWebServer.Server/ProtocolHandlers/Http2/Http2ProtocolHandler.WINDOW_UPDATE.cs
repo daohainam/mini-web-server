@@ -29,19 +29,15 @@ public partial class Http2ProtocolHandler
             return false;
         }
 
-        if (logger.IsEnabled(LogLevel.Debug))
+        if (frame.StreamIdentifier == 0) // this is a connection-wise setting
         {
-            if (frame.StreamIdentifier == 0) // this is a connection-wise setting
+            if (logger.IsEnabled(LogLevel.Debug))
             {
                 logger.LogDebug("Window Size Increment is set: {v}", windowSizeIncrement);
-
-                this.windowSizeIncrement = windowSizeIncrement;
-            }
-            else
-            {
-                this.windowSizeIncrement = windowSizeIncrement;
             }
         }
+
+        this.windowSizeIncrement = windowSizeIncrement;
 
         return true;
     }
