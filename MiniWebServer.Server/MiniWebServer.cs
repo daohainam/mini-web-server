@@ -197,7 +197,6 @@ public class MiniWebServer : BackgroundService, IServer
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Starting web server...");
-        ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault;
 
         running = true;
         var clientConnectionListeningProcs = new List<Task>();
