@@ -115,7 +115,7 @@ public class MiniWebServerBuilder : IServerBuilder
 
         if (File.Exists(certificate))
         {
-            var cert = ".pem".Equals(Path.GetExtension(certificate)) ? GenerateCertOnWindows(X509Certificate2.CreateFromPemFile(certificate, certificatePrivateKey)) : new X509Certificate2(certificate, certificatePassword);
+            var cert = ".pem".Equals(Path.GetExtension(certificate)) ? GenerateCertOnWindows(X509Certificate2.CreateFromPemFile(certificate, certificatePrivateKey)) : X509CertificateLoader.LoadPkcs12FromFile(certificate, certificatePassword);
 
             bindings.Add(new(
                     new IPEndPoint(ip, port), cert
@@ -132,10 +132,10 @@ public class MiniWebServerBuilder : IServerBuilder
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return new X509Certificate2(
+                return X509CertificateLoader.LoadPkcs12(
                      cert.Export(
                         X509ContentType.Pkcs12
-                     ));
+                     ), null);
             }
             else
             {
