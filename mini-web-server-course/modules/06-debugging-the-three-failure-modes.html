@@ -1,0 +1,350 @@
+<section class="module" id="module-6" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">06</span>
+      <h1 class="module-title">Debugging the Three Failure Modes</h1>
+      <p class="module-subtitle">A calm way to classify failures: unreadable input, missing destination, or a crash during execution.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Three warning lights, not endless chaos</h2>
+        <p>Server bugs feel random until you notice this codebase keeps most failures inside three lanes: 400 for a broken read, 404 for a missing <span class="term" data-definition="A route is the path or rule that decides which code should handle a request. When debugging with AI, saying 'the route is missing' points to lookup logic, not parsing or execution.">route</span>, and 500 for a crash while work is already underway.</p>
+        <p>That map matters because it tells you what to ask AI next: “check the <span class="term" data-definition="A parser turns raw request text into structured data the server can work with. If parsing fails, the problem is usually with the incoming format, not the route logic.">parser</span>,” “check route selection,” or “check the <span class="term" data-definition="A handler is the code that takes ownership of a request and does the actual work. If the handler crashes, the route was found but execution failed.">handler</span> exception path.”</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1);">
+            <div class="pattern-icon" style="background: var(--color-actor-1);">400</div>
+            <h4 class="pattern-title">Read lane</h4>
+            <p class="pattern-desc">The server could not successfully parse the incoming request, so it sends Bad Request and closes the bad connection.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">Ask AI</code>
+                <span class="badge-desc">Inspect parser input, headers, and request formatting first</span>
+              </div>
+            </div>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-info);">
+            <div class="pattern-icon" style="background: var(--color-info);">404</div>
+            <h4 class="pattern-title">Find lane</h4>
+            <p class="pattern-desc">The request was readable, but no matching handler claimed it, so the response becomes Not Found.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">Ask AI</code>
+                <span class="badge-desc">Trace endpoint registration and route matching</span>
+              </div>
+            </div>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-error);">
+            <div class="pattern-icon" style="background: var(--color-error);">500</div>
+            <h4 class="pattern-title">Execute lane</h4>
+            <p class="pattern-desc">The right handler started running, but an <span class="term" data-definition="An exception is a runtime error that interrupts normal code flow. When guiding AI, telling it to inspect exception handling means the code was found and started, but crashed mid-flight.">exception</span> happened inside that work.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">Ask AI</code>
+                <span class="badge-desc">Look at the action code, logs, and caught exceptions</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-num">1</div>
+            <p>Read the request</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">2</div>
+            <p>Find the handler</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">3</div>
+            <p>Execute the handler</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Lane 1: unreadable input becomes 400</h2>
+        <p>If the server cannot read the request cleanly, it does not keep pretending. It sends a 400 and shuts down that broken conversation.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>                    var readRequestResult = await protocolHandler.ReadRequestAsync(requestBuilder, cancellationToken);
+                    if (!readRequestResult)
+                    {
+                        isKeepAlive = false; // we always close wrongly working connections
+
+                        var response = new HttpResponse(HttpResponseCodes.BadRequest, config.ClientStream);
+
+                        cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+                        logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
+                        await SendResponseAsync(response, protocolHandler, cancellationToken);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Try to read the incoming request using the protocol handler.</p>
+              <p class="tl">If that read fails, stop pretending this connection is healthy.</p>
+              <p class="tl">Turn off keep-alive so the bad connection does not hang around.</p>
+              <p class="tl">Build a 400 Bad Request response on the client stream.</p>
+              <p class="tl">Set a send timeout, log what is happening, and send the response back quickly.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    private static async Task&lt;ReadRequestTestResult&gt; ReadRequestAsync(string requestContent)
+    {
+        var reader = PipeUtils.String2Reader(requestContent);
+        var loggerFactory = new LoggerFactory();
+
+        var httpParser = new ByteSequenceHttpParser(loggerFactory);
+        var handler = new Http11ProtocolHandler(new ProtocolHandlerConfiguration(global::MiniWebServer.Abstractions.HttpVersions.Http11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser(), 
+            new ProtocolHandlerContext() { 
+                PipeReader = reader, Stream = new MemoryStream()
+            });
+
+        var requestBuilder = new HttpWebRequestBuilder();
+
+        var result = await handler.ReadRequestAsync(requestBuilder, CancellationToken.None);
+        return new ReadRequestTestResult(result, requestBuilder);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This test creates a reader from a raw request string so the parser can be exercised in isolation.</p>
+              <p class="tl">It builds the HTTP parser and a specific HTTP/1.1 protocol handler with a fake stream.</p>
+              <p class="tl">Then it creates a fresh request builder to collect parsed fields.</p>
+              <p class="tl">The real check is one call: can the handler read this request successfully or not?</p>
+              <p class="tl">That is powerful debugging design: isolate one subsystem, feed it controlled input, and inspect the result without booting the whole server.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">🧪</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why isolated tests help</strong>
+            <p>When AI gets stuck in a bug loop, asking it to reproduce the problem in a tiny parser-only test is often the fastest escape hatch.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Lane 2 and Lane 3: not found versus crashed</h2>
+        <p>Once the request is readable, the next question is simple: did nobody claim the job, or did the worker crash while doing it?</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>                try
+                {
+                    await action.InvokeAsync(context, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "[{cid}] - Error executing action handler", ConnectionId);
+                    response.StatusCode = HttpResponseCodes.InternalServerError;
+                }
+            }
+            else
+            {
+                StandardResponseBuilderHelpers.NotFound(response);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If an action exists, the server tries to run it.</p>
+              <p class="tl">If running that action throws an exception, the error is logged and the response becomes 500 Internal Server Error.</p>
+              <p class="tl">If there was no action to run in the first place, the code falls into the else branch instead.</p>
+              <p class="tl">That else branch is the key distinction: unreadable input is no longer the problem here; missing ownership is.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>public class StandardResponseBuilderHelpers
+{
+    public static void NotFound(IHttpResponse response)
+    {
+        response.StatusCode = HttpResponseCodes.NotFound;
+        response.Headers.ContentLength = 0;
+    }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This helper gives the response a 404 Not Found status.</p>
+              <p class="tl">It also sets the content length to zero, which means there is no body payload attached.</p>
+              <p class="tl">That is a clean “nobody claimed this request” answer, which is much more precise than blaming the server with a 500.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-info);">
+            <div class="pattern-icon" style="background: var(--color-info);">🔎</div>
+            <h4 class="pattern-title">404 means “look for wiring”</h4>
+            <p class="pattern-desc">The request got in. Now inspect registration, matching rules, and path expectations.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-error);">
+            <div class="pattern-icon" style="background: var(--color-error);">🧯</div>
+            <h4 class="pattern-title">500 means “look inside the code that ran”</h4>
+            <p class="pattern-desc">The route existed. The failure is inside the business logic, not in the routing table.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Spot the bug: which lane are you in?</h2>
+        <p>This is the practical move: classify the failure before you start editing. That keeps AI from wandering through the wrong subsystem.</p>
+
+        <div class="quiz-container" id="bug-module6">
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Exactly — the handler was found and started, then crashed while executing. That is the 500 Execute lane."
+               data-explanation-wrong="Not quite. The route already exists in this scenario, and the input was readable. The break happens after execution begins.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Spot the bug challenge</span>
+                <p>A request reaches the correct endpoint, but halfway through <code>action.InvokeAsync</code> the code throws an exception and the log records “Error executing action handler.” Which lane should you investigate first?</p>
+              </div>
+            </div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>400 Read — malformed request input</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>404 Find — missing route registration</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>500 Execute — the handler started and then crashed</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('bug-module6')">Reveal Diagnosis</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('bug-module6')">Try Another Pass</button>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Final debugging checklist</h2>
+        <p>You now have a compact failure map you can use with confidence. The goal is not memorizing status codes — it is learning where to look first.</p>
+
+        <div class="quiz-container" id="quiz-module6">
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Right — malformed headers stop the request in the read phase, so the parser and request-reading path are the first place to inspect."
+               data-explanation-wrong="Not quite. If the request was never readable, route matching and endpoint code are too late in the story.">
+            <h3 class="quiz-question">A client sends malformed headers and gets a failure immediately. Where should AI look first?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The parser and ReadRequestAsync path</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The route registration table</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The action method body</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly — 404 is more helpful because it says the server is healthy enough to read the request, but no matching handler claimed it."
+               data-explanation-wrong="Close, but 500 would blame execution when nothing actually crashed. 404 narrows the problem to route lookup.">
+            <h3 class="quiz-question">Why is a 404 better than a 500 when no route matches?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because 404 responses are always faster to send</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because it tells you the request was understood but unclaimed, which narrows debugging</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because 500 is only used in tests</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Yes — that test setup isolates parser behavior so you can confirm whether the request format itself is the problem."
+               data-explanation-wrong="Not quite. The test exists precisely so you can avoid booting the whole stack and focus on one subsystem.">
+            <h3 class="quiz-question">How does the isolated parser test help when debugging a suspicious 400?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It proves the route registration is correct</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It makes exceptions impossible</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It lets you feed controlled input directly into the read path without booting everything else</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly — once the handler is running, the likely issue is inside execution, so logs and exception paths are the smart first stop."
+               data-explanation-wrong="Not quite. A stack trace after handler start points to the execute lane, not to unreadable input or missing routes.">
+            <h3 class="quiz-question">A stack trace appears after the right endpoint starts running. What is the best first debugging move?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Rewrite the parser because all failures start there</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Inspect the action code and exception handling path</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Assume the route does not exist and add a new one</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module6')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module6')">Try Again</button>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">🚦</div>
+          <div class="callout-content">
+            <strong class="callout-title">Your new shortcut</strong>
+            <p>When something breaks, ask three questions in order: was it readable, was it claimed, and did it crash while running? That one habit will make your AI debugging prompts dramatically sharper.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

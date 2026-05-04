@@ -1,0 +1,277 @@
+<section class="module" id="module-5" style="background: var(--color-bg);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">Why This Server Is Built This Way</h1>
+      <p class="module-subtitle">The design choices that make this server flexible, cheaper to run, and much easier to steer with AI.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A warehouse with specialist teams</h2>
+        <p>Imagine a shipping warehouse that does <span class="term" data-definition="A protocol is the agreed set of rules for how two computers talk to each other. When guiding AI, naming the protocol tells it which communication rules matter.">protocol</span> checks, package reading, and delivery by handing each job to a different team instead of forcing one exhausted worker to do everything.</p>
+        <p>That is the core idea here: split the server into focused parts so you can swap, test, and debug one part without tearing apart the whole machine.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-error);">
+            <div class="pattern-icon" style="background: var(--color-error);">📦</div>
+            <h4 class="pattern-title">All-in-one server</h4>
+            <p class="pattern-desc">Reads everything immediately, mixes parsing with routing, and makes every change feel risky.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">one giant flow</code>
+                <span class="badge-desc">Fast to start, hard to evolve</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">tight coupling</code>
+                <span class="badge-desc">One change can ripple everywhere</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pattern-card" style="border-top: 3px solid var(--color-accent);">
+            <div class="pattern-icon" style="background: var(--color-accent);">🏗️</div>
+            <h4 class="pattern-title">This modular server</h4>
+            <p class="pattern-desc">Separates <span class="term" data-definition="Middleware is code that sits in the middle of a request's journey. It can inspect, change, allow, or stop the request before the final handler runs.">middleware</span>, parsers, handlers, and body reading so each piece can stay simple.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">focused roles</code>
+                <span class="badge-desc">Each layer has one main job</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">easier swaps</code>
+                <span class="badge-desc">You can replace one piece without rewriting the rest</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why this matters for AI steering</strong>
+            <p>If you can say “keep the <span class="term" data-definition="A parser turns raw input into structured pieces the program can understand. Telling AI to change the parser means changing how incoming data is interpreted.">parser</span> separate from the request handler” or “make body reading lazy,” you give AI a much sharper instruction than “clean this up.”</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Four patterns hiding in plain sight</h2>
+        <p>This module is really a vocabulary upgrade. These are the pattern names you can now use when you want AI to copy the same architecture on purpose.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1);">
+            <div class="pattern-icon" style="background: var(--color-actor-1);">🐢</div>
+            <h4 class="pattern-title">Lazy Body Read</h4>
+            <p class="pattern-desc">Do not pull the whole request body up front. Wait until the app actually needs it.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2);">
+            <div class="pattern-icon" style="background: var(--color-actor-2);">🛣️</div>
+            <h4 class="pattern-title">Protocol-Specific Handler</h4>
+            <p class="pattern-desc">Give <span class="term" data-definition="HTTP is the web's request-and-response language. Different HTTP versions can have different rules, so telling AI which version you mean prevents fuzzy architecture changes.">HTTP</span>/1.1 and HTTP/2 their own paths so each version can behave correctly.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3);">
+            <div class="pattern-icon" style="background: var(--color-actor-3);">🧱</div>
+            <h4 class="pattern-title">Builder Pattern</h4>
+            <p class="pattern-desc">Use a <span class="term" data-definition="A builder is an object that gradually collects pieces until a larger object is ready. When talking to AI, 'use a builder' means avoid constructing everything in one giant step.">builder</span> object to assemble a request piece by piece instead of in one giant constructor call.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-success);">
+            <div class="pattern-icon" style="background: var(--color-success);">🪜</div>
+            <h4 class="pattern-title">Abstraction Layer</h4>
+            <p class="pattern-desc">An <span class="term" data-definition="An abstraction layer is a simplified boundary that hides messy details underneath. It lets you swap implementations without changing every caller.">abstraction layer</span> keeps the rest of the app from caring which concrete parser or cookie reader is underneath.</p>
+          </div>
+        </div>
+
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-num">1</div>
+            <p>Choose the right protocol handler</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">2</div>
+            <p>Parse only what is needed first</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">3</div>
+            <p>Let middleware and endpoints run</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">4</div>
+            <p>Swap pieces safely later</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Why the server waits before pulling the big box</h2>
+        <p>The <span class="term" data-definition="The request body is the payload sent with a request, like uploaded JSON, a form, or a file. It can be tiny or huge, so reading it lazily can save time and memory.">request body</span> might be tiny, or it might be huge. This server starts reading it in parallel, lets the app do its work, then stops wasting effort if the work is already done.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>                                // now we continue reading body part
+                                using CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                                Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
+                                Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
+
+                                readBodyCancellationTokenSource.Cancel();
+
+                                // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
+                                Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Now the server moves from headers into body-reading work.</p>
+              <p class="tl">It creates a linked <span class="term" data-definition="A cancellation token is a stop signal shared between pieces of code. It lets one part say 'you can stop now' without force-crashing the program.">cancellation token</span> so body reading can be stopped cleanly.</p>
+              <p class="tl">One task starts reading the body while another task runs the app logic.</p>
+              <p class="tl">Then the stop signal is triggered, because the app may finish before all body reading is worth doing.</p>
+              <p class="tl">The comment openly admits there is still design work here, which is useful debugging honesty.</p>
+              <p class="tl">Finally, the server waits for both jobs so the connection does not race ahead half-finished.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    public async Task ReadBodyAsync(PipeReader reader, IHttpRequest request, CancellationToken cancellationToken)
+    {
+        // we don't read body part in ReadRequestAsync, because:
+        // 1. a body can be very large, and we want to read/process it only when an app requests
+        // 2. we want to make it responsive, we can discard a connection right away without reading it's body, there is no reasons to waste our resouces to process an invalid request
+
+        // read body part, we read only contentLength bytes
+        var contentLength = request.ContentLength;
+        if (contentLength == 0)
+        {
+            // nothing to read
+            await request.BodyPipeline.Writer.CompleteAsync();</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This method is the dedicated body reader.</p>
+              <p class="tl">The comments state the design rule clearly: do not read a huge body until the app really needs it.</p>
+              <p class="tl">That choice keeps the server responsive and avoids spending resources on bad requests.</p>
+              <p class="tl">It only plans to read the exact number of bytes promised by Content-Length.</p>
+              <p class="tl">If there is no body at all, it immediately marks the body pipeline complete and moves on.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Different protocol roads, same destination</h2>
+        <p>A <span class="term" data-definition="A handler is the piece of code responsible for dealing with a specific job. Saying 'protocol handler' tells AI which object should own HTTP-version-specific behavior.">handler</span> factory keeps the high-level server calm while still letting HTTP/1.1 and HTTP/2 behave differently underneath.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>        if (httpVersion == HttpVersions.Http11)
+        {
+            // in reality we often use default parsers
+
+            return new Http11ProtocolHandler(config, loggerFactory,
+                services.GetService&lt;IHttpComponentParser&gt;() ?? new ByteSequenceHttpParser(loggerFactory),
+                services.GetService&lt;ICookieValueParser&gt;() ?? new DefaultCookieParser(),
+                protocolHandlerContext
+                );
+        }
+        else if (httpVersion == HttpVersions.Http20)
+        {
+            return new Http2ProtocolHandler(loggerFactory,
+                services.GetService&lt;IHttpComponentParser&gt;() ?? new ByteSequenceHttpParser(loggerFactory),
+                services.GetService&lt;ICookieValueParser&gt;() ?? new DefaultCookieParser(),
+                protocolHandlerContext
+                );</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">First, check which HTTP version this connection is using.</p>
+              <p class="tl">If it is HTTP/1.1, build an Http11ProtocolHandler with the shared dependencies it needs.</p>
+              <p class="tl">If the app did not provide a custom parser or cookie parser, fall back to the default ones.</p>
+              <p class="tl">If it is HTTP/2, create the HTTP/2-specific handler instead.</p>
+              <p class="tl">This is the payoff of modular design: version-specific behavior changes without forcing the whole server to fork.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="quiz-container" id="quiz-module5">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly — if the body might be large or the request might be rejected early, lazy reading saves time and resources."
+               data-explanation-wrong="Not quite. The code comments point to performance and early rejection, not to making logic more mysterious.">
+            <h3 class="quiz-question">You ask AI to speed up uploads on invalid requests. Which change best matches this server's design?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Read the full body earlier so all requests follow one path</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Keep body reading lazy so obviously bad requests can be dropped sooner</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Move body reading into every endpoint separately with no shared helper</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Yes — separate protocol handlers let each HTTP version evolve without turning the rest of the server into version-specific spaghetti."
+               data-explanation-wrong="Close, but the main win is separation of behavior, not hiding the existence of HTTP versions.">
+            <h3 class="quiz-question">Why keep HTTP/1.1 and HTTP/2 in separate handlers instead of one giant if/else method?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>So developers never need to think about versions again</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because factories are always faster than direct construction</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>So each version's behavior can change independently while shared pieces stay reusable</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Exactly — naming builders and abstractions gives AI stable boundaries to preserve when it edits the system."
+               data-explanation-wrong="Not quite. The real advantage is safer evolution: AI can change one layer while keeping the interfaces intact.">
+            <h3 class="quiz-question">AI keeps proposing risky rewrites. Which instruction is most likely to preserve this architecture?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Keep the builder and abstraction boundaries; only swap the parser implementation</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Merge the protocol handlers to reduce the number of files</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Inline every dependency so the call path is shorter to read once</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

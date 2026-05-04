@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inside a Mini Web Server</title>
+
+  <!-- Google Fonts: Bricolage Grotesque · DM Sans · JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!--
+    CUSTOMIZE PER COURSE — change only the three accent variables below.
+    Options:
+      vermillion  #D94F30 / #C4432A / #FDEEE9 / #E8836C  (default)
+      coral       #E06B56 / #C85A47 / #FDECEA / #E89585
+      teal        #2A7B9B / #1F6280 / #E4F2F7 / #5A9DB8
+      amber       #D4A843 / #BF9530 / #FDF5E0 / #E0C070
+      forest      #2D8B55 / #226B41 / #E8F5EE / #5AAD7A
+  -->
+  <style>
+    :root {
+      --color-accent:       #D94F30;
+      --color-accent-hover: #C4432A;
+      --color-accent-light: #FDEEE9;
+      --color-accent-muted: #E8836C;
+    }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">Inside a Mini Web Server</span>
+      <div class="nav-dots" id="nav-dots" role="tablist">
+        <!--
+          One <button> per module. Replace MODULE_N_NAME with the actual module title.
+
+          <button class="nav-dot" data-target="module-1" data-tooltip="MODULE_1_NAME" role="tab" aria-label="Module 1: MODULE_1_NAME"></button>
+          <button class="nav-dot" data-target="module-2" data-tooltip="MODULE_2_NAME" role="tab" aria-label="Module 2: MODULE_2_NAME"></button>
+          ...
+        -->
+        <button class="nav-dot" data-target="module-1" data-tooltip="One Click, One Request" role="tab" aria-label="Module 1: One Click, One Request"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="Meet the Server Crew" role="tab" aria-label="Module 2: Meet the Server Crew"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="Reading Raw HTTP" role="tab" aria-label="Module 3: Reading Raw HTTP"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="The Middleware Conveyor Belt" role="tab" aria-label="Module 4: The Middleware Conveyor Belt"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="Why This Server Is Built This Way" role="tab" aria-label="Module 5: Why This Server Is Built This Way"></button>
+        <button class="nav-dot" data-target="module-6" data-tooltip="Debugging the Three Failure Modes" role="tab" aria-label="Module 6: Debugging the Three Failure Modes"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->
+<section class="module" id="module-1" style="background: var(--color-bg);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">One Click, One Request</h1>
+      <p class="module-subtitle">Follow one request journey from a browser address bar to the server answer coming back.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A tiny request journey you can actually trace</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-6);align-items:start;">
+          <div>
+            <p>Imagine you open a <span class="term" data-definition="A browser is the app you use to visit websites, like Chrome or Edge. It sends web requests and shows the responses it gets back.">browser</span> and visit <code>/string-api/toupper?text=hello</code>. That sends a <span class="term" data-definition="A request is a message asking a server to do something or send something back. It is like handing a form to a clerk and waiting for the result.">request</span> to a server <span class="term" data-definition="A route is a named path the server watches for, like a street address that points to one specific handler.">route</span> with a <span class="term" data-definition="A query parameter is a small piece of extra data attached to a URL, usually after a question mark. It is a quick way to pass inputs without building a full form.">query parameter</span>.</p>
+            <p>This matters for AI steering because every "add a new endpoint" or "trace the bug" prompt depends on knowing which station in the trip owns the next move.</p>
+            <div class="callout callout-accent">
+              <div class="callout-icon">📦</div>
+              <div class="callout-content">
+                <strong class="callout-title">Aha: servers work by handoffs</strong>
+                <p>A <span class="term" data-definition="A server is the program that listens for incoming requests and sends back responses. You can think of it as the backstage machine behind a website or API.">server</span> is rarely one giant magic function. It is a chain of small parts that each touch the parcel once.</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;gap:var(--space-4);">
+            <div>
+              <h3 style="margin-bottom:var(--space-3);">Three files to keep in your head</h3>
+              <div class="file-tree">
+                <div class="ft-folder open">
+                  <span class="ft-name">MiniWebServer/</span>
+                  <span class="ft-desc">Startup code and the route map live here</span>
+                  <div class="ft-children">
+                    <div class="ft-file">
+                      <span class="ft-name">Program.cs</span>
+                      <span class="ft-desc">Defines the /string-api/toupper route</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="ft-folder open">
+                  <span class="ft-name">MiniWebServer.Server/</span>
+                  <span class="ft-desc">The network-facing parts of the trip</span>
+                  <div class="ft-children">
+                    <div class="ft-file">
+                      <span class="ft-name">MiniWebServer.cs</span>
+                      <span class="ft-desc">Accepts brand-new connections</span>
+                    </div>
+                    <div class="ft-file">
+                      <span class="ft-name">MiniWebClientConnection.cs</span>
+                      <span class="ft-desc">Decides how to read the incoming bytes</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: var(--color-bg-code); color: #CDD6F4; border-radius: var(--radius-md); padding: var(--space-5); box-shadow: var(--shadow-sm);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+                <strong>Doorbell moment</strong>
+                <span style="font-size:var(--text-xs);opacity:0.7;letter-spacing:0.08em;text-transform:uppercase;">MiniWebServer.cs</span>
+              </div>
+              <pre><code>                TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);
+
+                var connectionId = Interlocked.Increment(ref nextClientId); // this function can be called concurrently (or not?) so we cannot use ++
+
+                logger.LogDebug("New client connected! ClientID = {cid}", connectionId);
+
+                Task t = HandleNewClientConnectionAsync(connectionId, binding, client);</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:var(--space-8);">
+          <h3 style="margin-bottom:var(--space-3);">The six-hop route map</h3>
+          <div class="step-cards">
+            <div class="step-card">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <strong>The browser sends the path and the text value</strong>
+                <p>The request journey starts with a URL that asks for one very specific job: turn text into uppercase.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <strong>The listener notices a new connection</strong>
+                <p>A <span class="term" data-definition="A listener is the part of a server that waits for new network connections. It is like a front desk person watching the door.">listener</span> accepts a new <span class="term" data-definition="A TCP client is one live network connection between a user and a server. It is the communication line the request travels through.">TCP client</span> and gives it an ID.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <strong>The connection object checks the incoming format</strong>
+                <p>This is where the code decides which <span class="term" data-definition="An HTTP version is the flavor of the web protocol being spoken on the connection, such as HTTP/1.1 or HTTP/2.">HTTP version</span> it is dealing with.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">4</div>
+              <div class="step-body">
+                <strong>A protocol handler reads the raw bytes</strong>
+                <p>A <span class="term" data-definition="A protocol handler is a specialist that knows how to read and write one communication format. Here, it turns raw network data into a usable web request.">protocol handler</span> interprets the <span class="term" data-definition="Bytes are the raw tiny pieces of digital data moving through a connection. Before parsing, a request is just bytes on the wire.">bytes</span> instead of guessing.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">5</div>
+              <div class="step-body">
+                <strong>The route handler builds the answer</strong>
+                <p>The app code reads the text input, transforms it, and prepares a <span class="term" data-definition="A response is the message the server sends back after it finishes the job. It contains the content the user finally sees.">response</span>.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">6</div>
+              <div class="step-body">
+                <strong>The answer travels back the same line</strong>
+                <p>If you ever get the wrong result, you can debug by finding the last hop that still looked healthy.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Watch the cast talk it through</h2>
+        <p>Same request journey, different lens: this is the handoff chain as a group chat. It is a fast way to see who knows what, and that is exactly the vocabulary you need when telling AI where new logic belongs.</p>
+
+        <div class="chat-window" id="chat-module-1">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="browser" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🌐</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">Browser</span>
+                <p>GET /string-api/toupper?text=hello</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="listener" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">👂</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Listener</span>
+                <p>New client arrived. I made a connection ID and passed it along.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="connection" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">🔌</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">Connection Handler</span>
+                <p>Before I parse anything, I need to know which HTTP version is speaking.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="protocol" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">🧠</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">Protocol Handler</span>
+                <p>I know how to read those bytes and turn them into a real request object.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="route" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">🛠️</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">Route Handler</span>
+                <p>I built the answer: hello ===&gt; HELLO</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="browser" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">✅</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">Browser</span>
+                <p>Perfect. I can show the final text to the user now.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-typing" id="chat-module-1-typing" style="display:none">
+            <div class="chat-avatar" id="chat-module-1-typing-avatar">…</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Now watch the data itself move</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-6);align-items:start;">
+          <div>
+            <p>A <span class="term" data-definition="Data flow is the path information takes through a system, step by step, from one component to the next.">data flow</span> view is your debugging map. When something breaks, ask: which hop was the last one that definitely worked?</p>
+            <div class="callout callout-info">
+              <div class="callout-icon">🧭</div>
+              <div class="callout-content">
+                <strong class="callout-title">Debugging trick</strong>
+                <p>If AI says "the server is broken," ask it to name the exact hop: listener, connection object, protocol handler, or route. That turns a vague complaint into a real investigation.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-animation" data-steps='[{"highlight":"flow-actor-1","label":"Browser prepares the request"},{"highlight":"flow-actor-1","label":"Browser sends request to MiniWebServer","packet":true,"from":"actor-1","to":"actor-2"},{"highlight":"flow-actor-2","label":"MiniWebServer accepts the TCP client"},{"highlight":"flow-actor-2","label":"MiniWebServer hands connection to MiniWebClientConnection","packet":true,"from":"actor-2","to":"actor-3"},{"highlight":"flow-actor-3","label":"Connection object chooses the right protocol reader","packet":true,"from":"actor-3","to":"actor-4"},{"highlight":"flow-actor-4","label":"Protocol handler turns bytes into a request","packet":true,"from":"actor-4","to":"actor-5"},{"highlight":"flow-actor-5","label":"Route handler creates the uppercase response"},{"highlight":"flow-actor-5","label":"Response returns to the browser","packet":true,"from":"actor-5","to":"actor-1"}]'>
+            <div class="flow-actors">
+              <div class="flow-actor" id="flow-actor-1">
+                <div class="flow-actor-icon">🌐</div>
+                <span>Browser</span>
+              </div>
+              <div class="flow-actor" id="flow-actor-2">
+                <div class="flow-actor-icon">🖧</div>
+                <span>MiniWebServer</span>
+              </div>
+              <div class="flow-actor" id="flow-actor-3">
+                <div class="flow-actor-icon">🔌</div>
+                <span>MiniWebClientConnection</span>
+              </div>
+              <div class="flow-actor" id="flow-actor-4">
+                <div class="flow-actor-icon">📘</div>
+                <span>Http11ProtocolHandler</span>
+              </div>
+              <div class="flow-actor" id="flow-actor-5">
+                <div class="flow-actor-icon">��️</div>
+                <span>Route Handler</span>
+              </div>
+            </div>
+
+            <div class="flow-packet" id="flow-packet"></div>
+            <div class="flow-step-label" id="flow-label">Click &quot;Next Step&quot; to begin</div>
+
+            <div class="flow-controls">
+              <button class="btn flow-next-btn">Next Step</button>
+              <button class="btn flow-reset-btn">Restart</button>
+              <span class="flow-progress"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Open the two most important code moments</h2>
+        <p>The route snippet is where the visible answer is created. The connection snippet is where the server decides how to interpret the wire-level message before any route logic can run.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">        app.MapGet(&quot;/string-api/toupper&quot;, (context, cancellationToken) =&gt;</span>
+<span class="code-line">        {</span>
+<span class="code-line">            string p = context.Request.QueryParameters[&quot;text&quot;].Value ?? string.Empty;</span>
+<span class="code-line"></span>
+<span class="code-line">            context.Response.Content = new MiniApp.Content.StringContent(p + &quot; ===&gt; &quot; + p.ToUpper());</span>
+<span class="code-line"></span>
+<span class="code-line">            return Task.CompletedTask;</span>
+<span class="code-line">        });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Create a GET route for one exact path: <code>/string-api/toupper</code>.</p>
+              <p class="tl">When that path is hit, open a handler with the request <span class="term" data-definition="Context is the bundle of useful information passed into a handler, such as the request, the response, and related helpers.">context</span> already attached.</p>
+              <p class="tl">Pull out the <code>text</code> input. If it is missing, quietly use an empty string instead of crashing.</p>
+              <p class="tl">Build the answer content by joining the original text and its uppercase version.</p>
+              <p class="tl">Finish the handler. There is no extra background work to wait for here.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">            if (httpVersion == HttpVersions.Http20) // skip MAGIC string</span>
+<span class="code-line">            {</span>
+<span class="code-line">                requestPipeReader.AdvanceTo(buffer.GetPosition(HTTP2_MAGIC.Length));</span>
+<span class="code-line">            }</span>
+<span class="code-line"></span>
+<span class="code-line">            var protocolConfig = new ProtocolHandlerConfiguration(httpVersion, config.MaxRequestBodySize);</span>
+<span class="code-line">            var protocolHandlerContext = new ProtocolHandlerContext()</span>
+<span class="code-line">            {</span>
+<span class="code-line">                PipeReader = requestPipeReader,</span>
+<span class="code-line">                Stream = config.ClientStream</span>
+<span class="code-line">            };</span>
+<span class="code-line"></span>
+<span class="code-line">            var protocolHandler = protocolHandlerFactory.Create(httpVersion, protocolConfig, protocolHandlerContext);</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If the connection is speaking HTTP/2, skip past its special opening marker before reading the rest.</p>
+              <p class="tl">Build a small config object that says which HTTP version we saw and how large a request body is allowed.</p>
+              <p class="tl">Create a handler context that carries the <span class="term" data-definition="A stream is a live flow of data moving through a connection. It is like water moving through a pipe while you are still using it.">stream</span> and the reader that pulls bytes from it.</p>
+              <p class="tl">Ask the factory to create the right protocol handler for this connection, instead of hard-coding one reader for every case.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Quick check: can you steer the journey now?</h2>
+        <p>These are not memory questions. They are the kinds of choices you make when you ask AI to change behavior or when you debug a broken request journey.</p>
+
+        <div class="quiz-container" id="quiz-module-1">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly. A new endpoint starts in the route layer, because that is where the app maps a path to a handler."
+               data-explanation-wrong="Not quite. The request must reach the route layer before anything can transform the text, so the first change belongs where routes are mapped.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>You want a new URL: <code>/string-api/reverse?text=hello</code>. Where should AI add the first real behavior change?</p>
+              </div>
+              <h3 class="quiz-question">Which layer owns that job?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The browser UI that sent the request</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>A new <code>MapGet</code> route in the app layer</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The TCP listener that accepts connections</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Yes. The listener in MiniWebServer is the first part that notices a brand-new client and assigns a connection ID."
+               data-explanation-wrong="Close, but later than necessary. If you want to log a connection before parsing, the first useful place is the listener that accepts the client.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>You need a log line that says a new client connected, even if request parsing fails one second later.</p>
+              </div>
+              <h3 class="quiz-question">What part notices that first?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The listener inside MiniWebServer</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The route handler in Program.cs</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The browser after it renders the result</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Exactly. The connection and protocol-selection layer decides how raw bytes should be interpreted before route code can run."
+               data-explanation-wrong="Not this time. A wrong protocol choice happens before the route handler can help, because the server must first understand the bytes on the wire.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>A request works in one HTTP version but fails in another. The server seems confused before it even reaches your route.</p>
+              </div>
+              <h3 class="quiz-question">Which layer is the smartest first place to inspect?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The browser tab, because that is where the request started</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The route handler, because it builds the visible answer</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The connection and protocol handler selection stage</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module-1')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module-1')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section><section class="module" id="module-2" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">Meet the Server Crew</h1>
+      <p class="module-subtitle">Name the main actors so you know where to put new features, fixes, and protocol decisions.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Think of this codebase like a film set</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-6);align-items:start;">
+          <div>
+            <p>On a film set, the director, camera crew, editor, and sound team all touch the same scene, but each role stays narrow. This server does the same thing with <span class="term" data-definition="Architecture is the big-picture layout of a system: which parts exist, what each one owns, and how they connect.">architecture</span>: one part handles <span class="term" data-definition="Startup is the setup phase before real requests arrive. It is where the app decides what features exist and how they are wired together.">startup</span>, another handles networking, and another handles request-time decisions.</p>
+            <p>This is the vocabulary module. When you tell AI "put that in <span class="term" data-definition="Middleware is code that sits in the request path and can inspect, change, or block a request before the final handler runs.">middleware</span>" or "that belongs in the <span class="term" data-definition="A protocol handler is the specialist that understands one wire format, such as HTTP/1.1 or HTTP/2, and turns it into usable request data.">protocol handler</span>," you are really making an architecture decision.</p>
+            <div class="callout callout-accent">
+              <div class="callout-icon">🎬</div>
+              <div class="callout-content">
+                <strong class="callout-title">Aha: small roles make AI prompts sharper</strong>
+                <p>When components have clear jobs, your prompts get precise: "add caching middleware" is much better than "change the server stuff somewhere."</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;gap:var(--space-4);">
+            <div style="background: var(--color-bg-code); color: #CDD6F4; border-radius: var(--radius-md); padding: var(--space-5); box-shadow: var(--shadow-sm);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+                <strong>Startup cue card</strong>
+                <span style="font-size:var(--text-xs);opacity:0.7;letter-spacing:0.08em;text-transform:uppercase;">Program.cs</span>
+              </div>
+              <pre><code>        IMiniApp app = BuildApp(serverBuilder.Services, demoAppConfig, httpsPort); // or server.CreateAppBuilder(); ?
+        app = MapRoutes(app);
+        serverBuilder.AddHost(string.Empty, app);</code></pre>
+            </div>
+
+            <div class="pattern-cards">
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1);">
+                <div class="pattern-icon" style="background: var(--color-actor-1);">🎛️</div>
+                <h4 class="pattern-title">Startup / Program</h4>
+                <p class="pattern-desc">Chooses which features exist before the first request shows up.</p>
+              </div>
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2);">
+                <div class="pattern-icon" style="background: var(--color-actor-2);">🧱</div>
+                <h4 class="pattern-title">MiniApp Builder</h4>
+                <p class="pattern-desc">Stacks reusable app behavior like auth, sessions, and MVC.</p>
+              </div>
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3);">
+                <div class="pattern-icon" style="background: var(--color-actor-3);">🖧</div>
+                <h4 class="pattern-title">MiniWebServer</h4>
+                <p class="pattern-desc">Hosts the app and accepts live client connections.</p>
+              </div>
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4);">
+                <div class="pattern-icon" style="background: var(--color-actor-4);">🔀</div>
+                <h4 class="pattern-title">Protocol Handler Factory</h4>
+                <p class="pattern-desc">Chooses the right reader for each HTTP version.</p>
+              </div>
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5);">
+                <div class="pattern-icon" style="background: var(--color-actor-5);">🛣️</div>
+                <h4 class="pattern-title">Route / Middleware Layer</h4>
+                <p class="pattern-desc">Handles request-time rules and builds the final answer.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Click the architecture diagram like a cast map</h2>
+        <p>This diagram answers the most practical question in architecture work: if you want to change behavior, which actor should own the change?</p>
+
+        <div class="arch-diagram">
+          <div class="arch-zone arch-zone-browser">
+            <h4 class="arch-zone-label">Startup</h4>
+            <div class="arch-component" data-desc="Program.cs is the opening script. It builds the app, maps routes, and adds the host so the whole system can start." onclick="showArchDesc(this)">
+              <div class="arch-icon">🎛️</div>
+              <span>Startup / Program</span>
+            </div>
+            <div class="arch-component" data-desc="The MiniApp builder is where app-level features are stacked together. This is the right home for capabilities that should affect many requests in a consistent way." onclick="showArchDesc(this)">
+              <div class="arch-icon">🧱</div>
+              <span>MiniApp Builder</span>
+            </div>
+          </div>
+          <div class="arch-zone arch-zone-server">
+            <h4 class="arch-zone-label">Core Server</h4>
+            <div class="arch-component" data-desc="MiniWebServer is the network-facing host. It accepts clients and hands each connection off so request processing can begin." onclick="showArchDesc(this)">
+              <div class="arch-icon">🖧</div>
+              <span>MiniWebServer</span>
+            </div>
+            <div class="arch-component" data-desc="The Protocol Handler Factory is the chooser. It looks at the detected HTTP version and returns the right specialist to parse it." onclick="showArchDesc(this)">
+              <div class="arch-icon">🔀</div>
+              <span>Protocol Handler Factory</span>
+            </div>
+          </div>
+          <div class="arch-zone arch-zone-external">
+            <h4 class="arch-zone-label">Request-Time Work</h4>
+            <div class="arch-component" data-desc="The route and middleware layer runs after the server understands the request. This is where auth rules, sessions, static files, MVC, and custom endpoints shape the response." onclick="showArchDesc(this)">
+              <div class="arch-icon">🛣️</div>
+              <span>Route / Middleware Layer</span>
+            </div>
+          </div>
+          <div class="arch-description" id="arch-desc">Click any component to learn what it does.</div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">These are the features the builder plugs in</h2>
+        <p>When the builder wires the app, it is deciding which reusable behaviors every request can use. That is a different kind of decision from request-time business logic.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1);">
+            <div class="pattern-icon" style="background: var(--color-actor-1);">🪪</div>
+            <h4 class="pattern-title">Auth</h4>
+            <p class="pattern-desc">Short for authentication and authorization work. Use this layer when AI should identify the user or check whether a request is allowed.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2);">
+            <div class="pattern-icon" style="background: var(--color-actor-2);">🧾</div>
+            <h4 class="pattern-title">Session</h4>
+            <p class="pattern-desc">A <span class="term" data-definition="A session is a small server-managed memory of a user across multiple requests, like keeping a temporary folder for one visitor.">session</span> keeps a little state around between requests.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3);">
+            <div class="pattern-icon" style="background: var(--color-actor-3);">📁</div>
+            <h4 class="pattern-title">Static Files</h4>
+            <p class="pattern-desc"><span class="term" data-definition="Static files are assets the server can send as-is, such as images, CSS, or JavaScript files, without custom code running for each one.">Static files</span> are ready-made files the server can hand back directly.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4);">
+            <div class="pattern-icon" style="background: var(--color-actor-4);">🧭</div>
+            <h4 class="pattern-title">MVC</h4>
+            <p class="pattern-desc"><span class="term" data-definition="MVC stands for Model-View-Controller, a way to organize app code so data, page rendering, and request handling do not all get mixed together.">MVC</span> is the structured page-and-handler layer for larger app behavior.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5);">
+            <div class="pattern-icon" style="background: var(--color-actor-5);">1️⃣</div>
+            <h4 class="pattern-title">HTTP/1.1</h4>
+            <p class="pattern-desc">One supported <span class="term" data-definition="An HTTP version is the exact rulebook both sides use when speaking over the web.">HTTP version</span>. The factory can choose a handler for it.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2);">
+            <div class="pattern-icon" style="background: var(--color-actor-2);">2️⃣</div>
+            <h4 class="pattern-title">HTTP/2</h4>
+            <p class="pattern-desc">Another supported rulebook. Keeping version choice isolated makes the rest of the app simpler.</p>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top:var(--space-6);">
+          <div class="callout-icon">🧠</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why this matters for AI prompts</strong>
+            <p>If you want a reusable <span class="term" data-definition="Caching means storing a result so you can reuse it instead of doing the same work again every time.">caching</span> rule, ask for middleware. If you want a new page pattern, ask about MVC. If you want a new protocol, ask about the factory and handler layer.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">See startup wiring and protocol choice in real code</h2>
+        <p>These two snippets show the split clearly: first, startup adds reusable capabilities to the app; later, the factory chooses the right protocol specialist for each connection.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">        appBuilder.UseAuthorization(options =&gt;</span>
+<span class="code-line">        {</span>
+<span class="code-line">            options.Policies.Add(&quot;is-mini-web-server&quot;, policy =&gt; policy.RequireClaimValue(ClaimTypes.NameIdentifier, &quot;mini-web-server&quot;));</span>
+<span class="code-line">            options.Policies.Add(&quot;dev-required&quot;, policy =&gt; policy.RequireClaimValue(ClaimTypes.Role, &quot;Developer&quot;));</span>
+<span class="code-line"></span>
+<span class="code-line">            options.Routes.Add(&quot;/helpcheck&quot;, &quot;is-mini-web-server&quot;, &quot;dev-required&quot;);</span>
+<span class="code-line">        });</span>
+<span class="code-line"></span>
+<span class="code-line">        appBuilder.UseSession();</span>
+<span class="code-line">        appBuilder.UseStaticFiles(&quot;wwwroot&quot;, defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days</span>
+<span class="code-line">        appBuilder.UseMvc();</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Start the authorization setup and hand it a configuration object.</p>
+              <p class="tl">Create reusable <span class="term" data-definition="A policy is a named rule the server can reuse, like a saved checklist for what must be true before access is granted.">policies</span> that check for specific <span class="term" data-definition="A claim is a named piece of identity information, like a label on an ID badge saying who you are or what role you have.">claims</span>.</p>
+              <p class="tl">Attach those rules to the <code>/helpcheck</code> route so the route gets protection automatically.</p>
+              <p class="tl">Then add sessions, static-file serving, and MVC as more reusable app capabilities.</p>
+              <p class="tl">This is classic startup wiring: decide what powers the app has before live traffic starts.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">        if (httpVersion == HttpVersions.Http11)</span>
+<span class="code-line">        {</span>
+<span class="code-line">            // in reality we often use default parsers</span>
+<span class="code-line"></span>
+<span class="code-line">            return new Http11ProtocolHandler(config, loggerFactory,</span>
+<span class="code-line">                services.GetService&lt;IHttpComponentParser&gt;() ?? new ByteSequenceHttpParser(loggerFactory),</span>
+<span class="code-line">                services.GetService&lt;ICookieValueParser&gt;() ?? new DefaultCookieParser(),</span>
+<span class="code-line">                protocolHandlerContext</span>
+<span class="code-line">                );</span>
+<span class="code-line">        }</span>
+<span class="code-line">        else if (httpVersion == HttpVersions.Http20)</span>
+<span class="code-line">        {</span>
+<span class="code-line">            return new Http2ProtocolHandler(loggerFactory,</span>
+<span class="code-line">                services.GetService&lt;IHttpComponentParser&gt;() ?? new ByteSequenceHttpParser(loggerFactory),</span>
+<span class="code-line">                services.GetService&lt;ICookieValueParser&gt;() ?? new DefaultCookieParser(),</span>
+<span class="code-line">                protocolHandlerContext</span>
+<span class="code-line">                );</span>
+<span class="code-line">        }</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If the connection is HTTP/1.1, build an HTTP/1.1 protocol handler.</p>
+              <p class="tl">Try to reuse shared services for the <span class="term" data-definition="A parser is code that takes raw text or bytes and turns them into structured pieces the program can work with.">parser</span> pieces; if none are registered, fall back to default ones.</p>
+              <p class="tl">Pass in the handler context so the new object can read from the live connection.</p>
+              <p class="tl">If the connection is HTTP/2 instead, return the HTTP/2 specialist instead of forcing one class to handle every version.</p>
+              <p class="tl">That separation is what lets the server grow new protocol support without bloating one giant class.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Quick check: can you place new work on the right actor?</h2>
+        <p>If you can answer these, you are already better at steering AI than someone who only says "change the server" and hopes for the best.</p>
+
+        <div class="quiz-container" id="quiz-module-2">
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Exactly. A reusable cross-request behavior like caching belongs in middleware, because it can sit in front of many routes without rewriting each one."
+               data-explanation-wrong="Not quite. If the goal is a reusable rule that can affect many requests, middleware is the cleanest home. The protocol layer is too low-level and the listener is too early.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>You want a reusable cache so repeated requests can skip expensive work before the final route runs.</p>
+              </div>
+              <h3 class="quiz-question">Where should that feature live first?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>In middleware attached during app startup</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>Inside the protocol handler factory</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>Inside the raw TCP listener only</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Yes. Supporting a new HTTP version is exactly the sort of choice the protocol handler factory exists to make."
+               data-explanation-wrong="Close, but this choice happens before route logic. The factory is where the server decides which protocol specialist to create.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>Your team wants to support a new HTTP version next month.</p>
+              </div>
+              <h3 class="quiz-question">Which actor should own that decision point?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The MVC layer</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The Protocol Handler Factory</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The session system</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Correct. Static file serving is startup wiring: it is a capability you enable for the whole app before individual requests arrive."
+               data-explanation-wrong="Not quite. This is not per-request business logic. Static file serving is an app capability you enable during startup so many requests can use it.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>You want the server to start serving images and CSS from a folder for the whole app.</p>
+              </div>
+              <h3 class="quiz-question">What kind of code change is this?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>A protocol parsing change</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>A route-specific business rule</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>A startup wiring change in the app builder</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module-2')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module-2')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-3" style="background: var(--color-bg);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">Reading Raw HTTP</h1>
+      <p class="module-subtitle">Inside a Mini Web Server: how raw text turns into a request object the rest of the server can trust.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A browser sends an envelope, not a ready-made object</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); align-items: start;">
+          <div style="display: grid; gap: var(--space-5);">
+            <p>The browser sends an <span class="term" data-definition="HTTP is the standard language browsers and servers use to talk to each other on the web. It defines the shape of messages like requests and responses.">HTTP</span> <span class="term" data-definition="A request is the message a browser sends when it wants something from a server, like a page, image, or API result.">request</span> as raw text and bytes. A <span class="term" data-definition="A parser is code that reads raw input and turns it into structured pieces other code can safely use.">parser</span> has to break that message into parts before anything smarter can happen.</p>
+            <p>This matters when AI tells you to “just inspect the request.” You now know what to inspect: the <span class="term" data-definition="The request line is the very first line of an HTTP request. It usually contains the method, the path, and the HTTP version.">request line</span>, the <span class="term" data-definition="Headers are little labeled facts attached to a request, like the host name, cookies, or accepted formats.">headers</span>, the blank separator, and then the optional <span class="term" data-definition="The body is the main payload of a request. It usually appears after a blank line and is where forms or JSON data live.">body</span>.</p>
+          </div>
+
+          <div style="display: grid; gap: var(--space-4);">
+            <div class="flow-steps">
+              <div class="flow-step">
+                <div class="flow-step-num">1</div>
+                <p>Request line says what the browser wants.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">2</div>
+                <p>Headers add context like host, cookies, and preferences.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">3</div>
+                <p>A blank line marks “headers end here.”</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">4</div>
+                <p>The body appears only when extra payload is needed.</p>
+              </div>
+            </div>
+
+            <div class="callout callout-accent">
+              <div class="callout-icon">✉️</div>
+              <div class="callout-content">
+                <strong class="callout-title">Why this helps you debug</strong>
+                <p>If a request looks “mysteriously broken,” the fastest win is often finding which stage was malformed or missing.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The raw message already tells a story</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr); align-items: start;">
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">CODE</span>
+              <pre><code>        string requestContent =
+            @"GET /index.html?id1=1&amp;id2=2&amp;t1=Mini%20Web%20Server HTTP/1.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36
+Host: localhost:8443
+Connection: keep-alive
+Cookie: CONSENT=PENDING+243; sw_version=1; JSESSION=10F4DF1D-C4BE-44BA-AF88-81A3AC132E6A
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate, br
+Accept-Language: vi,en-US;q=0.9,en;q=0.8,nb;q=0.7
+Cache-Control:no-cache
+
+";</code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">PLAIN ENGLISH</span>
+              <div class="translation-lines">
+                <p class="tl">This test builds one full browser request as a text blob, so the server has to read it exactly the way a real connection would deliver it.</p>
+                <p class="tl"><code>GET /index.html?... HTTP/1.1</code> is the request line: method, path, and version all packed into one line.</p>
+                <p class="tl">The path also carries a <span class="term" data-definition="A query string is the extra information after a question mark in a URL. It lets the browser attach named values like filters or search terms.">query string</span>, so the parser needs to separate destination from parameters.</p>
+                <p class="tl">Each following header line adds context: which browser sent this, which host it wants, which cookies came along, and which formats are acceptable.</p>
+                <p class="tl">That empty line is not decoration. It is the fence that tells the server, “header reading is over; body reading starts after this.”</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: var(--space-4);">
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">GET</code>
+                <span class="badge-desc">The browser is asking for something, not uploading new data.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">/index.html</code>
+                <span class="badge-desc">The path says which resource the browser wants.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">?id1=1...</code>
+                <span class="badge-desc">Extra named values ride alongside the path.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">HTTP/1.1</code>
+                <span class="badge-desc">The <span class="term" data-definition="A protocol is an agreed rulebook for how two systems communicate. HTTP is one protocol.">protocol</span> version tells the server which rules this message expects.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The server reads one line, then turns it into fields</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); align-items: start;">
+          <div style="display: grid; gap: var(--space-5);">
+            <p>The incoming <span class="term" data-definition="A buffer is a waiting area in memory where incoming bytes sit before the program processes them.">buffer</span> first yields one line. Then the parser splits that line into method, <span class="term" data-definition="A URL is the address of a resource on the web. It can include a path, query string, and hash.">URL</span>, segments, and the HTTP version.</p>
+            <div class="flow-animation" data-steps='[
+              {"highlight":"flow-actor-1","label":"Request Buffer holds incoming bytes"},
+              {"highlight":"flow-actor-1","label":"TryReadLine extracts the first line","packet":true,"from":"actor-1","to":"actor-2"},
+              {"highlight":"flow-actor-2","label":"Parser splits method path and version","packet":true,"from":"actor-2","to":"actor-3"},
+              {"highlight":"flow-actor-3","label":"Version and URL pieces are validated","packet":true,"from":"actor-3","to":"actor-4"},
+              {"highlight":"flow-actor-4","label":"Request Builder stores the parsed parts"},
+              {"highlight":"flow-actor-1","label":"Handler continues on to header lines"}
+            ]'>
+              <div class="flow-actors">
+                <div class="flow-actor" id="flow-actor-1">
+                  <div class="flow-actor-icon">📦</div>
+                  <span>Request Buffer</span>
+                </div>
+                <div class="flow-actor" id="flow-actor-2">
+                  <div class="flow-actor-icon">✂️</div>
+                  <span>TryReadLine</span>
+                </div>
+                <div class="flow-actor" id="flow-actor-3">
+                  <div class="flow-actor-icon">🧠</div>
+                  <span>Parser</span>
+                </div>
+                <div class="flow-actor" id="flow-actor-4">
+                  <div class="flow-actor-icon">🧱</div>
+                  <span>Request Builder</span>
+                </div>
+              </div>
+
+              <div class="flow-packet" id="flow-packet"></div>
+
+              <div class="flow-step-label" id="flow-label">Click "Next Step" to trace the request line.</div>
+
+              <div class="flow-controls">
+                <button class="btn flow-next-btn">Next Step</button>
+                <button class="btn flow-reset-btn">Restart</button>
+                <span class="flow-progress"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">CODE</span>
+              <pre><code>            if (TryReadLine(ref buffer, out ReadOnlySequence&lt;byte&gt; line))
+            {
+                var requestLine = httpComponentParser.ParseRequestLine(line);
+
+                if (requestLine != null)
+                {
+                    logger.LogDebug("Parsed request line: {requestLine}", requestLine);
+
+                    // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
+                    // if Url length exceeds Url buffer length, you should return 414 URI Too Long
+
+                    // todo: parse the Url with percent-encoding (https://www.rfc-editor.org/rfc/rfc3986)
+
+                    httpMethod = requestLine.Method;
+                    requestBuilder
+                        .SetMethod(requestLine.Method)
+                        .SetUrl(requestLine.Url)
+                        .SetParameters(requestLine.Parameters)
+                        .SetQueryString(requestLine.QueryString)
+                        .SetHash(requestLine.Hash)
+                        .SetSegments(requestLine.Segments);</code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">PLAIN ENGLISH</span>
+              <div class="translation-lines">
+                <p class="tl">First, try to peel exactly one line off the incoming bytes. If that fails, there is no clean request line to work with yet.</p>
+                <p class="tl">Next, hand that line to a dedicated parser instead of mixing low-level byte reading with higher-level HTTP rules.</p>
+                <p class="tl">If the parser succeeds, the server logs what it found. That is gold when you are debugging “why did this become a 400?” moments.</p>
+                <p class="tl">The comments show two concrete failure ideas: a method that is too long, or a URL that is too long for the expected limits.</p>
+                <p class="tl">Finally, the request builder stores the structured parts so later middleware and handlers can ask for friendly fields instead of re-reading raw bytes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Can you match each piece to its job?</h2>
+        <div style="display: grid; gap: var(--space-5);">
+          <p>This is the skill that helps you steer AI precisely: “the method looks wrong,” “the blank line is missing,” or “the host header is fine but the path is malformed.”</p>
+
+          <div class="dnd-container" id="dnd-module3">
+            <div class="dnd-chips">
+              <div class="dnd-chip" draggable="true" data-answer="method">GET</div>
+              <div class="dnd-chip" draggable="true" data-answer="path">/index.html?id1=1&amp;id2=2&amp;t1=Mini%20Web%20Server</div>
+              <div class="dnd-chip" draggable="true" data-answer="version">HTTP/1.1</div>
+              <div class="dnd-chip" draggable="true" data-answer="host">Host: localhost:8443</div>
+              <div class="dnd-chip" draggable="true" data-answer="blank-line">blank line</div>
+              <div class="dnd-chip" draggable="true" data-answer="body">body</div>
+            </div>
+            <div class="dnd-zones">
+              <div class="dnd-zone" data-correct="method">
+                <p class="dnd-zone-label">The action word that says what kind of request this is.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="path">
+                <p class="dnd-zone-label">The destination plus any attached query values.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="version">
+                <p class="dnd-zone-label">The rulebook version the server should validate against.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="host">
+                <p class="dnd-zone-label">The header that tells the server which host and port the browser believes it is reaching.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="blank-line">
+                <p class="dnd-zone-label">The separator that says “stop reading headers now.”</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="body">
+                <p class="dnd-zone-label">The payload area that may follow when a request needs to send extra data.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <button class="btn" onclick="checkDnD('dnd-module3')">Check Matches</button>
+              <button class="btn" onclick="resetDnD('dnd-module3')">Reset</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Quick debugger check</h2>
+        <p>You do not need to memorize syntax. You need to know where to look when a request stops making sense.</p>
+
+        <div class="quiz-container" id="quiz-module3">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly. The path lives in the middle field of the request line, between the method and the version."
+               data-explanation-wrong="Not quite. Think about the three-part request line: method first, destination in the middle, version last.">
+            <h3 class="quiz-question">A bug report says the server is reaching the wrong page even though the method is correct. Which part would you inspect first?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The Host header only</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The path section of the request line</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The blank line after the headers</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Yes. A malformed first line is a classic way to trigger a bad-request response before later stages even run."
+               data-explanation-wrong="Close, but think earlier. A 400 often happens before business logic when the parser cannot trust the incoming structure.">
+            <h3 class="quiz-question">Which malformed input is most likely to cause an immediate 400-style parser failure?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A valid path with many query values</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>An ordinary Host header on port 8443</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A broken request line that cannot be split into method, path, and version</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Exactly. Version checks protect the parser from applying the wrong expectations to the incoming bytes."
+               data-explanation-wrong="Not quite. The version string matters because it tells the parser which HTTP rules and separators it should trust.">
+            <h3 class="quiz-question">Why is validating the HTTP version worth doing before the request moves deeper into the server?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because the parser needs to know which message rules it should apply</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because it decides which controller name to call</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because it automatically generates missing headers</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-4" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">The Middleware Conveyor Belt</h1>
+      <p class="module-subtitle">Inside a Mini Web Server: once a request is parsed, the next question is who gets first crack at handling it.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Order is the architecture here</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); align-items: start;">
+          <div style="display: grid; gap: var(--space-5);">
+            <p>A <span class="term" data-definition="Middleware is a checkpoint in a web server pipeline. Each checkpoint can inspect a request, change it, stop it, or pass it to the next checkpoint.">middleware</span> chain is like an airport conveyor belt: every station gets a chance to act, and the order changes the outcome.</p>
+            <p><span class="term" data-definition="Authentication is the step where the server figures out who the visitor is, often from a cookie, token, or login state.">Authentication</span> should usually happen before <span class="term" data-definition="Authorization is the step where the server decides whether an already-identified user is allowed to do something.">authorization</span>. <span class="term" data-definition="A session is server-side memory tied to one visitor, so the app can remember state between requests.">Session</span>, <span class="term" data-definition="Static files are ready-made assets like images, CSS, or JavaScript files that can often be returned immediately.">static files</span>, and <span class="term" data-definition="MVC stands for Model-View-Controller, a web pattern where controller code decides what page or action to run.">MVC</span> each compete for the same request.</p>
+
+            <div class="flow-steps">
+              <div class="flow-step">
+                <div class="flow-step-num">1</div>
+                <p>Prove identity.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">2</div>
+                <p>Check permissions.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">3</div>
+                <p>Load visit memory.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">4</div>
+                <p>Serve files fast when possible.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">5</div>
+                <p>Let MVC build the response.</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: var(--space-4);">
+            <div class="translation-code" style="border-radius: var(--radius-md);">
+              <span class="translation-label">STARTUP ORDER</span>
+              <pre><code>        appBuilder.UseAuthorization(options =>
+        {
+            options.Policies.Add("is-mini-web-server", policy =&gt; policy.RequireClaimValue(ClaimTypes.NameIdentifier, "mini-web-server"));
+            options.Policies.Add("dev-required", policy =&gt; policy.RequireClaimValue(ClaimTypes.Role, "Developer"));
+
+            options.Routes.Add("/helpcheck", "is-mini-web-server", "dev-required");
+        });
+
+        appBuilder.UseSession();
+        appBuilder.UseStaticFiles("wwwroot", defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days
+        appBuilder.UseMvc();</code></pre>
+            </div>
+
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">/helpcheck</code>
+                <span class="badge-desc">Protected <span class="term" data-definition="A route is the path pattern a server uses to decide which code should handle a request.">route</span> that needs both named policies.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">is-mini-web-server</code>
+                <span class="badge-desc">Requires a matching name identifier claim.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">dev-required</code>
+                <span class="badge-desc">Requires the Developer role before access is allowed.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">wwwroot</code>
+                <span class="badge-desc">Static file root with a seven-day default cache age.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">This builder makes the last added middleware run first</h2>
+        <div style="display: grid; gap: var(--space-6);">
+          <div class="callout callout-warning">
+            <div class="callout-icon">⚠️</div>
+            <div class="callout-content">
+              <strong class="callout-title">Core instinct to keep</strong>
+              <p>This server uses <span class="term" data-definition="LIFO means Last In, First Out. The most recently added item gets processed before older ones, like the top plate in a stack.">LIFO</span> wrapping. Changing startup order changes runtime behavior.</p>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: var(--space-8); grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start;">
+            <div class="translation-block">
+              <div class="translation-code">
+                <span class="translation-label">CODE</span>
+                <pre><code>        if (typeof(IMiddleware).IsAssignableFrom(middlewareType))
+        {
+            middlewareTypes.Insert(0, middlewareType); // LIFO: last added middleware will be called first
+        }</code></pre>
+              </div>
+              <div class="translation-english">
+                <span class="translation-label">PLAIN ENGLISH</span>
+                <div class="translation-lines">
+                  <p class="tl">Only real middleware types enter this special chain.</p>
+                  <p class="tl">Instead of appending to the end, the builder inserts each new item at the front of the list.</p>
+                  <p class="tl">That means the middleware you add last in startup code becomes the one that gets called first when a request arrives.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="translation-block">
+              <div class="translation-code">
+                <span class="translation-label">CODE</span>
+                <pre><code>        foreach (var middleware in middlewareChain)
+        {
+            var callWrapper = new MiddlewareWrapper(middleware, callable);
+
+            callable = callWrapper;
+        }
+
+        return callable;</code></pre>
+              </div>
+              <div class="translation-english">
+                <span class="translation-label">PLAIN ENGLISH</span>
+                <div class="translation-lines">
+                  <p class="tl">Walk through the chain one middleware at a time.</p>
+                  <p class="tl">Each pass creates a wrapper that knows two things: who should run now, and who should be called next.</p>
+                  <p class="tl">Then that wrapper becomes the new callable, so the next loop wraps around it again.</p>
+                  <p class="tl">By the end, the outermost wrapper is the first station the request hits.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Watch the actors “talk” through two requests</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr); align-items: start;">
+          <div class="chat-window" id="chat-module4-routing">
+            <div class="chat-messages">
+              <div class="chat-message" data-msg="0" data-sender="actor-a" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-1)">A</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-1)">Authentication</span>
+                  <p>Request one is /helpcheck. I will identify the visitor before anyone checks permissions.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="1" data-sender="actor-b" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-2)">B</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-2)">Authorization</span>
+                  <p>I see a protected route, so I will enforce both policies before the request can continue.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="2" data-sender="actor-c" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-3)">C</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-3)">Session</span>
+                  <p>Great. The request survived permission checks, so I can load any per-visitor state it may need.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="3" data-sender="actor-d" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-4)">D</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-4)">Static Files</span>
+                  <p>/helpcheck is not a file in wwwroot, so I pass it onward.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="4" data-sender="actor-e" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-5)">E</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-5)">MVC</span>
+                  <p>This one is mine. I will handle the route and build the response.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="5" data-sender="actor-a" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-1)">A</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-1)">Authentication</span>
+                  <p>Request two is /logo.svg. Nothing fancy here, but identity still gets checked first.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="6" data-sender="actor-d" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-4)">D</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-4)">Static Files</span>
+                  <p>I found the file immediately, so I finish the job and MVC never needs to wake up.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="7" data-sender="actor-f" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-6)">F</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-6)">Final 404 Handler</span>
+                  <p>If nobody handles a request at all, I am the fallback that returns “not found.”</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-typing" id="chat-module4-routing-typing" style="display:none">
+              <div class="chat-avatar" id="chat-module4-routing-typing-avatar">?</div>
+              <div class="chat-typing-dots">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+              </div>
+            </div>
+
+            <div class="chat-controls">
+              <button class="btn chat-next-btn">Next Message</button>
+              <button class="btn chat-all-btn">Play All</button>
+              <button class="btn chat-reset-btn">Replay</button>
+              <span class="chat-progress"></span>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: var(--space-4);">
+            <div class="callout callout-info">
+              <div class="callout-icon">🧭</div>
+              <div class="callout-content">
+                <strong class="callout-title">Why this matters for AI steering</strong>
+                <p>If AI suggests moving static files after MVC or checking permissions before identity, you can now explain the architectural consequence instead of just saying “that feels wrong.”</p>
+              </div>
+            </div>
+
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">/helpcheck</code>
+                <span class="badge-desc">Needs identity, policies, then MVC.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">/logo.svg</code>
+                <span class="badge-desc">Should get served early by Static Files.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">404</code>
+                <span class="badge-desc">Only the fallback should answer when every other station passed.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Put the conveyor belt in a sensible order</h2>
+        <p>This is an ordering exercise in disguise: build the chain you would want for protected routes plus fast static assets.</p>
+
+        <div class="dnd-container" id="dnd-module4">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="authn">Authentication</div>
+            <div class="dnd-chip" draggable="true" data-answer="authz">Authorization</div>
+            <div class="dnd-chip" draggable="true" data-answer="session">Session</div>
+            <div class="dnd-chip" draggable="true" data-answer="static">Static Files</div>
+            <div class="dnd-chip" draggable="true" data-answer="mvc">MVC</div>
+            <div class="dnd-chip" draggable="true" data-answer="notfound">Final 404 Handler</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="authn">
+              <p class="dnd-zone-label">1. Figure out who the visitor is before permission checks happen.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="authz">
+              <p class="dnd-zone-label">2. Enforce protected-route rules only after identity is known.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="session">
+              <p class="dnd-zone-label">3. Load per-visitor state for requests that made it this far.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="static">
+              <p class="dnd-zone-label">4. Return files quickly when the path points to an asset.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="mvc">
+              <p class="dnd-zone-label">5. Let the main application logic handle everything still unresolved.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="notfound">
+              <p class="dnd-zone-label">6. Catch the leftovers and return a not-found response.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <button class="btn" onclick="checkDnD('dnd-module4')">Check Matches</button>
+            <button class="btn" onclick="resetDnD('dnd-module4')">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Architecture instincts check</h2>
+        <p>The goal is not “remember the order.” The goal is “notice when the order makes the whole app behave differently.”</p>
+
+        <div class="quiz-container" id="quiz-module4">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly. Authorization can only make a useful decision after authentication has established who the user is."
+               data-explanation-wrong="Not quite. Permission checks depend on identity data, so running them first usually means they are missing the facts they need.">
+            <h3 class="quiz-question">AI suggests putting authorization before authentication on a protected route. What is the core problem with that idea?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It makes static files impossible to cache</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Authorization would try to enforce rules before identity is known</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It forces MVC to handle every route</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Yes. If MVC grabs the request first, the server loses the cheap fast path that serves assets directly."
+               data-explanation-wrong="Close, but the main tradeoff here is speed and responsibility. Static assets are usually better served before full MVC routing.">
+            <h3 class="quiz-question">Why might putting Static Files after MVC be a bad architectural choice for a request like /logo.svg?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>MVC may do extra routing work for something that could have been returned immediately</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It automatically disables sessions for all users</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It changes the HTTP version from 1.1 to 2.0</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Exactly. That sequence protects the route, keeps file serving efficient, and leaves 404 handling as the true fallback."
+               data-explanation-wrong="Not quite. Think about what needs to happen earliest for protected routes, and what should stay late as the catch-all.">
+            <h3 class="quiz-question">You are designing a chain for protected pages plus static assets. Which order shows the healthiest instincts?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>MVC → Static Files → Authorization → Authentication → 404</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Static Files → MVC → Session → Authorization → Authentication → 404</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Authentication → Authorization → Session → Static Files → MVC → 404</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-5" style="background: var(--color-bg);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">Why This Server Is Built This Way</h1>
+      <p class="module-subtitle">The design choices that make this server flexible, cheaper to run, and much easier to steer with AI.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A warehouse with specialist teams</h2>
+        <p>Imagine a shipping warehouse that does <span class="term" data-definition="A protocol is the agreed set of rules for how two computers talk to each other. When guiding AI, naming the protocol tells it which communication rules matter.">protocol</span> checks, package reading, and delivery by handing each job to a different team instead of forcing one exhausted worker to do everything.</p>
+        <p>That is the core idea here: split the server into focused parts so you can swap, test, and debug one part without tearing apart the whole machine.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-error);">
+            <div class="pattern-icon" style="background: var(--color-error);">📦</div>
+            <h4 class="pattern-title">All-in-one server</h4>
+            <p class="pattern-desc">Reads everything immediately, mixes parsing with routing, and makes every change feel risky.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">one giant flow</code>
+                <span class="badge-desc">Fast to start, hard to evolve</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">tight coupling</code>
+                <span class="badge-desc">One change can ripple everywhere</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pattern-card" style="border-top: 3px solid var(--color-accent);">
+            <div class="pattern-icon" style="background: var(--color-accent);">🏗️</div>
+            <h4 class="pattern-title">This modular server</h4>
+            <p class="pattern-desc">Separates <span class="term" data-definition="Middleware is code that sits in the middle of a request's journey. It can inspect, change, allow, or stop the request before the final handler runs.">middleware</span>, parsers, handlers, and body reading so each piece can stay simple.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">focused roles</code>
+                <span class="badge-desc">Each layer has one main job</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">easier swaps</code>
+                <span class="badge-desc">You can replace one piece without rewriting the rest</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why this matters for AI steering</strong>
+            <p>If you can say “keep the <span class="term" data-definition="A parser turns raw input into structured pieces the program can understand. Telling AI to change the parser means changing how incoming data is interpreted.">parser</span> separate from the request handler” or “make body reading lazy,” you give AI a much sharper instruction than “clean this up.”</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Four patterns hiding in plain sight</h2>
+        <p>This module is really a vocabulary upgrade. These are the pattern names you can now use when you want AI to copy the same architecture on purpose.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1);">
+            <div class="pattern-icon" style="background: var(--color-actor-1);">🐢</div>
+            <h4 class="pattern-title">Lazy Body Read</h4>
+            <p class="pattern-desc">Do not pull the whole request body up front. Wait until the app actually needs it.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2);">
+            <div class="pattern-icon" style="background: var(--color-actor-2);">🛣️</div>
+            <h4 class="pattern-title">Protocol-Specific Handler</h4>
+            <p class="pattern-desc">Give <span class="term" data-definition="HTTP is the web's request-and-response language. Different HTTP versions can have different rules, so telling AI which version you mean prevents fuzzy architecture changes.">HTTP</span>/1.1 and HTTP/2 their own paths so each version can behave correctly.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3);">
+            <div class="pattern-icon" style="background: var(--color-actor-3);">🧱</div>
+            <h4 class="pattern-title">Builder Pattern</h4>
+            <p class="pattern-desc">Use a <span class="term" data-definition="A builder is an object that gradually collects pieces until a larger object is ready. When talking to AI, 'use a builder' means avoid constructing everything in one giant step.">builder</span> object to assemble a request piece by piece instead of in one giant constructor call.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-success);">
+            <div class="pattern-icon" style="background: var(--color-success);">🪜</div>
+            <h4 class="pattern-title">Abstraction Layer</h4>
+            <p class="pattern-desc">An <span class="term" data-definition="An abstraction layer is a simplified boundary that hides messy details underneath. It lets you swap implementations without changing every caller.">abstraction layer</span> keeps the rest of the app from caring which concrete parser or cookie reader is underneath.</p>
+          </div>
+        </div>
+
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-num">1</div>
+            <p>Choose the right protocol handler</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">2</div>
+            <p>Parse only what is needed first</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">3</div>
+            <p>Let middleware and endpoints run</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">4</div>
+            <p>Swap pieces safely later</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Why the server waits before pulling the big box</h2>
+        <p>The <span class="term" data-definition="The request body is the payload sent with a request, like uploaded JSON, a form, or a file. It can be tiny or huge, so reading it lazily can save time and memory.">request body</span> might be tiny, or it might be huge. This server starts reading it in parallel, lets the app do its work, then stops wasting effort if the work is already done.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>                                // now we continue reading body part
+                                using CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                                Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
+                                Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
+
+                                readBodyCancellationTokenSource.Cancel();
+
+                                // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
+                                Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Now the server moves from headers into body-reading work.</p>
+              <p class="tl">It creates a linked <span class="term" data-definition="A cancellation token is a stop signal shared between pieces of code. It lets one part say 'you can stop now' without force-crashing the program.">cancellation token</span> so body reading can be stopped cleanly.</p>
+              <p class="tl">One task starts reading the body while another task runs the app logic.</p>
+              <p class="tl">Then the stop signal is triggered, because the app may finish before all body reading is worth doing.</p>
+              <p class="tl">The comment openly admits there is still design work here, which is useful debugging honesty.</p>
+              <p class="tl">Finally, the server waits for both jobs so the connection does not race ahead half-finished.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    public async Task ReadBodyAsync(PipeReader reader, IHttpRequest request, CancellationToken cancellationToken)
+    {
+        // we don't read body part in ReadRequestAsync, because:
+        // 1. a body can be very large, and we want to read/process it only when an app requests
+        // 2. we want to make it responsive, we can discard a connection right away without reading it's body, there is no reasons to waste our resouces to process an invalid request
+
+        // read body part, we read only contentLength bytes
+        var contentLength = request.ContentLength;
+        if (contentLength == 0)
+        {
+            // nothing to read
+            await request.BodyPipeline.Writer.CompleteAsync();</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This method is the dedicated body reader.</p>
+              <p class="tl">The comments state the design rule clearly: do not read a huge body until the app really needs it.</p>
+              <p class="tl">That choice keeps the server responsive and avoids spending resources on bad requests.</p>
+              <p class="tl">It only plans to read the exact number of bytes promised by Content-Length.</p>
+              <p class="tl">If there is no body at all, it immediately marks the body pipeline complete and moves on.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Different protocol roads, same destination</h2>
+        <p>A <span class="term" data-definition="A handler is the piece of code responsible for dealing with a specific job. Saying 'protocol handler' tells AI which object should own HTTP-version-specific behavior.">handler</span> factory keeps the high-level server calm while still letting HTTP/1.1 and HTTP/2 behave differently underneath.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>        if (httpVersion == HttpVersions.Http11)
+        {
+            // in reality we often use default parsers
+
+            return new Http11ProtocolHandler(config, loggerFactory,
+                services.GetService&lt;IHttpComponentParser&gt;() ?? new ByteSequenceHttpParser(loggerFactory),
+                services.GetService&lt;ICookieValueParser&gt;() ?? new DefaultCookieParser(),
+                protocolHandlerContext
+                );
+        }
+        else if (httpVersion == HttpVersions.Http20)
+        {
+            return new Http2ProtocolHandler(loggerFactory,
+                services.GetService&lt;IHttpComponentParser&gt;() ?? new ByteSequenceHttpParser(loggerFactory),
+                services.GetService&lt;ICookieValueParser&gt;() ?? new DefaultCookieParser(),
+                protocolHandlerContext
+                );</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">First, check which HTTP version this connection is using.</p>
+              <p class="tl">If it is HTTP/1.1, build an Http11ProtocolHandler with the shared dependencies it needs.</p>
+              <p class="tl">If the app did not provide a custom parser or cookie parser, fall back to the default ones.</p>
+              <p class="tl">If it is HTTP/2, create the HTTP/2-specific handler instead.</p>
+              <p class="tl">This is the payoff of modular design: version-specific behavior changes without forcing the whole server to fork.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="quiz-container" id="quiz-module5">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly — if the body might be large or the request might be rejected early, lazy reading saves time and resources."
+               data-explanation-wrong="Not quite. The code comments point to performance and early rejection, not to making logic more mysterious.">
+            <h3 class="quiz-question">You ask AI to speed up uploads on invalid requests. Which change best matches this server's design?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Read the full body earlier so all requests follow one path</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Keep body reading lazy so obviously bad requests can be dropped sooner</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Move body reading into every endpoint separately with no shared helper</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Yes — separate protocol handlers let each HTTP version evolve without turning the rest of the server into version-specific spaghetti."
+               data-explanation-wrong="Close, but the main win is separation of behavior, not hiding the existence of HTTP versions.">
+            <h3 class="quiz-question">Why keep HTTP/1.1 and HTTP/2 in separate handlers instead of one giant if/else method?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>So developers never need to think about versions again</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because factories are always faster than direct construction</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>So each version's behavior can change independently while shared pieces stay reusable</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Exactly — naming builders and abstractions gives AI stable boundaries to preserve when it edits the system."
+               data-explanation-wrong="Not quite. The real advantage is safer evolution: AI can change one layer while keeping the interfaces intact.">
+            <h3 class="quiz-question">AI keeps proposing risky rewrites. Which instruction is most likely to preserve this architecture?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Keep the builder and abstraction boundaries; only swap the parser implementation</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Merge the protocol handlers to reduce the number of files</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Inline every dependency so the call path is shorter to read once</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+<section class="module" id="module-6" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">06</span>
+      <h1 class="module-title">Debugging the Three Failure Modes</h1>
+      <p class="module-subtitle">A calm way to classify failures: unreadable input, missing destination, or a crash during execution.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Three warning lights, not endless chaos</h2>
+        <p>Server bugs feel random until you notice this codebase keeps most failures inside three lanes: 400 for a broken read, 404 for a missing <span class="term" data-definition="A route is the path or rule that decides which code should handle a request. When debugging with AI, saying 'the route is missing' points to lookup logic, not parsing or execution.">route</span>, and 500 for a crash while work is already underway.</p>
+        <p>That map matters because it tells you what to ask AI next: “check the <span class="term" data-definition="A parser turns raw request text into structured data the server can work with. If parsing fails, the problem is usually with the incoming format, not the route logic.">parser</span>,” “check route selection,” or “check the <span class="term" data-definition="A handler is the code that takes ownership of a request and does the actual work. If the handler crashes, the route was found but execution failed.">handler</span> exception path.”</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1);">
+            <div class="pattern-icon" style="background: var(--color-actor-1);">400</div>
+            <h4 class="pattern-title">Read lane</h4>
+            <p class="pattern-desc">The server could not successfully parse the incoming request, so it sends Bad Request and closes the bad connection.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">Ask AI</code>
+                <span class="badge-desc">Inspect parser input, headers, and request formatting first</span>
+              </div>
+            </div>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-info);">
+            <div class="pattern-icon" style="background: var(--color-info);">404</div>
+            <h4 class="pattern-title">Find lane</h4>
+            <p class="pattern-desc">The request was readable, but no matching handler claimed it, so the response becomes Not Found.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">Ask AI</code>
+                <span class="badge-desc">Trace endpoint registration and route matching</span>
+              </div>
+            </div>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-error);">
+            <div class="pattern-icon" style="background: var(--color-error);">500</div>
+            <h4 class="pattern-title">Execute lane</h4>
+            <p class="pattern-desc">The right handler started running, but an <span class="term" data-definition="An exception is a runtime error that interrupts normal code flow. When guiding AI, telling it to inspect exception handling means the code was found and started, but crashed mid-flight.">exception</span> happened inside that work.</p>
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">Ask AI</code>
+                <span class="badge-desc">Look at the action code, logs, and caught exceptions</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-num">1</div>
+            <p>Read the request</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">2</div>
+            <p>Find the handler</p>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="flow-step-num">3</div>
+            <p>Execute the handler</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Lane 1: unreadable input becomes 400</h2>
+        <p>If the server cannot read the request cleanly, it does not keep pretending. It sends a 400 and shuts down that broken conversation.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>                    var readRequestResult = await protocolHandler.ReadRequestAsync(requestBuilder, cancellationToken);
+                    if (!readRequestResult)
+                    {
+                        isKeepAlive = false; // we always close wrongly working connections
+
+                        var response = new HttpResponse(HttpResponseCodes.BadRequest, config.ClientStream);
+
+                        cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+                        logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
+                        await SendResponseAsync(response, protocolHandler, cancellationToken);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Try to read the incoming request using the protocol handler.</p>
+              <p class="tl">If that read fails, stop pretending this connection is healthy.</p>
+              <p class="tl">Turn off keep-alive so the bad connection does not hang around.</p>
+              <p class="tl">Build a 400 Bad Request response on the client stream.</p>
+              <p class="tl">Set a send timeout, log what is happening, and send the response back quickly.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>    private static async Task&lt;ReadRequestTestResult&gt; ReadRequestAsync(string requestContent)
+    {
+        var reader = PipeUtils.String2Reader(requestContent);
+        var loggerFactory = new LoggerFactory();
+
+        var httpParser = new ByteSequenceHttpParser(loggerFactory);
+        var handler = new Http11ProtocolHandler(new ProtocolHandlerConfiguration(global::MiniWebServer.Abstractions.HttpVersions.Http11, 1024 * 1024 * 10), loggerFactory, httpParser, new DefaultCookieParser(), 
+            new ProtocolHandlerContext() { 
+                PipeReader = reader, Stream = new MemoryStream()
+            });
+
+        var requestBuilder = new HttpWebRequestBuilder();
+
+        var result = await handler.ReadRequestAsync(requestBuilder, CancellationToken.None);
+        return new ReadRequestTestResult(result, requestBuilder);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This test creates a reader from a raw request string so the parser can be exercised in isolation.</p>
+              <p class="tl">It builds the HTTP parser and a specific HTTP/1.1 protocol handler with a fake stream.</p>
+              <p class="tl">Then it creates a fresh request builder to collect parsed fields.</p>
+              <p class="tl">The real check is one call: can the handler read this request successfully or not?</p>
+              <p class="tl">That is powerful debugging design: isolate one subsystem, feed it controlled input, and inspect the result without booting the whole server.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <div class="callout-icon">🧪</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why isolated tests help</strong>
+            <p>When AI gets stuck in a bug loop, asking it to reproduce the problem in a tiny parser-only test is often the fastest escape hatch.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Lane 2 and Lane 3: not found versus crashed</h2>
+        <p>Once the request is readable, the next question is simple: did nobody claim the job, or did the worker crash while doing it?</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>                try
+                {
+                    await action.InvokeAsync(context, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "[{cid}] - Error executing action handler", ConnectionId);
+                    response.StatusCode = HttpResponseCodes.InternalServerError;
+                }
+            }
+            else
+            {
+                StandardResponseBuilderHelpers.NotFound(response);</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If an action exists, the server tries to run it.</p>
+              <p class="tl">If running that action throws an exception, the error is logged and the response becomes 500 Internal Server Error.</p>
+              <p class="tl">If there was no action to run in the first place, the code falls into the else branch instead.</p>
+              <p class="tl">That else branch is the key distinction: unreadable input is no longer the problem here; missing ownership is.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code>public class StandardResponseBuilderHelpers
+{
+    public static void NotFound(IHttpResponse response)
+    {
+        response.StatusCode = HttpResponseCodes.NotFound;
+        response.Headers.ContentLength = 0;
+    }</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">This helper gives the response a 404 Not Found status.</p>
+              <p class="tl">It also sets the content length to zero, which means there is no body payload attached.</p>
+              <p class="tl">That is a clean “nobody claimed this request” answer, which is much more precise than blaming the server with a 500.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-info);">
+            <div class="pattern-icon" style="background: var(--color-info);">🔎</div>
+            <h4 class="pattern-title">404 means “look for wiring”</h4>
+            <p class="pattern-desc">The request got in. Now inspect registration, matching rules, and path expectations.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-error);">
+            <div class="pattern-icon" style="background: var(--color-error);">🧯</div>
+            <h4 class="pattern-title">500 means “look inside the code that ran”</h4>
+            <p class="pattern-desc">The route existed. The failure is inside the business logic, not in the routing table.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Spot the bug: which lane are you in?</h2>
+        <p>This is the practical move: classify the failure before you start editing. That keeps AI from wandering through the wrong subsystem.</p>
+
+        <div class="quiz-container" id="bug-module6">
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Exactly — the handler was found and started, then crashed while executing. That is the 500 Execute lane."
+               data-explanation-wrong="Not quite. The route already exists in this scenario, and the input was readable. The break happens after execution begins.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Spot the bug challenge</span>
+                <p>A request reaches the correct endpoint, but halfway through <code>action.InvokeAsync</code> the code throws an exception and the log records “Error executing action handler.” Which lane should you investigate first?</p>
+              </div>
+            </div>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>400 Read — malformed request input</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>404 Find — missing route registration</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>500 Execute — the handler started and then crashed</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('bug-module6')">Reveal Diagnosis</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('bug-module6')">Try Another Pass</button>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Final debugging checklist</h2>
+        <p>You now have a compact failure map you can use with confidence. The goal is not memorizing status codes — it is learning where to look first.</p>
+
+        <div class="quiz-container" id="quiz-module6">
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Right — malformed headers stop the request in the read phase, so the parser and request-reading path are the first place to inspect."
+               data-explanation-wrong="Not quite. If the request was never readable, route matching and endpoint code are too late in the story.">
+            <h3 class="quiz-question">A client sends malformed headers and gets a failure immediately. Where should AI look first?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The parser and ReadRequestAsync path</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The route registration table</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The action method body</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly — 404 is more helpful because it says the server is healthy enough to read the request, but no matching handler claimed it."
+               data-explanation-wrong="Close, but 500 would blame execution when nothing actually crashed. 404 narrows the problem to route lookup.">
+            <h3 class="quiz-question">Why is a 404 better than a 500 when no route matches?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because 404 responses are always faster to send</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because it tells you the request was understood but unclaimed, which narrows debugging</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because 500 is only used in tests</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Yes — that test setup isolates parser behavior so you can confirm whether the request format itself is the problem."
+               data-explanation-wrong="Not quite. The test exists precisely so you can avoid booting the whole stack and focus on one subsystem.">
+            <h3 class="quiz-question">How does the isolated parser test help when debugging a suspicious 400?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It proves the route registration is correct</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It makes exceptions impossible</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It lets you feed controlled input directly into the read path without booting everything else</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly — once the handler is running, the likely issue is inside execution, so logs and exception paths are the smart first stop."
+               data-explanation-wrong="Not quite. A stack trace after handler start points to the execute lane, not to unreadable input or missing routes.">
+            <h3 class="quiz-question">A stack trace appears after the right endpoint starts running. What is the best first debugging move?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Rewrite the parser because all failures start there</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Inspect the action code and exception handling path</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Assume the route does not exist and add a new one</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module6')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module6')">Try Again</button>
+        </div>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">🚦</div>
+          <div class="callout-content">
+            <strong class="callout-title">Your new shortcut</strong>
+            <p>When something breaks, ask three questions in order: was it readable, was it claimed, and did it crash while running? That one habit will make your AI debugging prompts dramatically sharper.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+  </main>
+
+</body>
+</html>

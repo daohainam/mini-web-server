@@ -1,0 +1,369 @@
+<section class="module" id="module-4" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">The Middleware Conveyor Belt</h1>
+      <p class="module-subtitle">Inside a Mini Web Server: once a request is parsed, the next question is who gets first crack at handling it.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Order is the architecture here</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); align-items: start;">
+          <div style="display: grid; gap: var(--space-5);">
+            <p>A <span class="term" data-definition="Middleware is a checkpoint in a web server pipeline. Each checkpoint can inspect a request, change it, stop it, or pass it to the next checkpoint.">middleware</span> chain is like an airport conveyor belt: every station gets a chance to act, and the order changes the outcome.</p>
+            <p><span class="term" data-definition="Authentication is the step where the server figures out who the visitor is, often from a cookie, token, or login state.">Authentication</span> should usually happen before <span class="term" data-definition="Authorization is the step where the server decides whether an already-identified user is allowed to do something.">authorization</span>. <span class="term" data-definition="A session is server-side memory tied to one visitor, so the app can remember state between requests.">Session</span>, <span class="term" data-definition="Static files are ready-made assets like images, CSS, or JavaScript files that can often be returned immediately.">static files</span>, and <span class="term" data-definition="MVC stands for Model-View-Controller, a web pattern where controller code decides what page or action to run.">MVC</span> each compete for the same request.</p>
+
+            <div class="flow-steps">
+              <div class="flow-step">
+                <div class="flow-step-num">1</div>
+                <p>Prove identity.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">2</div>
+                <p>Check permissions.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">3</div>
+                <p>Load visit memory.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">4</div>
+                <p>Serve files fast when possible.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">5</div>
+                <p>Let MVC build the response.</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: var(--space-4);">
+            <div class="translation-code" style="border-radius: var(--radius-md);">
+              <span class="translation-label">STARTUP ORDER</span>
+              <pre><code>        appBuilder.UseAuthorization(options =>
+        {
+            options.Policies.Add("is-mini-web-server", policy =&gt; policy.RequireClaimValue(ClaimTypes.NameIdentifier, "mini-web-server"));
+            options.Policies.Add("dev-required", policy =&gt; policy.RequireClaimValue(ClaimTypes.Role, "Developer"));
+
+            options.Routes.Add("/helpcheck", "is-mini-web-server", "dev-required");
+        });
+
+        appBuilder.UseSession();
+        appBuilder.UseStaticFiles("wwwroot", defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days
+        appBuilder.UseMvc();</code></pre>
+            </div>
+
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">/helpcheck</code>
+                <span class="badge-desc">Protected <span class="term" data-definition="A route is the path pattern a server uses to decide which code should handle a request.">route</span> that needs both named policies.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">is-mini-web-server</code>
+                <span class="badge-desc">Requires a matching name identifier claim.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">dev-required</code>
+                <span class="badge-desc">Requires the Developer role before access is allowed.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">wwwroot</code>
+                <span class="badge-desc">Static file root with a seven-day default cache age.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">This builder makes the last added middleware run first</h2>
+        <div style="display: grid; gap: var(--space-6);">
+          <div class="callout callout-warning">
+            <div class="callout-icon">⚠️</div>
+            <div class="callout-content">
+              <strong class="callout-title">Core instinct to keep</strong>
+              <p>This server uses <span class="term" data-definition="LIFO means Last In, First Out. The most recently added item gets processed before older ones, like the top plate in a stack.">LIFO</span> wrapping. Changing startup order changes runtime behavior.</p>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: var(--space-8); grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start;">
+            <div class="translation-block">
+              <div class="translation-code">
+                <span class="translation-label">CODE</span>
+                <pre><code>        if (typeof(IMiddleware).IsAssignableFrom(middlewareType))
+        {
+            middlewareTypes.Insert(0, middlewareType); // LIFO: last added middleware will be called first
+        }</code></pre>
+              </div>
+              <div class="translation-english">
+                <span class="translation-label">PLAIN ENGLISH</span>
+                <div class="translation-lines">
+                  <p class="tl">Only real middleware types enter this special chain.</p>
+                  <p class="tl">Instead of appending to the end, the builder inserts each new item at the front of the list.</p>
+                  <p class="tl">That means the middleware you add last in startup code becomes the one that gets called first when a request arrives.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="translation-block">
+              <div class="translation-code">
+                <span class="translation-label">CODE</span>
+                <pre><code>        foreach (var middleware in middlewareChain)
+        {
+            var callWrapper = new MiddlewareWrapper(middleware, callable);
+
+            callable = callWrapper;
+        }
+
+        return callable;</code></pre>
+              </div>
+              <div class="translation-english">
+                <span class="translation-label">PLAIN ENGLISH</span>
+                <div class="translation-lines">
+                  <p class="tl">Walk through the chain one middleware at a time.</p>
+                  <p class="tl">Each pass creates a wrapper that knows two things: who should run now, and who should be called next.</p>
+                  <p class="tl">Then that wrapper becomes the new callable, so the next loop wraps around it again.</p>
+                  <p class="tl">By the end, the outermost wrapper is the first station the request hits.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Watch the actors “talk” through two requests</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr); align-items: start;">
+          <div class="chat-window" id="chat-module4-routing">
+            <div class="chat-messages">
+              <div class="chat-message" data-msg="0" data-sender="actor-a" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-1)">A</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-1)">Authentication</span>
+                  <p>Request one is /helpcheck. I will identify the visitor before anyone checks permissions.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="1" data-sender="actor-b" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-2)">B</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-2)">Authorization</span>
+                  <p>I see a protected route, so I will enforce both policies before the request can continue.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="2" data-sender="actor-c" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-3)">C</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-3)">Session</span>
+                  <p>Great. The request survived permission checks, so I can load any per-visitor state it may need.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="3" data-sender="actor-d" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-4)">D</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-4)">Static Files</span>
+                  <p>/helpcheck is not a file in wwwroot, so I pass it onward.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="4" data-sender="actor-e" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-5)">E</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-5)">MVC</span>
+                  <p>This one is mine. I will handle the route and build the response.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="5" data-sender="actor-a" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-1)">A</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-1)">Authentication</span>
+                  <p>Request two is /logo.svg. Nothing fancy here, but identity still gets checked first.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="6" data-sender="actor-d" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-4)">D</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-4)">Static Files</span>
+                  <p>I found the file immediately, so I finish the job and MVC never needs to wake up.</p>
+                </div>
+              </div>
+              <div class="chat-message" data-msg="7" data-sender="actor-f" style="display:none">
+                <div class="chat-avatar" style="background: var(--color-actor-6)">F</div>
+                <div class="chat-bubble">
+                  <span class="chat-sender" style="color: var(--color-actor-6)">Final 404 Handler</span>
+                  <p>If nobody handles a request at all, I am the fallback that returns “not found.”</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-typing" id="chat-module4-routing-typing" style="display:none">
+              <div class="chat-avatar" id="chat-module4-routing-typing-avatar">?</div>
+              <div class="chat-typing-dots">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+              </div>
+            </div>
+
+            <div class="chat-controls">
+              <button class="btn chat-next-btn">Next Message</button>
+              <button class="btn chat-all-btn">Play All</button>
+              <button class="btn chat-reset-btn">Replay</button>
+              <span class="chat-progress"></span>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: var(--space-4);">
+            <div class="callout callout-info">
+              <div class="callout-icon">🧭</div>
+              <div class="callout-content">
+                <strong class="callout-title">Why this matters for AI steering</strong>
+                <p>If AI suggests moving static files after MVC or checking permissions before identity, you can now explain the architectural consequence instead of just saying “that feels wrong.”</p>
+              </div>
+            </div>
+
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">/helpcheck</code>
+                <span class="badge-desc">Needs identity, policies, then MVC.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">/logo.svg</code>
+                <span class="badge-desc">Should get served early by Static Files.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">404</code>
+                <span class="badge-desc">Only the fallback should answer when every other station passed.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Put the conveyor belt in a sensible order</h2>
+        <p>This is an ordering exercise in disguise: build the chain you would want for protected routes plus fast static assets.</p>
+
+        <div class="dnd-container" id="dnd-module4">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="authn">Authentication</div>
+            <div class="dnd-chip" draggable="true" data-answer="authz">Authorization</div>
+            <div class="dnd-chip" draggable="true" data-answer="session">Session</div>
+            <div class="dnd-chip" draggable="true" data-answer="static">Static Files</div>
+            <div class="dnd-chip" draggable="true" data-answer="mvc">MVC</div>
+            <div class="dnd-chip" draggable="true" data-answer="notfound">Final 404 Handler</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="authn">
+              <p class="dnd-zone-label">1. Figure out who the visitor is before permission checks happen.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="authz">
+              <p class="dnd-zone-label">2. Enforce protected-route rules only after identity is known.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="session">
+              <p class="dnd-zone-label">3. Load per-visitor state for requests that made it this far.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="static">
+              <p class="dnd-zone-label">4. Return files quickly when the path points to an asset.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="mvc">
+              <p class="dnd-zone-label">5. Let the main application logic handle everything still unresolved.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+            <div class="dnd-zone" data-correct="notfound">
+              <p class="dnd-zone-label">6. Catch the leftovers and return a not-found response.</p>
+              <div class="dnd-zone-target">Drop here</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <button class="btn" onclick="checkDnD('dnd-module4')">Check Matches</button>
+            <button class="btn" onclick="resetDnD('dnd-module4')">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Architecture instincts check</h2>
+        <p>The goal is not “remember the order.” The goal is “notice when the order makes the whole app behave differently.”</p>
+
+        <div class="quiz-container" id="quiz-module4">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly. Authorization can only make a useful decision after authentication has established who the user is."
+               data-explanation-wrong="Not quite. Permission checks depend on identity data, so running them first usually means they are missing the facts they need.">
+            <h3 class="quiz-question">AI suggests putting authorization before authentication on a protected route. What is the core problem with that idea?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It makes static files impossible to cache</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Authorization would try to enforce rules before identity is known</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It forces MVC to handle every route</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Yes. If MVC grabs the request first, the server loses the cheap fast path that serves assets directly."
+               data-explanation-wrong="Close, but the main tradeoff here is speed and responsibility. Static assets are usually better served before full MVC routing.">
+            <h3 class="quiz-question">Why might putting Static Files after MVC be a bad architectural choice for a request like /logo.svg?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>MVC may do extra routing work for something that could have been returned immediately</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It automatically disables sessions for all users</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>It changes the HTTP version from 1.1 to 2.0</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Exactly. That sequence protects the route, keeps file serving efficient, and leaves 404 handling as the true fallback."
+               data-explanation-wrong="Not quite. Think about what needs to happen earliest for protected routes, and what should stay late as the catch-all.">
+            <h3 class="quiz-question">You are designing a chain for protected pages plus static assets. Which order shows the healthiest instincts?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>MVC → Static Files → Authorization → Authentication → 404</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Static Files → MVC → Session → Authorization → Authentication → 404</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Authentication → Authorization → Session → Static Files → MVC → 404</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,314 @@
+<section class="module" id="module-3" style="background: var(--color-bg);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">Reading Raw HTTP</h1>
+      <p class="module-subtitle">Inside a Mini Web Server: how raw text turns into a request object the rest of the server can trust.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A browser sends an envelope, not a ready-made object</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); align-items: start;">
+          <div style="display: grid; gap: var(--space-5);">
+            <p>The browser sends an <span class="term" data-definition="HTTP is the standard language browsers and servers use to talk to each other on the web. It defines the shape of messages like requests and responses.">HTTP</span> <span class="term" data-definition="A request is the message a browser sends when it wants something from a server, like a page, image, or API result.">request</span> as raw text and bytes. A <span class="term" data-definition="A parser is code that reads raw input and turns it into structured pieces other code can safely use.">parser</span> has to break that message into parts before anything smarter can happen.</p>
+            <p>This matters when AI tells you to “just inspect the request.” You now know what to inspect: the <span class="term" data-definition="The request line is the very first line of an HTTP request. It usually contains the method, the path, and the HTTP version.">request line</span>, the <span class="term" data-definition="Headers are little labeled facts attached to a request, like the host name, cookies, or accepted formats.">headers</span>, the blank separator, and then the optional <span class="term" data-definition="The body is the main payload of a request. It usually appears after a blank line and is where forms or JSON data live.">body</span>.</p>
+          </div>
+
+          <div style="display: grid; gap: var(--space-4);">
+            <div class="flow-steps">
+              <div class="flow-step">
+                <div class="flow-step-num">1</div>
+                <p>Request line says what the browser wants.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">2</div>
+                <p>Headers add context like host, cookies, and preferences.</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">3</div>
+                <p>A blank line marks “headers end here.”</p>
+              </div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step">
+                <div class="flow-step-num">4</div>
+                <p>The body appears only when extra payload is needed.</p>
+              </div>
+            </div>
+
+            <div class="callout callout-accent">
+              <div class="callout-icon">✉️</div>
+              <div class="callout-content">
+                <strong class="callout-title">Why this helps you debug</strong>
+                <p>If a request looks “mysteriously broken,” the fastest win is often finding which stage was malformed or missing.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The raw message already tells a story</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr); align-items: start;">
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">CODE</span>
+              <pre><code>        string requestContent =
+            @"GET /index.html?id1=1&amp;id2=2&amp;t1=Mini%20Web%20Server HTTP/1.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36
+Host: localhost:8443
+Connection: keep-alive
+Cookie: CONSENT=PENDING+243; sw_version=1; JSESSION=10F4DF1D-C4BE-44BA-AF88-81A3AC132E6A
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Encoding: gzip, deflate, br
+Accept-Language: vi,en-US;q=0.9,en;q=0.8,nb;q=0.7
+Cache-Control:no-cache
+
+";</code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">PLAIN ENGLISH</span>
+              <div class="translation-lines">
+                <p class="tl">This test builds one full browser request as a text blob, so the server has to read it exactly the way a real connection would deliver it.</p>
+                <p class="tl"><code>GET /index.html?... HTTP/1.1</code> is the request line: method, path, and version all packed into one line.</p>
+                <p class="tl">The path also carries a <span class="term" data-definition="A query string is the extra information after a question mark in a URL. It lets the browser attach named values like filters or search terms.">query string</span>, so the parser needs to separate destination from parameters.</p>
+                <p class="tl">Each following header line adds context: which browser sent this, which host it wants, which cookies came along, and which formats are acceptable.</p>
+                <p class="tl">That empty line is not decoration. It is the fence that tells the server, “header reading is over; body reading starts after this.”</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: var(--space-4);">
+            <div class="badge-list">
+              <div class="badge-item">
+                <code class="badge-code">GET</code>
+                <span class="badge-desc">The browser is asking for something, not uploading new data.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">/index.html</code>
+                <span class="badge-desc">The path says which resource the browser wants.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">?id1=1...</code>
+                <span class="badge-desc">Extra named values ride alongside the path.</span>
+              </div>
+              <div class="badge-item">
+                <code class="badge-code">HTTP/1.1</code>
+                <span class="badge-desc">The <span class="term" data-definition="A protocol is an agreed rulebook for how two systems communicate. HTTP is one protocol.">protocol</span> version tells the server which rules this message expects.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">The server reads one line, then turns it into fields</h2>
+        <div style="display: grid; gap: var(--space-8); grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); align-items: start;">
+          <div style="display: grid; gap: var(--space-5);">
+            <p>The incoming <span class="term" data-definition="A buffer is a waiting area in memory where incoming bytes sit before the program processes them.">buffer</span> first yields one line. Then the parser splits that line into method, <span class="term" data-definition="A URL is the address of a resource on the web. It can include a path, query string, and hash.">URL</span>, segments, and the HTTP version.</p>
+            <div class="flow-animation" data-steps='[
+              {"highlight":"flow-actor-1","label":"Request Buffer holds incoming bytes"},
+              {"highlight":"flow-actor-1","label":"TryReadLine extracts the first line","packet":true,"from":"actor-1","to":"actor-2"},
+              {"highlight":"flow-actor-2","label":"Parser splits method path and version","packet":true,"from":"actor-2","to":"actor-3"},
+              {"highlight":"flow-actor-3","label":"Version and URL pieces are validated","packet":true,"from":"actor-3","to":"actor-4"},
+              {"highlight":"flow-actor-4","label":"Request Builder stores the parsed parts"},
+              {"highlight":"flow-actor-1","label":"Handler continues on to header lines"}
+            ]'>
+              <div class="flow-actors">
+                <div class="flow-actor" id="flow-actor-1">
+                  <div class="flow-actor-icon">📦</div>
+                  <span>Request Buffer</span>
+                </div>
+                <div class="flow-actor" id="flow-actor-2">
+                  <div class="flow-actor-icon">✂️</div>
+                  <span>TryReadLine</span>
+                </div>
+                <div class="flow-actor" id="flow-actor-3">
+                  <div class="flow-actor-icon">🧠</div>
+                  <span>Parser</span>
+                </div>
+                <div class="flow-actor" id="flow-actor-4">
+                  <div class="flow-actor-icon">🧱</div>
+                  <span>Request Builder</span>
+                </div>
+              </div>
+
+              <div class="flow-packet" id="flow-packet"></div>
+
+              <div class="flow-step-label" id="flow-label">Click "Next Step" to trace the request line.</div>
+
+              <div class="flow-controls">
+                <button class="btn flow-next-btn">Next Step</button>
+                <button class="btn flow-reset-btn">Restart</button>
+                <span class="flow-progress"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">CODE</span>
+              <pre><code>            if (TryReadLine(ref buffer, out ReadOnlySequence&lt;byte&gt; line))
+            {
+                var requestLine = httpComponentParser.ParseRequestLine(line);
+
+                if (requestLine != null)
+                {
+                    logger.LogDebug("Parsed request line: {requestLine}", requestLine);
+
+                    // when implementing as a sequence of octets, if method length exceeds method buffer length, you should return 501 Not Implemented 
+                    // if Url length exceeds Url buffer length, you should return 414 URI Too Long
+
+                    // todo: parse the Url with percent-encoding (https://www.rfc-editor.org/rfc/rfc3986)
+
+                    httpMethod = requestLine.Method;
+                    requestBuilder
+                        .SetMethod(requestLine.Method)
+                        .SetUrl(requestLine.Url)
+                        .SetParameters(requestLine.Parameters)
+                        .SetQueryString(requestLine.QueryString)
+                        .SetHash(requestLine.Hash)
+                        .SetSegments(requestLine.Segments);</code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">PLAIN ENGLISH</span>
+              <div class="translation-lines">
+                <p class="tl">First, try to peel exactly one line off the incoming bytes. If that fails, there is no clean request line to work with yet.</p>
+                <p class="tl">Next, hand that line to a dedicated parser instead of mixing low-level byte reading with higher-level HTTP rules.</p>
+                <p class="tl">If the parser succeeds, the server logs what it found. That is gold when you are debugging “why did this become a 400?” moments.</p>
+                <p class="tl">The comments show two concrete failure ideas: a method that is too long, or a URL that is too long for the expected limits.</p>
+                <p class="tl">Finally, the request builder stores the structured parts so later middleware and handlers can ask for friendly fields instead of re-reading raw bytes.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Can you match each piece to its job?</h2>
+        <div style="display: grid; gap: var(--space-5);">
+          <p>This is the skill that helps you steer AI precisely: “the method looks wrong,” “the blank line is missing,” or “the host header is fine but the path is malformed.”</p>
+
+          <div class="dnd-container" id="dnd-module3">
+            <div class="dnd-chips">
+              <div class="dnd-chip" draggable="true" data-answer="method">GET</div>
+              <div class="dnd-chip" draggable="true" data-answer="path">/index.html?id1=1&amp;id2=2&amp;t1=Mini%20Web%20Server</div>
+              <div class="dnd-chip" draggable="true" data-answer="version">HTTP/1.1</div>
+              <div class="dnd-chip" draggable="true" data-answer="host">Host: localhost:8443</div>
+              <div class="dnd-chip" draggable="true" data-answer="blank-line">blank line</div>
+              <div class="dnd-chip" draggable="true" data-answer="body">body</div>
+            </div>
+            <div class="dnd-zones">
+              <div class="dnd-zone" data-correct="method">
+                <p class="dnd-zone-label">The action word that says what kind of request this is.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="path">
+                <p class="dnd-zone-label">The destination plus any attached query values.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="version">
+                <p class="dnd-zone-label">The rulebook version the server should validate against.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="host">
+                <p class="dnd-zone-label">The header that tells the server which host and port the browser believes it is reaching.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="blank-line">
+                <p class="dnd-zone-label">The separator that says “stop reading headers now.”</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+              <div class="dnd-zone" data-correct="body">
+                <p class="dnd-zone-label">The payload area that may follow when a request needs to send extra data.</p>
+                <div class="dnd-zone-target">Drop here</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <button class="btn" onclick="checkDnD('dnd-module3')">Check Matches</button>
+              <button class="btn" onclick="resetDnD('dnd-module3')">Reset</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Quick debugger check</h2>
+        <p>You do not need to memorize syntax. You need to know where to look when a request stops making sense.</p>
+
+        <div class="quiz-container" id="quiz-module3">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly. The path lives in the middle field of the request line, between the method and the version."
+               data-explanation-wrong="Not quite. Think about the three-part request line: method first, destination in the middle, version last.">
+            <h3 class="quiz-question">A bug report says the server is reaching the wrong page even though the method is correct. Which part would you inspect first?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The Host header only</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The path section of the request line</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>The blank line after the headers</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Yes. A malformed first line is a classic way to trigger a bad-request response before later stages even run."
+               data-explanation-wrong="Close, but think earlier. A 400 often happens before business logic when the parser cannot trust the incoming structure.">
+            <h3 class="quiz-question">Which malformed input is most likely to cause an immediate 400-style parser failure?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A valid path with many query values</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>An ordinary Host header on port 8443</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>A broken request line that cannot be split into method, path, and version</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Exactly. Version checks protect the parser from applying the wrong expectations to the incoming bytes."
+               data-explanation-wrong="Not quite. The version string matters because it tells the parser which HTTP rules and separators it should trust.">
+            <h3 class="quiz-question">Why is validating the HTTP version worth doing before the request moves deeper into the server?</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because the parser needs to know which message rules it should apply</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because it decides which controller name to call</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Because it automatically generates missing headers</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

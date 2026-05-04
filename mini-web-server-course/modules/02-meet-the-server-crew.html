@@ -1,0 +1,312 @@
+<section class="module" id="module-2" style="background: var(--color-bg-warm);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">Meet the Server Crew</h1>
+      <p class="module-subtitle">Name the main actors so you know where to put new features, fixes, and protocol decisions.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Think of this codebase like a film set</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-6);align-items:start;">
+          <div>
+            <p>On a film set, the director, camera crew, editor, and sound team all touch the same scene, but each role stays narrow. This server does the same thing with <span class="term" data-definition="Architecture is the big-picture layout of a system: which parts exist, what each one owns, and how they connect.">architecture</span>: one part handles <span class="term" data-definition="Startup is the setup phase before real requests arrive. It is where the app decides what features exist and how they are wired together.">startup</span>, another handles networking, and another handles request-time decisions.</p>
+            <p>This is the vocabulary module. When you tell AI "put that in <span class="term" data-definition="Middleware is code that sits in the request path and can inspect, change, or block a request before the final handler runs.">middleware</span>" or "that belongs in the <span class="term" data-definition="A protocol handler is the specialist that understands one wire format, such as HTTP/1.1 or HTTP/2, and turns it into usable request data.">protocol handler</span>," you are really making an architecture decision.</p>
+            <div class="callout callout-accent">
+              <div class="callout-icon">🎬</div>
+              <div class="callout-content">
+                <strong class="callout-title">Aha: small roles make AI prompts sharper</strong>
+                <p>When components have clear jobs, your prompts get precise: "add caching middleware" is much better than "change the server stuff somewhere."</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;gap:var(--space-4);">
+            <div style="background: var(--color-bg-code); color: #CDD6F4; border-radius: var(--radius-md); padding: var(--space-5); box-shadow: var(--shadow-sm);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+                <strong>Startup cue card</strong>
+                <span style="font-size:var(--text-xs);opacity:0.7;letter-spacing:0.08em;text-transform:uppercase;">Program.cs</span>
+              </div>
+              <pre><code>        IMiniApp app = BuildApp(serverBuilder.Services, demoAppConfig, httpsPort); // or server.CreateAppBuilder(); ?
+        app = MapRoutes(app);
+        serverBuilder.AddHost(string.Empty, app);</code></pre>
+            </div>
+
+            <div class="pattern-cards">
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1);">
+                <div class="pattern-icon" style="background: var(--color-actor-1);">🎛️</div>
+                <h4 class="pattern-title">Startup / Program</h4>
+                <p class="pattern-desc">Chooses which features exist before the first request shows up.</p>
+              </div>
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2);">
+                <div class="pattern-icon" style="background: var(--color-actor-2);">🧱</div>
+                <h4 class="pattern-title">MiniApp Builder</h4>
+                <p class="pattern-desc">Stacks reusable app behavior like auth, sessions, and MVC.</p>
+              </div>
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3);">
+                <div class="pattern-icon" style="background: var(--color-actor-3);">🖧</div>
+                <h4 class="pattern-title">MiniWebServer</h4>
+                <p class="pattern-desc">Hosts the app and accepts live client connections.</p>
+              </div>
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4);">
+                <div class="pattern-icon" style="background: var(--color-actor-4);">🔀</div>
+                <h4 class="pattern-title">Protocol Handler Factory</h4>
+                <p class="pattern-desc">Chooses the right reader for each HTTP version.</p>
+              </div>
+              <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5);">
+                <div class="pattern-icon" style="background: var(--color-actor-5);">🛣️</div>
+                <h4 class="pattern-title">Route / Middleware Layer</h4>
+                <p class="pattern-desc">Handles request-time rules and builds the final answer.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Click the architecture diagram like a cast map</h2>
+        <p>This diagram answers the most practical question in architecture work: if you want to change behavior, which actor should own the change?</p>
+
+        <div class="arch-diagram">
+          <div class="arch-zone arch-zone-browser">
+            <h4 class="arch-zone-label">Startup</h4>
+            <div class="arch-component" data-desc="Program.cs is the opening script. It builds the app, maps routes, and adds the host so the whole system can start." onclick="showArchDesc(this)">
+              <div class="arch-icon">🎛️</div>
+              <span>Startup / Program</span>
+            </div>
+            <div class="arch-component" data-desc="The MiniApp builder is where app-level features are stacked together. This is the right home for capabilities that should affect many requests in a consistent way." onclick="showArchDesc(this)">
+              <div class="arch-icon">🧱</div>
+              <span>MiniApp Builder</span>
+            </div>
+          </div>
+          <div class="arch-zone arch-zone-server">
+            <h4 class="arch-zone-label">Core Server</h4>
+            <div class="arch-component" data-desc="MiniWebServer is the network-facing host. It accepts clients and hands each connection off so request processing can begin." onclick="showArchDesc(this)">
+              <div class="arch-icon">🖧</div>
+              <span>MiniWebServer</span>
+            </div>
+            <div class="arch-component" data-desc="The Protocol Handler Factory is the chooser. It looks at the detected HTTP version and returns the right specialist to parse it." onclick="showArchDesc(this)">
+              <div class="arch-icon">🔀</div>
+              <span>Protocol Handler Factory</span>
+            </div>
+          </div>
+          <div class="arch-zone arch-zone-external">
+            <h4 class="arch-zone-label">Request-Time Work</h4>
+            <div class="arch-component" data-desc="The route and middleware layer runs after the server understands the request. This is where auth rules, sessions, static files, MVC, and custom endpoints shape the response." onclick="showArchDesc(this)">
+              <div class="arch-icon">🛣️</div>
+              <span>Route / Middleware Layer</span>
+            </div>
+          </div>
+          <div class="arch-description" id="arch-desc">Click any component to learn what it does.</div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">These are the features the builder plugs in</h2>
+        <p>When the builder wires the app, it is deciding which reusable behaviors every request can use. That is a different kind of decision from request-time business logic.</p>
+
+        <div class="pattern-cards">
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-1);">
+            <div class="pattern-icon" style="background: var(--color-actor-1);">🪪</div>
+            <h4 class="pattern-title">Auth</h4>
+            <p class="pattern-desc">Short for authentication and authorization work. Use this layer when AI should identify the user or check whether a request is allowed.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2);">
+            <div class="pattern-icon" style="background: var(--color-actor-2);">🧾</div>
+            <h4 class="pattern-title">Session</h4>
+            <p class="pattern-desc">A <span class="term" data-definition="A session is a small server-managed memory of a user across multiple requests, like keeping a temporary folder for one visitor.">session</span> keeps a little state around between requests.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-3);">
+            <div class="pattern-icon" style="background: var(--color-actor-3);">📁</div>
+            <h4 class="pattern-title">Static Files</h4>
+            <p class="pattern-desc"><span class="term" data-definition="Static files are assets the server can send as-is, such as images, CSS, or JavaScript files, without custom code running for each one.">Static files</span> are ready-made files the server can hand back directly.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-4);">
+            <div class="pattern-icon" style="background: var(--color-actor-4);">🧭</div>
+            <h4 class="pattern-title">MVC</h4>
+            <p class="pattern-desc"><span class="term" data-definition="MVC stands for Model-View-Controller, a way to organize app code so data, page rendering, and request handling do not all get mixed together.">MVC</span> is the structured page-and-handler layer for larger app behavior.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-5);">
+            <div class="pattern-icon" style="background: var(--color-actor-5);">1️⃣</div>
+            <h4 class="pattern-title">HTTP/1.1</h4>
+            <p class="pattern-desc">One supported <span class="term" data-definition="An HTTP version is the exact rulebook both sides use when speaking over the web.">HTTP version</span>. The factory can choose a handler for it.</p>
+          </div>
+          <div class="pattern-card" style="border-top: 3px solid var(--color-actor-2);">
+            <div class="pattern-icon" style="background: var(--color-actor-2);">2️⃣</div>
+            <h4 class="pattern-title">HTTP/2</h4>
+            <p class="pattern-desc">Another supported rulebook. Keeping version choice isolated makes the rest of the app simpler.</p>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top:var(--space-6);">
+          <div class="callout-icon">🧠</div>
+          <div class="callout-content">
+            <strong class="callout-title">Why this matters for AI prompts</strong>
+            <p>If you want a reusable <span class="term" data-definition="Caching means storing a result so you can reuse it instead of doing the same work again every time.">caching</span> rule, ask for middleware. If you want a new page pattern, ask about MVC. If you want a new protocol, ask about the factory and handler layer.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">See startup wiring and protocol choice in real code</h2>
+        <p>These two snippets show the split clearly: first, startup adds reusable capabilities to the app; later, the factory chooses the right protocol specialist for each connection.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">        appBuilder.UseAuthorization(options =&gt;</span>
+<span class="code-line">        {</span>
+<span class="code-line">            options.Policies.Add(&quot;is-mini-web-server&quot;, policy =&gt; policy.RequireClaimValue(ClaimTypes.NameIdentifier, &quot;mini-web-server&quot;));</span>
+<span class="code-line">            options.Policies.Add(&quot;dev-required&quot;, policy =&gt; policy.RequireClaimValue(ClaimTypes.Role, &quot;Developer&quot;));</span>
+<span class="code-line"></span>
+<span class="code-line">            options.Routes.Add(&quot;/helpcheck&quot;, &quot;is-mini-web-server&quot;, &quot;dev-required&quot;);</span>
+<span class="code-line">        });</span>
+<span class="code-line"></span>
+<span class="code-line">        appBuilder.UseSession();</span>
+<span class="code-line">        appBuilder.UseStaticFiles(&quot;wwwroot&quot;, defaultMaxAge: 7 * 24 * 3600); // defaultMaxAge = 7 days</span>
+<span class="code-line">        appBuilder.UseMvc();</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Start the authorization setup and hand it a configuration object.</p>
+              <p class="tl">Create reusable <span class="term" data-definition="A policy is a named rule the server can reuse, like a saved checklist for what must be true before access is granted.">policies</span> that check for specific <span class="term" data-definition="A claim is a named piece of identity information, like a label on an ID badge saying who you are or what role you have.">claims</span>.</p>
+              <p class="tl">Attach those rules to the <code>/helpcheck</code> route so the route gets protection automatically.</p>
+              <p class="tl">Then add sessions, static-file serving, and MVC as more reusable app capabilities.</p>
+              <p class="tl">This is classic startup wiring: decide what powers the app has before live traffic starts.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">        if (httpVersion == HttpVersions.Http11)</span>
+<span class="code-line">        {</span>
+<span class="code-line">            // in reality we often use default parsers</span>
+<span class="code-line"></span>
+<span class="code-line">            return new Http11ProtocolHandler(config, loggerFactory,</span>
+<span class="code-line">                services.GetService&lt;IHttpComponentParser&gt;() ?? new ByteSequenceHttpParser(loggerFactory),</span>
+<span class="code-line">                services.GetService&lt;ICookieValueParser&gt;() ?? new DefaultCookieParser(),</span>
+<span class="code-line">                protocolHandlerContext</span>
+<span class="code-line">                );</span>
+<span class="code-line">        }</span>
+<span class="code-line">        else if (httpVersion == HttpVersions.Http20)</span>
+<span class="code-line">        {</span>
+<span class="code-line">            return new Http2ProtocolHandler(loggerFactory,</span>
+<span class="code-line">                services.GetService&lt;IHttpComponentParser&gt;() ?? new ByteSequenceHttpParser(loggerFactory),</span>
+<span class="code-line">                services.GetService&lt;ICookieValueParser&gt;() ?? new DefaultCookieParser(),</span>
+<span class="code-line">                protocolHandlerContext</span>
+<span class="code-line">                );</span>
+<span class="code-line">        }</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If the connection is HTTP/1.1, build an HTTP/1.1 protocol handler.</p>
+              <p class="tl">Try to reuse shared services for the <span class="term" data-definition="A parser is code that takes raw text or bytes and turns them into structured pieces the program can work with.">parser</span> pieces; if none are registered, fall back to default ones.</p>
+              <p class="tl">Pass in the handler context so the new object can read from the live connection.</p>
+              <p class="tl">If the connection is HTTP/2 instead, return the HTTP/2 specialist instead of forcing one class to handle every version.</p>
+              <p class="tl">That separation is what lets the server grow new protocol support without bloating one giant class.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Quick check: can you place new work on the right actor?</h2>
+        <p>If you can answer these, you are already better at steering AI than someone who only says "change the server" and hopes for the best.</p>
+
+        <div class="quiz-container" id="quiz-module-2">
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Exactly. A reusable cross-request behavior like caching belongs in middleware, because it can sit in front of many routes without rewriting each one."
+               data-explanation-wrong="Not quite. If the goal is a reusable rule that can affect many requests, middleware is the cleanest home. The protocol layer is too low-level and the listener is too early.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>You want a reusable cache so repeated requests can skip expensive work before the final route runs.</p>
+              </div>
+              <h3 class="quiz-question">Where should that feature live first?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>In middleware attached during app startup</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>Inside the protocol handler factory</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>Inside the raw TCP listener only</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Yes. Supporting a new HTTP version is exactly the sort of choice the protocol handler factory exists to make."
+               data-explanation-wrong="Close, but this choice happens before route logic. The factory is where the server decides which protocol specialist to create.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>Your team wants to support a new HTTP version next month.</p>
+              </div>
+              <h3 class="quiz-question">Which actor should own that decision point?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The MVC layer</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The Protocol Handler Factory</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The session system</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Correct. Static file serving is startup wiring: it is a capability you enable for the whole app before individual requests arrive."
+               data-explanation-wrong="Not quite. This is not per-request business logic. Static file serving is an app capability you enable during startup so many requests can use it.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>You want the server to start serving images and CSS from a folder for the whole app.</p>
+              </div>
+              <h3 class="quiz-question">What kind of code change is this?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>A protocol parsing change</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>A route-specific business rule</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>A startup wiring change in the app builder</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module-2')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module-2')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

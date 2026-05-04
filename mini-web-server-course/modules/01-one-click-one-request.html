@@ -1,0 +1,391 @@
+<section class="module" id="module-1" style="background: var(--color-bg);">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">One Click, One Request</h1>
+      <p class="module-subtitle">Follow one request journey from a browser address bar to the server answer coming back.</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h2 class="screen-heading">A tiny request journey you can actually trace</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-6);align-items:start;">
+          <div>
+            <p>Imagine you open a <span class="term" data-definition="A browser is the app you use to visit websites, like Chrome or Edge. It sends web requests and shows the responses it gets back.">browser</span> and visit <code>/string-api/toupper?text=hello</code>. That sends a <span class="term" data-definition="A request is a message asking a server to do something or send something back. It is like handing a form to a clerk and waiting for the result.">request</span> to a server <span class="term" data-definition="A route is a named path the server watches for, like a street address that points to one specific handler.">route</span> with a <span class="term" data-definition="A query parameter is a small piece of extra data attached to a URL, usually after a question mark. It is a quick way to pass inputs without building a full form.">query parameter</span>.</p>
+            <p>This matters for AI steering because every "add a new endpoint" or "trace the bug" prompt depends on knowing which station in the trip owns the next move.</p>
+            <div class="callout callout-accent">
+              <div class="callout-icon">📦</div>
+              <div class="callout-content">
+                <strong class="callout-title">Aha: servers work by handoffs</strong>
+                <p>A <span class="term" data-definition="A server is the program that listens for incoming requests and sends back responses. You can think of it as the backstage machine behind a website or API.">server</span> is rarely one giant magic function. It is a chain of small parts that each touch the parcel once.</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;gap:var(--space-4);">
+            <div>
+              <h3 style="margin-bottom:var(--space-3);">Three files to keep in your head</h3>
+              <div class="file-tree">
+                <div class="ft-folder open">
+                  <span class="ft-name">MiniWebServer/</span>
+                  <span class="ft-desc">Startup code and the route map live here</span>
+                  <div class="ft-children">
+                    <div class="ft-file">
+                      <span class="ft-name">Program.cs</span>
+                      <span class="ft-desc">Defines the /string-api/toupper route</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="ft-folder open">
+                  <span class="ft-name">MiniWebServer.Server/</span>
+                  <span class="ft-desc">The network-facing parts of the trip</span>
+                  <div class="ft-children">
+                    <div class="ft-file">
+                      <span class="ft-name">MiniWebServer.cs</span>
+                      <span class="ft-desc">Accepts brand-new connections</span>
+                    </div>
+                    <div class="ft-file">
+                      <span class="ft-name">MiniWebClientConnection.cs</span>
+                      <span class="ft-desc">Decides how to read the incoming bytes</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: var(--color-bg-code); color: #CDD6F4; border-radius: var(--radius-md); padding: var(--space-5); box-shadow: var(--shadow-sm);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+                <strong>Doorbell moment</strong>
+                <span style="font-size:var(--text-xs);opacity:0.7;letter-spacing:0.08em;text-transform:uppercase;">MiniWebServer.cs</span>
+              </div>
+              <pre><code>                TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken);
+
+                var connectionId = Interlocked.Increment(ref nextClientId); // this function can be called concurrently (or not?) so we cannot use ++
+
+                logger.LogDebug("New client connected! ClientID = {cid}", connectionId);
+
+                Task t = HandleNewClientConnectionAsync(connectionId, binding, client);</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:var(--space-8);">
+          <h3 style="margin-bottom:var(--space-3);">The six-hop route map</h3>
+          <div class="step-cards">
+            <div class="step-card">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <strong>The browser sends the path and the text value</strong>
+                <p>The request journey starts with a URL that asks for one very specific job: turn text into uppercase.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <strong>The listener notices a new connection</strong>
+                <p>A <span class="term" data-definition="A listener is the part of a server that waits for new network connections. It is like a front desk person watching the door.">listener</span> accepts a new <span class="term" data-definition="A TCP client is one live network connection between a user and a server. It is the communication line the request travels through.">TCP client</span> and gives it an ID.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <strong>The connection object checks the incoming format</strong>
+                <p>This is where the code decides which <span class="term" data-definition="An HTTP version is the flavor of the web protocol being spoken on the connection, such as HTTP/1.1 or HTTP/2.">HTTP version</span> it is dealing with.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">4</div>
+              <div class="step-body">
+                <strong>A protocol handler reads the raw bytes</strong>
+                <p>A <span class="term" data-definition="A protocol handler is a specialist that knows how to read and write one communication format. Here, it turns raw network data into a usable web request.">protocol handler</span> interprets the <span class="term" data-definition="Bytes are the raw tiny pieces of digital data moving through a connection. Before parsing, a request is just bytes on the wire.">bytes</span> instead of guessing.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">5</div>
+              <div class="step-body">
+                <strong>The route handler builds the answer</strong>
+                <p>The app code reads the text input, transforms it, and prepares a <span class="term" data-definition="A response is the message the server sends back after it finishes the job. It contains the content the user finally sees.">response</span>.</p>
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">6</div>
+              <div class="step-body">
+                <strong>The answer travels back the same line</strong>
+                <p>If you ever get the wrong result, you can debug by finding the last hop that still looked healthy.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Watch the cast talk it through</h2>
+        <p>Same request journey, different lens: this is the handoff chain as a group chat. It is a fast way to see who knows what, and that is exactly the vocabulary you need when telling AI where new logic belongs.</p>
+
+        <div class="chat-window" id="chat-module-1">
+          <div class="chat-messages">
+            <div class="chat-message" data-msg="0" data-sender="browser" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">🌐</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">Browser</span>
+                <p>GET /string-api/toupper?text=hello</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="listener" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">👂</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Listener</span>
+                <p>New client arrived. I made a connection ID and passed it along.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="connection" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">🔌</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">Connection Handler</span>
+                <p>Before I parse anything, I need to know which HTTP version is speaking.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="protocol" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">🧠</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">Protocol Handler</span>
+                <p>I know how to read those bytes and turn them into a real request object.</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="4" data-sender="route" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">🛠️</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">Route Handler</span>
+                <p>I built the answer: hello ===&gt; HELLO</p>
+              </div>
+            </div>
+            <div class="chat-message" data-msg="5" data-sender="browser" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">✅</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">Browser</span>
+                <p>Perfect. I can show the final text to the user now.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-typing" id="chat-module-1-typing" style="display:none">
+            <div class="chat-avatar" id="chat-module-1-typing-avatar">…</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">Next Message</button>
+            <button class="btn chat-all-btn">Play All</button>
+            <button class="btn chat-reset-btn">Replay</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Now watch the data itself move</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-6);align-items:start;">
+          <div>
+            <p>A <span class="term" data-definition="Data flow is the path information takes through a system, step by step, from one component to the next.">data flow</span> view is your debugging map. When something breaks, ask: which hop was the last one that definitely worked?</p>
+            <div class="callout callout-info">
+              <div class="callout-icon">🧭</div>
+              <div class="callout-content">
+                <strong class="callout-title">Debugging trick</strong>
+                <p>If AI says "the server is broken," ask it to name the exact hop: listener, connection object, protocol handler, or route. That turns a vague complaint into a real investigation.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-animation" data-steps='[{"highlight":"flow-actor-1","label":"Browser prepares the request"},{"highlight":"flow-actor-1","label":"Browser sends request to MiniWebServer","packet":true,"from":"actor-1","to":"actor-2"},{"highlight":"flow-actor-2","label":"MiniWebServer accepts the TCP client"},{"highlight":"flow-actor-2","label":"MiniWebServer hands connection to MiniWebClientConnection","packet":true,"from":"actor-2","to":"actor-3"},{"highlight":"flow-actor-3","label":"Connection object chooses the right protocol reader","packet":true,"from":"actor-3","to":"actor-4"},{"highlight":"flow-actor-4","label":"Protocol handler turns bytes into a request","packet":true,"from":"actor-4","to":"actor-5"},{"highlight":"flow-actor-5","label":"Route handler creates the uppercase response"},{"highlight":"flow-actor-5","label":"Response returns to the browser","packet":true,"from":"actor-5","to":"actor-1"}]'>
+            <div class="flow-actors">
+              <div class="flow-actor" id="flow-actor-1">
+                <div class="flow-actor-icon">🌐</div>
+                <span>Browser</span>
+              </div>
+              <div class="flow-actor" id="flow-actor-2">
+                <div class="flow-actor-icon">🖧</div>
+                <span>MiniWebServer</span>
+              </div>
+              <div class="flow-actor" id="flow-actor-3">
+                <div class="flow-actor-icon">🔌</div>
+                <span>MiniWebClientConnection</span>
+              </div>
+              <div class="flow-actor" id="flow-actor-4">
+                <div class="flow-actor-icon">📘</div>
+                <span>Http11ProtocolHandler</span>
+              </div>
+              <div class="flow-actor" id="flow-actor-5">
+                <div class="flow-actor-icon">��️</div>
+                <span>Route Handler</span>
+              </div>
+            </div>
+
+            <div class="flow-packet" id="flow-packet"></div>
+            <div class="flow-step-label" id="flow-label">Click &quot;Next Step&quot; to begin</div>
+
+            <div class="flow-controls">
+              <button class="btn flow-next-btn">Next Step</button>
+              <button class="btn flow-reset-btn">Restart</button>
+              <span class="flow-progress"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Open the two most important code moments</h2>
+        <p>The route snippet is where the visible answer is created. The connection snippet is where the server decides how to interpret the wire-level message before any route logic can run.</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">        app.MapGet(&quot;/string-api/toupper&quot;, (context, cancellationToken) =&gt;</span>
+<span class="code-line">        {</span>
+<span class="code-line">            string p = context.Request.QueryParameters[&quot;text&quot;].Value ?? string.Empty;</span>
+<span class="code-line"></span>
+<span class="code-line">            context.Response.Content = new MiniApp.Content.StringContent(p + &quot; ===&gt; &quot; + p.ToUpper());</span>
+<span class="code-line"></span>
+<span class="code-line">            return Task.CompletedTask;</span>
+<span class="code-line">        });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">Create a GET route for one exact path: <code>/string-api/toupper</code>.</p>
+              <p class="tl">When that path is hit, open a handler with the request <span class="term" data-definition="Context is the bundle of useful information passed into a handler, such as the request, the response, and related helpers.">context</span> already attached.</p>
+              <p class="tl">Pull out the <code>text</code> input. If it is missing, quietly use an empty string instead of crashing.</p>
+              <p class="tl">Build the answer content by joining the original text and its uppercase version.</p>
+              <p class="tl">Finish the handler. There is no extra background work to wait for here.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line">            if (httpVersion == HttpVersions.Http20) // skip MAGIC string</span>
+<span class="code-line">            {</span>
+<span class="code-line">                requestPipeReader.AdvanceTo(buffer.GetPosition(HTTP2_MAGIC.Length));</span>
+<span class="code-line">            }</span>
+<span class="code-line"></span>
+<span class="code-line">            var protocolConfig = new ProtocolHandlerConfiguration(httpVersion, config.MaxRequestBodySize);</span>
+<span class="code-line">            var protocolHandlerContext = new ProtocolHandlerContext()</span>
+<span class="code-line">            {</span>
+<span class="code-line">                PipeReader = requestPipeReader,</span>
+<span class="code-line">                Stream = config.ClientStream</span>
+<span class="code-line">            };</span>
+<span class="code-line"></span>
+<span class="code-line">            var protocolHandler = protocolHandlerFactory.Create(httpVersion, protocolConfig, protocolHandlerContext);</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN ENGLISH</span>
+            <div class="translation-lines">
+              <p class="tl">If the connection is speaking HTTP/2, skip past its special opening marker before reading the rest.</p>
+              <p class="tl">Build a small config object that says which HTTP version we saw and how large a request body is allowed.</p>
+              <p class="tl">Create a handler context that carries the <span class="term" data-definition="A stream is a live flow of data moving through a connection. It is like water moving through a pipe while you are still using it.">stream</span> and the reader that pulls bytes from it.</p>
+              <p class="tl">Ask the factory to create the right protocol handler for this connection, instead of hard-coding one reader for every case.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h2 class="screen-heading">Quick check: can you steer the journey now?</h2>
+        <p>These are not memory questions. They are the kinds of choices you make when you ask AI to change behavior or when you debug a broken request journey.</p>
+
+        <div class="quiz-container" id="quiz-module-1">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly. A new endpoint starts in the route layer, because that is where the app maps a path to a handler."
+               data-explanation-wrong="Not quite. The request must reach the route layer before anything can transform the text, so the first change belongs where routes are mapped.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>You want a new URL: <code>/string-api/reverse?text=hello</code>. Where should AI add the first real behavior change?</p>
+              </div>
+              <h3 class="quiz-question">Which layer owns that job?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The browser UI that sent the request</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>A new <code>MapGet</code> route in the app layer</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The TCP listener that accepts connections</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Yes. The listener in MiniWebServer is the first part that notices a brand-new client and assigns a connection ID."
+               data-explanation-wrong="Close, but later than necessary. If you want to log a connection before parsing, the first useful place is the listener that accepts the client.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>You need a log line that says a new client connected, even if request parsing fails one second later.</p>
+              </div>
+              <h3 class="quiz-question">What part notices that first?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The listener inside MiniWebServer</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The route handler in Program.cs</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The browser after it renders the result</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Exactly. The connection and protocol-selection layer decides how raw bytes should be interpreted before route code can run."
+               data-explanation-wrong="Not this time. A wrong protocol choice happens before the route handler can help, because the server must first understand the bytes on the wire.">
+            <div class="scenario-block">
+              <div class="scenario-context">
+                <span class="scenario-label">Scenario</span>
+                <p>A request works in one HTTP version but fails in another. The server seems confused before it even reaches your route.</p>
+              </div>
+              <h3 class="quiz-question">Which layer is the smartest first place to inspect?</h3>
+              <div class="quiz-options">
+                <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The browser tab, because that is where the request started</span>
+                </button>
+                <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The route handler, because it builds the visible answer</span>
+                </button>
+                <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                  <div class="quiz-option-radio"></div>
+                  <span>The connection and protocol handler selection stage</span>
+                </button>
+              </div>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module-1')">Check Answers</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module-1')">Try Again</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
