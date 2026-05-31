@@ -30,9 +30,8 @@ public class HttpResponseHeaders : HttpHeaders
         }
         set
         {
-            ArgumentNullException.ThrowIfNull(nameof(value));
-            if (value != null)
-                AddOrUpdate("Connection", value);
+            ArgumentNullException.ThrowIfNull(value);
+            AddOrUpdate("Connection", value);
         }
     }
     public string? ContentType
@@ -43,9 +42,8 @@ public class HttpResponseHeaders : HttpHeaders
         }
         set
         {
-            ArgumentNullException.ThrowIfNull(nameof(value));
-            if (value != null)
-                AddOrUpdate("Content-Type", value);
+            ArgumentNullException.ThrowIfNull(value);
+            AddOrUpdate("Content-Type", value);
         }
     }
     public string? ContentEncoding
@@ -56,9 +54,8 @@ public class HttpResponseHeaders : HttpHeaders
         }
         set
         {
-            ArgumentNullException.ThrowIfNull(nameof(value));
-            if (value != null)
-                AddOrUpdate("Content-Encoding", value);
+            ArgumentNullException.ThrowIfNull(value);
+            AddOrUpdate("Content-Encoding", value);
         }
     }
 
@@ -70,9 +67,8 @@ public class HttpResponseHeaders : HttpHeaders
         }
         set
         {
-            ArgumentNullException.ThrowIfNull(nameof(value));
-            if (value != null)
-                AddOrUpdate("Location", value);
+            ArgumentNullException.ThrowIfNull(value);
+            AddOrUpdate("Location", value);
         }
     }
 
@@ -84,9 +80,8 @@ public class HttpResponseHeaders : HttpHeaders
         }
         set
         {
-            ArgumentNullException.ThrowIfNull(nameof(value));
-            if (value != null)
-                AddOrUpdate("Sec-WebSocket-Accept", value);
+            ArgumentNullException.ThrowIfNull(value);
+            AddOrUpdate("Sec-WebSocket-Accept", value);
         }
     }
 

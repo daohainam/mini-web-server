@@ -21,7 +21,7 @@ public class MvcMiddleware : IMiddleware
 
     public MvcMiddleware(MvcOptions options, IViewEngine viewEngine, ILoggerFactory loggerFactory, IServiceProvider serviceProvider)
     {
-        ArgumentNullException.ThrowIfNull(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
         this.serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
         logger = loggerFactory != null ? loggerFactory.CreateLogger<MvcMiddleware>() : NullLogger<MvcMiddleware>.Instance;

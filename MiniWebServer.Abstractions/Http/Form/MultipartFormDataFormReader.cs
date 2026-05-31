@@ -45,7 +45,7 @@ public class MultipartFormDataFormReader : IFormReader
     {
         if (form == null)
         {
-            throw new NullReferenceException("form must be not null");
+            throw new InvalidOperationException("form must be not null");
         }
 
         logger.LogDebug("Found file: {p}, fileName: {fn}", name, fileName);
@@ -55,7 +55,7 @@ public class MultipartFormDataFormReader : IFormReader
     {
         if (form == null)
         {
-            throw new NullReferenceException("form must be not null");
+            throw new InvalidOperationException("form must be not null");
         }
 
         logger.LogDebug("Found parameter: {p}={v}", part.Name, part.Data);

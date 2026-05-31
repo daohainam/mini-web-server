@@ -89,7 +89,7 @@ public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
 
-        var idx = headers.FindIndex(x => x.Name == name);
+        var idx = headers.FindIndex(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (idx != -1)
         {
             var header = new HttpHeader(name, value);
@@ -113,7 +113,7 @@ public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
 
-        var idx = headers.FindIndex(x => x.Name == name);
+        var idx = headers.FindIndex(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (idx != -1)
         {
             var header = new HttpHeader(name, value);
@@ -136,7 +136,7 @@ public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>
     {
         ArgumentNullException.ThrowIfNull(header);
 
-        var idx = headers.FindIndex(x => x.Name == header.Name);
+        var idx = headers.FindIndex(x => x.Name.Equals(header.Name, StringComparison.OrdinalIgnoreCase));
         if (idx != -1)
         {
             headers[idx] = header;
@@ -157,7 +157,7 @@ public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>
 
         foreach (var header in headers)
         {
-            var idx = this.headers.FindIndex(x => x.Name == header.Name);
+            var idx = this.headers.FindIndex(x => x.Name.Equals(header.Name, StringComparison.OrdinalIgnoreCase));
             if (idx != -1)
             {
                 this.headers[idx] = header;
@@ -179,7 +179,7 @@ public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
 
-        var idx = headers.FindIndex(x => x.Name == name);
+        var idx = headers.FindIndex(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (idx == -1)
         {
             var header = new HttpHeader(name, value);
@@ -196,7 +196,7 @@ public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
 
-        var idx = headers.FindIndex(x => x.Name == name);
+        var idx = headers.FindIndex(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         if (idx == -1)
         {
             var header = new HttpHeader(name, value);
@@ -212,7 +212,7 @@ public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>
     {
         ArgumentNullException.ThrowIfNull(header);
 
-        var idx = headers.FindIndex(x => x.Name == header.Name);
+        var idx = headers.FindIndex(x => x.Name.Equals(header.Name, StringComparison.OrdinalIgnoreCase));
         if (idx == -1)
         {
             headers.Add(header);
@@ -226,11 +226,14 @@ public class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        var idx = headers.FindIndex(header => header.Name == name);
-        var header = headers[idx];
-        headers.RemoveAt(idx);
+        var idx = headers.FindIndex(header => header.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (idx != -1)
+        {
+            var header = headers[idx];
+            headers.RemoveAt(idx);
 
-        OnHeaderRemoved(header);
+            OnHeaderRemoved(header);
+        }
 
         return this;
     }
