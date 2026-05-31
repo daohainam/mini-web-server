@@ -157,7 +157,7 @@ public class MiniWebClientConnection
                                 readBodyCancellationTokenSource.Cancel();
 
                                 // todo: here we need to find a proper way to stop reading body after calling to middlewares and endpoints finished
-                                Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
+                                await Task.WhenAll(readBodyTask, callMethodTask);
 #if DEBUG
                                 logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, requestId);
 #endif
@@ -237,7 +237,7 @@ public class MiniWebClientConnection
 
             readBodyCancellationTokenSource.Cancel();
 
-            Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
+            await Task.WhenAll(readBodyTask, callMethodTask);
 #if DEBUG
             logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, request.RequestId);
 #endif

@@ -34,7 +34,7 @@ internal class Http2FrameWriter
 
     public static int SerializeSETTINGSFrame(Http2Frame frame, IEnumerable<Http2FrameSETTINGSItem> settingItems, byte[] writePayload)
     {
-        ArgumentNullException.ThrowIfNull(nameof(frame));
+        ArgumentNullException.ThrowIfNull(frame);
 
         if (writePayload.Length < (9 + (settingItems.Count() * 6)))
         {
@@ -65,7 +65,7 @@ internal class Http2FrameWriter
 
     public static int SerializePINGFrame(Http2Frame frame, byte[] opaqueData, byte[] writePayload)
     {
-        ArgumentNullException.ThrowIfNull(nameof(frame));
+        ArgumentNullException.ThrowIfNull(frame);
 
         if (opaqueData.Length != PING_OPAQUE_DATA_SIZE)
         {

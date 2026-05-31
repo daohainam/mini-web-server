@@ -23,7 +23,7 @@ public abstract class Controller : IController
         }
         set
         {
-            ArgumentNullException.ThrowIfNull(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             controllerContext = value;
         }
