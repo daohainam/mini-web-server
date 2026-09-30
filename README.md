@@ -1,6 +1,5 @@
 # Mini-Web-Server
 **(English below)**
-(tài liệu này được viết dựa trên phiên bản [0.3.2](https://github.com/daohainam/mini-web-server/tree/ba1af65b9a1e3a8f73e97a6c3541f831911469ac))
 
 Trang web demo chạy trên Mini-Web-Server: https://www.mini-web-server.com
 
@@ -9,25 +8,49 @@ Chào mừng đến với Mini-Web-Server, dự án được tạo với mục �
 Mini-Web-Server, gọi tắt là Mini là một máy chủ web, với các tính năng:
 - Hiệu năng cao, sử dụng bộ nhớ hiệu quả.
 - Hỗ trợ multihost, cho phép cung cấp nội dung khác nhau đến các domain khác nhau.
-- Hỗ trợ HTTPS, HTTP 1.1, WebSocket và cung cấp khả năng nâng thêm lên HTTP/2, HTTP/3. (*HTTP/2 đang được implement trong branch http2*)
+- Hỗ trợ HTTPS, HTTP/1.1 và WebSocket.
 - Dễ dàng mở rộng tính năng qua cơ chế Middleware.
 - Cho phép nhúng vào các ứng dụng khác một cách dễ dàng.
 - Hỗ trợ Authorization, Session, Hsts, Https redirection, Mvc, caching...
 - Cung cấp các API cho phép phát triển các ứng dụng dựa trên các handler đơn giản hoặc MVC (gọi là các MiniApp).
-- ...
 
 # Tổng quan về dự án
-- Dự án được phát triển trên .NET 8, có thể chạy trên tất cả các nền tảng mà .NET 8 hỗ trợ.
+- Dự án nhắm đến .NET 10 và cần .NET 10 SDK để build.
 - Sử dụng tối thiểu các thư viện bên ngoài, kể cả các thư viện hỗ trợ HTTP từ .NET SDK.
 - Dự án được đánh dấu qua các [tags](https://github.com/daohainam/mini-web-server/tags), giúp người đọc dễ dàng hơn khi tham khảo các tài nguyên.
 - Mục đích chính của dự án là tạo bộ học liệu để học về các chủ đề nâng cao (multithreading, OOAD, networking, HTTP protocol, design patterns...), tuy nhiên vẫn phải đủ mạnh và cung cấp đầy đủ tính năng để triển khai như một web server backend phía sau các reversed proxy.
+
+## Bắt đầu
+Từ thư mục gốc của repository, dùng .NET 10 SDK để restore, build và chạy các bài kiểm thử:
+
+```sh
+dotnet restore
+dotnet build --configuration Release --no-restore
+dotnet test --configuration Release --no-build
+```
+
+Chương trình mẫu nằm trong `MiniWebServer/`. Cấu hình mặc định lắng nghe tại `http://127.0.0.1:8080`; có thể chạy bằng:
+
+```sh
+dotnet run --project MiniWebServer/MiniWebServer.csproj
+```
+
+Sau khi khởi động, thử endpoint `http://127.0.0.1:8080/string-api/toupper?text=hello`.
+
+## Cấu trúc repository
+- `MiniWebServer.Abstractions/`, `MiniWebServer.Server.Abstractions/`: các abstraction cho HTTP và server.
+- `MiniWebServer.HttpParser/`, `MiniWebServer.Server/`: phân tích giao thức, protocol handler và server.
+- `MiniWebServer.MiniApp/`, `MiniWebServer.Mvc.Abstraction/`: API cho MiniApp và MVC.
+- `Middleware/`: các middleware như Authentication, Authorization, MVC, Session, StaticFiles và WebSocket.
+- `MiniWebServer/`: chương trình server mẫu và nội dung demo.
+- `Tests/`: các project kiểm thử.
+- [`mini-web-server-course/`](mini-web-server-course/index.html): khóa học tương tác giới thiệu cách một request đi qua server.
 
 # Cấu trúc các thành phần trong solution:
 Các dự án trong solution được chia thành các nhóm sau:
 - Cung cấp các lớp trừu tượng cho giao thức HTTP và các thành phần liên quan (MiniWebServer.Abstractions).
 - Cung cấp các lớp trừu tượng cho việc tổ chức các thành phần bên trong server (MiniWebServer.Server.Abstractions).
-- Cung cấp các trình xử lý dòng dữ liệu (protocol handler) và tạo ra các request, response (MiniWebServer.HttpParser, MiniWebServer.Server/ProtocolHandlers
-/Http11).
+- Cung cấp các trình xử lý dòng dữ liệu (protocol handler) và tạo ra các request, response (MiniWebServer.HttpParser, MiniWebServer.Server/ProtocolHandlers).
 - Cung cấp các lớp trừu tượng và các mô hình dữ liệu cho các API (API cung cấp bởi Mini-Web-Server) (MiniWebServer.MiniApp).
 - Server để kết nối mọi thứ lại (quản lý các connection, gọi các protocol handler, kết nối các request/response, tìm các trình xử lý request, xây dựng chuỗi middleware, gọi các middleware và trả response về cho protocol handler) (MiniWebServer.Server).
 - Các lớp tiện ích (MimeMapping, MiniWebServer.Configuration, MiniWebServer.Helpers).
@@ -56,7 +79,6 @@ Các dự án trong solution được chia thành các nhóm sau:
 
 [**English**]
 # Mini-Web-Server
-(this document is based on version [0.3.2](https://github.com/daohainam/mini-web-server/tree/ba1af65b9a1e3a8f73e97a6c3541f831911469ac))
 A demo web site running on Mini-Web-Server can be found at: https://www.mini-web-server.com
 
 Welcome to Mini-Web-Server, a project created with the purpose of helping junior developers upgrade to seniors!
@@ -64,18 +86,43 @@ Welcome to Mini-Web-Server, a project created with the purpose of helping junior
 Mini-Web-Server - aka Mini, is a web server, with many features:
 - High performance, memory use optimized.
 - Multi host supported, allowing to serve different contents to different domains.
-- Support HTTPS, HTTP 1.1, WebSocket and provide the ability to upgrade to support HTTP/2, HTTP/3. (*HTTP/2 is being implemented http2 branch*)
+- Supports HTTPS, HTTP/1.1, and WebSockets.
 - Easy to add more features, thanks to Middleware support.
 - Easy to embed to other apps.
 - Support Authorization, Session, Hsts, Https redirection, Mvc, caching...
 - Support writing MiniApp or Mvc app to serve dynamic content. (similar to ASP.NET apps)
-- ...
 
 # Project Overview
-- Built with .NET 8, capable of running on all platforms supported by .NET 8.
+- Targets .NET 10; the .NET 10 SDK is required to build the project.
 - Minimize using 3rd party libraries, including standard HTTP libraries from .NET SDK.
 - Marked with [tags](https://github.com/daohainam/mini-web-server/tags) to make it easier for readers to reference the resources. 
 - The main purpose of the project is to create a learning resource to study advanced topics, such as multithreading, OOAD, networking, HTTP protocol, design patterns... However, it must be robust and feature-complete enough to be deployed as a web server backend behind reverse proxies.
+
+## Getting started
+From the repository root, restore dependencies, build, and run the test suite with the .NET 10 SDK:
+
+```sh
+dotnet restore
+dotnet build --configuration Release --no-restore
+dotnet test --configuration Release --no-build
+```
+
+The sample server is in `MiniWebServer/`. Its default configuration listens at `http://127.0.0.1:8080`; start it with:
+
+```sh
+dotnet run --project MiniWebServer/MiniWebServer.csproj
+```
+
+Then try `http://127.0.0.1:8080/string-api/toupper?text=hello`.
+
+## Repository layout
+- `MiniWebServer.Abstractions/`, `MiniWebServer.Server.Abstractions/`: HTTP and server abstractions.
+- `MiniWebServer.HttpParser/`, `MiniWebServer.Server/`: protocol parsing, protocol handlers, and the server.
+- `MiniWebServer.MiniApp/`, `MiniWebServer.Mvc.Abstraction/`: MiniApp and MVC APIs.
+- `Middleware/`: middleware such as Authentication, Authorization, MVC, Session, StaticFiles, and WebSocket.
+- `MiniWebServer/`: sample server and demo content.
+- `Tests/`: test projects.
+- [`mini-web-server-course/`](mini-web-server-course/index.html): an interactive course following a request through the server.
 
 # Tham khảo/References
 [^builder-pattern]: https://refactoring.guru/design-patterns/builder
