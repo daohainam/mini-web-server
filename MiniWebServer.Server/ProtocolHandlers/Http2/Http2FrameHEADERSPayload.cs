@@ -1,28 +1,20 @@
-using MiniWebServer.Abstractions.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Buffers;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2;
 
-public class Http2FrameHEADERSPayload
+/// <summary>
+/// The fields of a HEADERS frame payload (RFC 9113 6.2) with padding and the optional priority fields stripped off.
+/// </summary>
+public sealed class Http2FrameHEADERSPayload
 {
-    public byte PadLength { get; set; }
-    public bool Exclusive { get; set; }
-    public uint StreamDependency { get; set; }
-    public byte Weight { get; set; }    
-    public object? FieldBlockFragment { get; set; }
-    public List<HPACKHeader> Headers { get; set; } = [];
+    public byte PadLength { get; init; }
+    public bool HasPriority { get; init; }
+    public bool Exclusive { get; init; }
+    public uint StreamDependency { get; init; }
+    public byte Weight { get; init; }
 
-    // there will be a Padding in a HEADERS frame, but we don't need to process it
-
-    public static readonly Http2FrameHEADERSPayload Empty = new() {
-        PadLength = 0,
-        Exclusive = false,
-        StreamDependency = 0,
-        Weight = 0,
-        FieldBlockFragment = null
-    };
+    /// <summary>
+    /// The HPACK header block fragment carried by this frame. It is only a fragment, CONTINUATION frames may follow.
+    /// </summary>
+    public ReadOnlySequence<byte> FieldBlockFragment { get; init; }
 }

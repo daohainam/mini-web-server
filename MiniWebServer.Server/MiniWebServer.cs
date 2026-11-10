@@ -64,8 +64,10 @@ public class MiniWebServer : BackgroundService, IServer
 
                 SslServerAuthenticationOptions options = new()
                 {
+                    // RFC 9113 3.3: HTTP/2 over TLS is negotiated with the "h2" ALPN identifier, HTTP/1.1 stays available as fallback
                     ApplicationProtocols =
                     [
+                        SslApplicationProtocol.Http2,
                         SslApplicationProtocol.Http11
                     ],
                     ServerCertificate = binding.Certificate,

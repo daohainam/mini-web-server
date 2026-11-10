@@ -66,6 +66,14 @@ public class MiniWebClientConnection
             ReadResult readResult = await requestPipeReader.ReadAsync(cancellationToken);
             ReadOnlySequence<byte> buffer = readResult.Buffer;
 
+            // the HTTP/2 connection preface (RFC 9113 3.4) may arrive in more than one segment
+            while (!readResult.IsCompleted && buffer.Length < HTTP2_MAGIC.Length && IsHttp2MagicPrefix(buffer))
+            {
+                requestPipeReader.AdvanceTo(buffer.Start, buffer.End);
+                readResult = await requestPipeReader.ReadAsync(cancellationToken);
+                buffer = readResult.Buffer;
+            }
+
             HttpVersions httpVersion = TryGetHttpVersion(buffer);
             if (httpVersion != HttpVersions.Http11 && httpVersion != HttpVersions.Http20)
             {
@@ -118,11 +126,15 @@ public class MiniWebClientConnection
                     {
                         isKeepAlive = false; // we always close wrongly working connections
 
-                        var response = new HttpResponse(HttpResponseCodes.BadRequest, config.ClientStream);
+                        if (httpVersion == HttpVersions.Http11)
+                        {
+                            var response = new HttpResponse(HttpResponseCodes.BadRequest, config.ClientStream);
 
-                        cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
-                        logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
-                        await SendResponseAsync(response, protocolHandler, cancellationToken);
+                            cancellationTokenSource.CancelAfter(config.SendResponseTimeout);
+                            logger.LogDebug("[{cid}] - Sending back response...", ConnectionId); // send back Bad Request
+                            await SendResponseAsync(null, response, protocolHandler, cancellationToken);
+                        }
+                        // in HTTP/2 the protocol handler has already sent GOAWAY (or the peer closed), in-flight responses still finish below
 
                         break;
                     }
@@ -185,7 +197,7 @@ public class MiniWebClientConnection
 #if DEBUG
                                 logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, requestId);
 #endif
-                                await SendResponseAsync(response, protocolHandler, cancellationToken);
+                                await SendResponseAsync(request, response, protocolHandler, cancellationToken);
                             }
                         }
                         else
@@ -195,7 +207,8 @@ public class MiniWebClientConnection
                             var request = requestBuilder.Build();
                             var response = new HttpResponse(HttpResponseCodes.NotFound, config.ClientStream);
 
-                            dispatchTasks.Add(DispatchRequestAsync(connectionContext, request, response, requestPipeReader, protocolHandler, cancellationToken));
+                            // the request runs on the thread pool so the frame demultiplexer in ReadRequestAsync keeps draining the connection
+                            dispatchTasks.Add(Task.Run(() => DispatchRequestAsync(connectionContext, request, response, requestPipeReader, protocolHandler, cancellationToken), cancellationToken));
                         }
                     }
                 }
@@ -230,14 +243,11 @@ public class MiniWebClientConnection
             logger.LogDebug("[{cid}][{rid}] - Processing request...", ConnectionId, request.RequestId);
 #endif
 
-            // now we continue reading body part
-            using CancellationTokenSource readBodyCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, readBodyCancellationTokenSource.Token);
+            // the body is delivered by the protocol handler's frame demultiplexer, ReadBodyAsync only completes the pipeline if needed
+            Task readBodyTask = protocolHandler.ReadBodyAsync(requestPipeReader, request, cancellationToken);
             Task callMethodTask = CallByMethod(connectionContext, app, request, response, cancellationToken);
 
-            readBodyCancellationTokenSource.Cancel();
-
-            Task.WaitAll([readBodyTask, callMethodTask], cancellationToken);
+            await Task.WhenAll(readBodyTask, callMethodTask);
 #if DEBUG
             logger.LogDebug("[{cid}][{rid}] - Done processing request...", ConnectionId, request.RequestId);
 #endif
@@ -246,7 +256,14 @@ public class MiniWebClientConnection
 #if DEBUG
         logger.LogDebug("[{cid}][{rid}] - Sending back response...", ConnectionId, request.RequestId);
 #endif
-        await SendResponseAsync(response, protocolHandler, cancellationToken);
+        try
+        {
+            await SendResponseAsync(request, response, protocolHandler, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "[{cid}][{rid}] - Error sending response", ConnectionId, request.RequestId);
+        }
     }
 
     private MiniAppConnectionContext BuildMiniAppConnectionContext()
@@ -256,9 +273,9 @@ public class MiniWebClientConnection
         return connectionContext;
     }
 
-    private async Task SendResponseAsync(HttpResponse response, IProtocolHandler protocolHandler, CancellationToken cancellationToken)
+    private static async Task SendResponseAsync(HttpRequest? request, HttpResponse response, IProtocolHandler protocolHandler, CancellationToken cancellationToken)
     {
-        await protocolHandler.WriteResponseAsync(response, cancellationToken);
+        await protocolHandler.WriteResponseAsync(request, response, cancellationToken);
 
         await response.Stream.FlushAsync(cancellationToken);
     }
@@ -340,6 +357,12 @@ public class MiniWebClientConnection
 
         // user will be set by Authentication middleware, we don't do anything here
         return new MiniAppContext(connectionContext, app, request, response, session, null);
+    }
+
+    private static bool IsHttp2MagicPrefix(ReadOnlySequence<byte> buffer)
+    {
+        var span = ToSpan(buffer);
+        return HTTP2_MAGIC.AsSpan(0, span.Length).SequenceEqual(span);
     }
 
     private static HttpVersions TryGetHttpVersion(ReadOnlySequence<byte> buffer)

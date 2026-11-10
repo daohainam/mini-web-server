@@ -1,125 +1,128 @@
 using Microsoft.Extensions.Logging;
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2;
 
 public partial class Http2ProtocolHandler
 {
-    private bool ProcessSETTINGSFrame(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, out Http2FrameSETTINGSItem[] settings)
+    private async Task ProcessSETTINGSFrameAsync(Http2Frame frame, ReadOnlySequence<byte> payload, CancellationToken cancellationToken)
     {
+        // RFC 9113 6.5
         if (frame.StreamIdentifier != 0)
         {
-            logger.LogError("Stream identifier for a SETTINGS frame MUST be zero");
-            settings = [];
-            return false;
-        }
-
-        if (!Http2FrameReader.TryReadSETTINGSFramePayload(ref payload, out settings))
-        {
-            return false;
-        }
-
-        if (logger.IsEnabled(LogLevel.Debug))
-        {
-            logger.LogDebug("Found {n} settings in payload", settings.Length);
-        }
-
-        foreach (var key in settings)
-        {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug("{id}: {v}", key.Identifier, key.Value);
-            }
-
-            if (!ProcessSETTINGSItem(key.Identifier, key.Value))
-            {
-                return false;
-            }
+            throw new Http2ConnectionException(Http2ErrorCode.PROTOCOL_ERROR, "SETTINGS frames must use stream identifier 0");
         }
 
         if (frame.Flags.HasFlag(Http2FrameFlags.ACK))
         {
-            logger.LogDebug("Received a SETTINGS_ACK frame");
-        }
-        else
-        {
-            // send an ACK back
-            var settingFrame = new Http2Frame()
+            if (payload.Length != 0)
             {
-                FrameType = Http2FrameType.SETTINGS,
-                Flags = Http2FrameFlags.ACK
-            };
-
-            var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-            int length = Http2FrameWriter.SerializeSETTINGSFrame(settingFrame, [], writePayload);
-            if (length > 0)
-            {
-                protocolHandlerContext.Stream.Write(writePayload, 0, length);
+                throw new Http2ConnectionException(Http2ErrorCode.FRAME_SIZE_ERROR, "A SETTINGS frame with the ACK flag must have an empty payload");
             }
 
-            ArrayPool<byte>.Shared.Return(writePayload);
+            logger.LogDebug("Received SETTINGS ACK");
+            return;
         }
 
-        return true;
+        if (!Http2FrameReader.TryReadSETTINGSFramePayload(ref payload, out var settings))
+        {
+            throw new Http2ConnectionException(Http2ErrorCode.FRAME_SIZE_ERROR, "SETTINGS payload length must be a multiple of 6");
+        }
+
+        foreach (var setting in settings)
+        {
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug("Peer setting {id} = {v}", setting.Identifier, setting.Value);
+            }
+
+            ApplyPeerSetting(setting.Identifier, setting.Value);
+        }
+
+        // RFC 9113 6.5.3: the receiver must acknowledge every SETTINGS frame it applied
+        var ackFrame = new Http2Frame { FrameType = Http2FrameType.SETTINGS, Flags = Http2FrameFlags.ACK };
+        var buffer = ArrayPool<byte>.Shared.Rent(Http2FrameWriter.FrameHeaderLength);
+        try
+        {
+            int length = Http2FrameWriter.SerializeSETTINGSFrame(ackFrame, [], buffer);
+            await WriteFrameAsync(buffer.AsMemory(0, length), cancellationToken);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
-    private bool ProcessSETTINGSItem(Http2FrameSettings identifier, uint value)
+    private void ApplyPeerSetting(Http2FrameSettings identifier, uint value)
     {
+        // RFC 9113 6.5.2, every one of these describes what the peer is willing to receive
         switch (identifier)
         {
-            case Http2FrameSettings.SETTINGS_ENABLE_PUSH:
-                if (value != 0)
-                {
-                    logger.LogInformation("Server Push is not supported"); // PUSH_PROMISE is not supported (it is deprecated by Chrome)
-                }
-                break;
-            case Http2FrameSettings.SETTINGS_MAX_CONCURRENT_STREAMS:
-                logger.LogInformation("Max_concurrent_streams = {m}", value); // 0 is also accepted, but it will prevent creating new streams
-                maxConcurrentStreams = value;
-                break;
-            case Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE:
-                if (value >= 16_384 && value <= 16_777_215)
-                {
-                    logger.LogInformation("MAX_FRAME_SIZE = {m}", value);
-                    maxFrameSize = value;
-                }
-                else
-                {
-                    logger.LogError("Invalid MAX_FRAME_SIZE: {m}", value);
-                    return false;
-                }
-                break;
-            case Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE:
-                if (value <= 2_147_483_647) // Values above the maximum flow-control window size of (2^31)-1 MUST be treated as a connection error
-                {
-                    logger.LogInformation("INITIAL_WINDOW_SIZE = {m}", value);
-                    initialWindowSize = value;
-                }
-                else
-                {
-                    logger.LogError("Invalid INITIAL_WINDOW_SIZE: {m}", value);
-                    return false;
-                }
-                break;
             case Http2FrameSettings.SETTINGS_HEADER_TABLE_SIZE:
-                if (value >= 1_024 && value <= 16_384) 
+                // the size of the dynamic table our encoder may use, any value is valid
+                encoder.SetPeerMaxTableSize((int)Math.Min(value, int.MaxValue));
+                break;
+
+            case Http2FrameSettings.SETTINGS_ENABLE_PUSH:
+                if (value > 1)
                 {
-                    logger.LogInformation("HEADER_TABLE_SIZE = {m}", value);
-                    headerTableSize = value;
+                    throw new Http2ConnectionException(Http2ErrorCode.PROTOCOL_ERROR, $"Invalid SETTINGS_ENABLE_PUSH value {value}");
                 }
-                else
+                break;
+
+            case Http2FrameSettings.SETTINGS_MAX_CONCURRENT_STREAMS:
+                peerMaxConcurrentStreams = value;
+                break;
+
+            case Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE:
+                if (value > Http2ProtocolHandlerOptions.MaxWindowSize)
                 {
-                    logger.LogError("Invalid HEADER_TABLE_SIZE: {m}", value);
-                    return false;
+                    throw new Http2ConnectionException(Http2ErrorCode.FLOW_CONTROL_ERROR, $"Invalid SETTINGS_INITIAL_WINDOW_SIZE value {value}");
                 }
+
+                UpdatePeerInitialWindowSize(value);
+                break;
+
+            case Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE:
+                if (value < Http2ProtocolHandlerOptions.MinMaxFrameSize || value > Http2ProtocolHandlerOptions.MaxMaxFrameSize)
+                {
+                    throw new Http2ConnectionException(Http2ErrorCode.PROTOCOL_ERROR, $"Invalid SETTINGS_MAX_FRAME_SIZE value {value}");
+                }
+
+                peerMaxFrameSize = value;
+                break;
+
+            case Http2FrameSettings.SETTINGS_MAX_HEADER_LIST_SIZE:
+                peerMaxHeaderListSize = value;
+                break;
+
+            default:
+                // unknown or unsupported settings must be ignored
                 break;
         }
+    }
 
-        return true;
+    private void UpdatePeerInitialWindowSize(uint value)
+    {
+        // RFC 9113 6.9.2: the change applies to the send window of every stream, open or half-closed
+        lock (flowControlLock)
+        {
+            long delta = (long)value - peerInitialWindowSize;
+            peerInitialWindowSize = value;
+
+            foreach (var stream in streams.Values)
+            {
+                stream.SendWindow += delta;
+                if (stream.SendWindow > Http2ProtocolHandlerOptions.MaxWindowSize)
+                {
+                    throw new Http2ConnectionException(Http2ErrorCode.FLOW_CONTROL_ERROR, $"Send window of stream {stream.StreamId} exceeds the maximum window size");
+                }
+            }
+
+            if (delta > 0)
+            {
+                SignalWindowUpdated();
+            }
+        }
     }
 }

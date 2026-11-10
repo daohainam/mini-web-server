@@ -55,15 +55,54 @@ public class Http2FrameReaderHeaderTests
     }
 
     [TestMethod()]
-    [DataRow(10, 4, 10)]
-    public void DecodeIntegerTest(int v, int n, int expectedV)
+    public void TryReadFrame_UnknownFrameType_IsReturnedNotRejected()
     {
-        Assert.AreEqual(expectedV, HPACKInteger.Decode(v, n));
+        // RFC 9113 4.1: unknown frame types must be ignored and discarded, so the reader must not throw on them
+        Http2Frame frame = new();
+        var buffer = new ReadOnlySequence<byte>([0x00, 0x00, 0x01, 0xAB, 0x00, 0x00, 0x00, 0x00, 0x01, 0xFF]);
+
+        var b = Http2FrameReader.TryReadFrame(ref buffer, ref frame, 16384, out var payload);
+
+        Assert.IsTrue(b);
+        Assert.AreEqual(0xAB, (byte)frame.FrameType);
+        Assert.AreEqual(1, payload.Length);
+        Assert.AreEqual(0, buffer.Length);
+    }
+
+    [TestMethod()]
+    public void TryReadFrame_PayloadLargerThanMaxFrameSize_ThrowsFrameSizeError()
+    {
+        Http2Frame frame = new();
+        var buffer = new ReadOnlySequence<byte>([0x00, 0x40, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01]); // length 16385
+
+        var ex = Assert.ThrowsExactly<Http2ConnectionException>(() => Http2FrameReader.TryReadFrame(ref buffer, ref frame, 16384, out _));
+        Assert.AreEqual(Http2ErrorCode.FRAME_SIZE_ERROR, ex.ErrorCode);
+    }
+
+    [TestMethod()]
+    [DataRow(new byte[] { 0b_0000_1010 }, 5, 10)]
+    [DataRow(new byte[] { 0b_0001_1111, 0b_1001_1010, 0b_0000_1010 }, 5, 1337)]
+    [DataRow(new byte[] { 0b_0010_1010 }, 8, 42)]
+    public void DecodeIntegerTest(byte[] bytes, int prefixBits, int expected)
+    {
+        int offset = 0;
+
+        Assert.AreEqual(expected, HPACKInteger.Read(bytes, ref offset, prefixBits));
+        Assert.AreEqual(bytes.Length, offset);
     }
 
     [TestMethod()]
     public void TryReadHEADERSFramePayloadTest()
     {
-        Assert.Fail();
+        // PADDED: pad length 2, block = :method GET (0x82), :path / (0x84), two bytes of padding
+        var frame = new Http2Frame { FrameType = Http2FrameType.HEADERS, Flags = Http2FrameFlags.END_HEADERS | Http2FrameFlags.PADDED };
+        var payload = new ReadOnlySequence<byte>([0x02, 0x82, 0x84, 0x00, 0x00]);
+
+        var result = Http2FrameReader.TryReadHEADERSFramePayload(frame, payload, out var headersPayload);
+
+        Assert.IsTrue(result);
+        Assert.AreEqual(2, headersPayload.PadLength);
+        Assert.IsFalse(headersPayload.HasPriority);
+        CollectionAssert.AreEqual(new byte[] { 0x82, 0x84 }, headersPayload.FieldBlockFragment.ToArray());
     }
 }
