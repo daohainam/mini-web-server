@@ -19,15 +19,23 @@ public class UnitTest1: ICallable
         return Task.CompletedTask;
     }
 
+    private const string PhpExecutable = "C:\\PHP\\php.exe";
+
     [TestMethod]
     public async Task TestMethod1Async()
     {
+        if (!File.Exists(PhpExecutable))
+        {
+            // the test runs a real PHP CGI script, it can only pass on a machine with PHP installed at this path (not on the CI runners)
+            Assert.Inconclusive($"PHP is not installed at {PhpExecutable}");
+        }
+
         var options = new CgiOptions()
         {
             Handlers = [
                 new CgiHandler()
                 {
-                    Executable = "C:\\PHP\\php.exe",
+                    Executable = PhpExecutable,
                     Route = "/cgi-bin/hellocgi.php",
                     WorkingDirectory = ".",
                     ScriptDirectory = ".\\scripts\\php",                        
