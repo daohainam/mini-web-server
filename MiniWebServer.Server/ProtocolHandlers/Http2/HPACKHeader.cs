@@ -1,35 +1,22 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace MiniWebServer.Server.ProtocolHandlers.Http2;
 
-public class HPACKHeader(HPACKHeaderTypes headerType, int staticTableIndex, string name, string value)
+/// <summary>
+/// A decoded HPACK header field (RFC 7541). Names are kept exactly as decoded, HTTP/2 requires them to be lowercase.
+/// </summary>
+public sealed class HPACKHeader(string name, string value, bool sensitive = false)
 {
-    public HPACKHeader(string name, string value) : this(HPACKHeaderTypes.Literal, 0, name, value)
-    {
-    }
-    public HPACKHeader(HPACKHeader header) : this(header.HeaderType, header.StaticTableIndex, header.Name, header.Value)
-    {
-    }
+    // RFC 7541 4.1: the size of an entry is the sum of its name length, its value length and 32 octets
+    public const int EntryOverhead = 32;
 
-    public int StaticTableIndex { get; } = staticTableIndex;
-    public string Name { get; } = name;
-    public string Value { get; } = value;
-    //public byte[] NameAsBytes { get; } = name.Length > 0 ? Encoding.ASCII.GetBytes(name) : [];
-    //public byte[] ValueAsBytes { get; } = value.Length > 0 ? Encoding.ASCII.GetBytes(value) : [];
-    public HPACKHeaderTypes HeaderType { get; } = headerType;
+    public string Name { get; } = name ?? throw new ArgumentNullException(nameof(name));
+    public string Value { get; } = value ?? throw new ArgumentNullException(nameof(value));
 
-    public override string ToString()
-    {
-        return $"{Name}: {Value}";
-    }
-}
+    /// <summary>
+    /// True when the field was received as "literal never indexed", intermediaries must not compress it.
+    /// </summary>
+    public bool Sensitive { get; } = sensitive;
 
-public enum HPACKHeaderTypes
-{
-    Static,
-    Literal
+    public int Size => EntryOverhead + Name.Length + Value.Length;
+
+    public override string ToString() => $"{Name}: {Value}";
 }

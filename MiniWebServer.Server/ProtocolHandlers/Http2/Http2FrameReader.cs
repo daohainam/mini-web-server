@@ -1,32 +1,36 @@
-using Microsoft.Extensions.Logging;
 using System.Buffers;
-using System.Text;
-using Hpack = global::Http2.Hpack;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2;
 
-public class Http2FrameReader
+/// <summary>
+/// Parses frame headers and the fixed-layout frame payloads of RFC 9113 section 6.
+/// </summary>
+public static class Http2FrameReader
 {
-    private const int HeaderLength = 9; // From RFC: All frames begin with a fixed 9-octet header
+    public const int HeaderLength = 9; // RFC 9113 4.1: all frames begin with a fixed 9-octet header
 
+    /// <summary>
+    /// Reads one complete frame from <paramref name="buffer"/>. Returns false when the buffer does not hold a complete frame yet.
+    /// Throws an <see cref="Http2ConnectionException"/> (FRAME_SIZE_ERROR) when the payload exceeds <paramref name="maxFrameSize"/>.
+    /// </summary>
     public static bool TryReadFrame(ref ReadOnlySequence<byte> buffer, ref Http2Frame frame, uint maxFrameSize, out ReadOnlySequence<byte> payload)
     {
-        ArgumentNullException.ThrowIfNull(buffer);
         ArgumentNullException.ThrowIfNull(frame);
 
         payload = ReadOnlySequence<byte>.Empty;
         if (buffer.Length < HeaderLength)
-        { 
-            return false; 
+        {
+            return false;
         }
 
         var headerSlice = buffer.Slice(0, HeaderLength);
-        var header = headerSlice.IsSingleSegment ? headerSlice.FirstSpan : headerSlice.ToArray(); 
+        var header = headerSlice.IsSingleSegment ? headerSlice.FirstSpan : headerSlice.ToArray();
         var payloadLength = ReadPayloadLength(header);
 
         if (payloadLength > maxFrameSize)
         {
-            throw new Http2Exception($"FrameSize error {payloadLength}");
+            // RFC 9113 4.2: a frame exceeding SETTINGS_MAX_FRAME_SIZE is a connection error
+            throw new Http2ConnectionException(Http2ErrorCode.FRAME_SIZE_ERROR, $"Frame payload of {payloadLength} bytes exceeds the maximum frame size of {maxFrameSize}");
         }
 
         if (buffer.Length < HeaderLength + payloadLength)
@@ -35,7 +39,7 @@ public class Http2FrameReader
         }
 
         frame.Length = payloadLength;
-        frame.FrameType = GetFrameType(header[3]);
+        frame.FrameType = GetFrameType(header[3]); // RFC 9113 4.1: unknown types are ignored by the caller, never rejected here
         frame.Flags = (Http2FrameFlags)header[4];
         frame.StreamIdentifier = GetStreamIdentifier(header);
 
@@ -47,28 +51,30 @@ public class Http2FrameReader
 
     internal static uint GetStreamIdentifier(ReadOnlySpan<byte> header)
     {
-        // first bit is always 0 so it is always a positive number
+        // the reserved first bit must be ignored when receiving
         return (uint)((header[5] & 0b_0111_1111) << 24 | header[6] << 16 | header[7] << 8 | header[8]);
     }
 
-    internal static Http2FrameType GetFrameType(byte b) => b switch
-    {
-        0 => Http2FrameType.DATA,
-        1 => Http2FrameType.HEADERS,
-        2 => Http2FrameType.PRIORITY,
-        3 => Http2FrameType.RST_STREAM,
-        4 => Http2FrameType.SETTINGS,
-        5 => Http2FrameType.PUSH_PROMISE,
-        6 => Http2FrameType.PING,
-        7 => Http2FrameType.GOAWAY,
-        8 => Http2FrameType.WINDOW_UPDATE,
-        9 => Http2FrameType.CONTINUATION,
-        _ => throw new Http2Exception($"Unknown frame type {b}")
-    };
+    internal static Http2FrameType GetFrameType(byte b) => (Http2FrameType)b;
 
     public static int ReadPayloadLength(ReadOnlySpan<byte> header)
     {
         return header[0] << 16 | header[1] << 8 | header[2];
+    }
+
+    private static ReadOnlySpan<byte> AsSpan(ReadOnlySequence<byte> sequence)
+    {
+        return sequence.IsSingleSegment ? sequence.FirstSpan : sequence.ToArray();
+    }
+
+    private static uint ReadUInt31(ReadOnlySpan<byte> bytes)
+    {
+        return (uint)((bytes[0] & 0b_0111_1111) << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
+    }
+
+    private static uint ReadUInt32(ReadOnlySpan<byte> bytes)
+    {
+        return (uint)(bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3]);
     }
 
     public static bool TryReadSETTINGSFramePayload(ref ReadOnlySequence<byte> payload, out Http2FrameSETTINGSItem[] settings)
@@ -79,7 +85,7 @@ public class Http2FrameReader
             return false;
         }
 
-        var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
+        var payloadBytes = AsSpan(payload);
 
         int count = payloadBytes.Length / 6;
         settings = new Http2FrameSETTINGSItem[count];
@@ -89,7 +95,7 @@ public class Http2FrameReader
             settings[i] = new Http2FrameSETTINGSItem()
             {
                 Identifier = (Http2FrameSettings)(payloadBytes[si] << 8 | payloadBytes[si + 1]),
-                Value = (uint)(payloadBytes[si + 2] << 24 | payloadBytes[si + 3] << 16 | payloadBytes[si + 4] << 8 | payloadBytes[si + 5])
+                Value = ReadUInt32(payloadBytes[(si + 2)..])
             };
         }
 
@@ -104,15 +110,13 @@ public class Http2FrameReader
             return false;
         }
 
-        var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
-
-        windowSizeIncrement = (uint)((payloadBytes[0] & 0b_0111_1111) << 24 | payloadBytes[1] << 16 | payloadBytes[2] << 8 | payloadBytes[3]);
+        windowSizeIncrement = ReadUInt31(AsSpan(payload));
         return true;
     }
 
     public static bool TryReadPINGFramePayload(ref ReadOnlySequence<byte> payload, out byte[] opaqueData)
     {
-        if (payload.Length != 8) // https://httpwg.org/specs/rfc9113.html#PING: Receipt of a PING frame with a length field value other than 8 MUST be treated as a connection error
+        if (payload.Length != 8) // RFC 9113 6.7: any other length is a connection error of type FRAME_SIZE_ERROR
         {
             opaqueData = [];
             return false;
@@ -124,286 +128,137 @@ public class Http2FrameReader
         return true;
     }
 
-    public static bool TryReadPRIORITYFramePayload(ref ReadOnlySequence<byte> payload, out Http2FramePRIOTITYPayload priorityPayload)
+    public static bool TryReadPRIORITYFramePayload(ref ReadOnlySequence<byte> payload, out Http2FramePRIORITYPayload priorityPayload)
     {
         if (payload.Length != 5)
         {
-            priorityPayload = Http2FramePRIOTITYPayload.Empty;
+            priorityPayload = Http2FramePRIORITYPayload.Empty;
             return false;
         }
 
-        var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
-        priorityPayload = new() { 
+        var payloadBytes = AsSpan(payload);
+        priorityPayload = new()
+        {
             Exclusive = (payloadBytes[0] & 0b_1000_0000) != 0,
-            StreamDependency = (uint)((payloadBytes[0] & 0b_0111_1111) << 24 | payloadBytes[1] << 16 | payloadBytes[2] << 8 | payloadBytes[3]),
+            StreamDependency = ReadUInt31(payloadBytes),
             Weight = payloadBytes[4]
         };
 
         return true;
     }
 
-    public static bool TryReadHEADERSFramePayload(ref Http2Frame frame, ReadOnlySequence<byte> payload, HPACKHeaderTable headerTable, out Http2FrameHEADERSPayload headersPayload, ILogger logger)
+    public static bool TryReadRST_STREAMFramePayload(ref ReadOnlySequence<byte> payload, out Http2ErrorCode errorCode)
     {
-        /*
-          HEADERS Frame {
-          Length (24),
-          Type (8) = 0x01,
-
-          Unused Flags (2),
-          PRIORITY Flag (1),
-          Unused Flag (1),
-          PADDED Flag (1),
-          END_HEADERS Flag (1),
-          Unused Flag (1),
-          END_STREAM Flag (1),
-
-          Reserved (1),
-          Stream Identifier (31),
-
-          [Pad Length (8)],
-          [Exclusive (1)],
-          [Stream Dependency (31)],
-          [Weight (8)],
-          Field Block Fragment (..),
-          Padding (..2040),
+        if (payload.Length != 4)
+        {
+            errorCode = Http2ErrorCode.NO_ERROR;
+            return false;
         }
-         */
+
+        errorCode = (Http2ErrorCode)ReadUInt32(AsSpan(payload));
+        return true;
+    }
+
+    public static bool TryReadGOAWAYFramePayload(ref ReadOnlySequence<byte> payload, out uint lastStreamId, out Http2ErrorCode errorCode, out ReadOnlySequence<byte> debugData)
+    {
+        if (payload.Length < 8)
+        {
+            lastStreamId = 0;
+            errorCode = Http2ErrorCode.NO_ERROR;
+            debugData = ReadOnlySequence<byte>.Empty;
+            return false;
+        }
+
+        var head = AsSpan(payload.Slice(0, 8));
+        lastStreamId = ReadUInt31(head);
+        errorCode = (Http2ErrorCode)ReadUInt32(head[4..]);
+        debugData = payload.Slice(8);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Strips the padding of a DATA frame (RFC 9113 6.1). Returns false when the pad length is not smaller than the payload.
+    /// </summary>
+    public static bool TryReadDATAFramePayload(Http2Frame frame, ReadOnlySequence<byte> payload, out ReadOnlySequence<byte> data)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+
+        if (!frame.Flags.HasFlag(Http2FrameFlags.PADDED))
+        {
+            data = payload;
+            return true;
+        }
+
+        if (payload.IsEmpty)
+        {
+            data = ReadOnlySequence<byte>.Empty;
+            return false;
+        }
+
+        int padLength = payload.FirstSpan[0];
+        if (padLength >= payload.Length)
+        {
+            data = ReadOnlySequence<byte>.Empty;
+            return false;
+        }
+
+        data = payload.Slice(1, payload.Length - 1 - padLength);
+        return true;
+    }
+
+    /// <summary>
+    /// Splits a HEADERS frame payload (RFC 9113 6.2) into its pad length, priority fields and header block fragment.
+    /// Returns false when the padding or priority fields do not fit into the payload.
+    /// </summary>
+    public static bool TryReadHEADERSFramePayload(Http2Frame frame, ReadOnlySequence<byte> payload, out Http2FrameHEADERSPayload headersPayload)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
 
         headersPayload = new();
 
-        // it is easier to parse the header frames when we have received a full stream, but I decided to parse here to determine errors as soon as possible
+        bool padded = frame.Flags.HasFlag(Http2FrameFlags.PADDED);
+        bool hasPriority = frame.Flags.HasFlag(Http2FrameFlags.PRIORITY);
 
-        while (!payload.IsEmpty)
-        {
-            //var payloadBytes = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
-            var bb = payload.ToArray();
-            byte b = payload.Slice(0, 1).FirstSpan[0];
-
-            if ((b & 0b_1000_0000) == 0b_1000_0000) // Indexed Header Field, https://httpwg.org/specs/rfc7541.html#indexed.header.representation
-            {
-                payload = payload.Slice(1);
-
-                var headerIndex = b & 0x7F;
-                var header = HPACKStaticTable.GetHeader(headerIndex);
-
-                if (header == null)
-                {
-#if DEBUG
-                    logger.LogError("Header index not found {idx}", headerIndex);
-#endif
-                    headersPayload = Http2FrameHEADERSPayload.Empty;
-                    return false;
-                }
-                else
-                {
-#if DEBUG
-                    logger.LogDebug("Static header: {k}: {v}", header.Name, header.Value);
-#endif
-                    headersPayload.Headers.Add(header);
-                }
-            }
-            else if ((b & 0b_1100_0000) == 0b_0100_0000) // Literal Header Field with Incremental Indexing, https://httpwg.org/specs/rfc7541.html#literal.header.with.incremental.indexing
-            {
-                var index = b & 0b_0011_1111;
-                if (index == 0) // New Name
-                {
-                    /*
-                      0   1   2   3   4   5   6   7
-                    +---+---+---+---+---+---+---+---+
-                    | 0 | 1 |           0           |
-                    +---+---+-----------------------+
-                    | H |     Name Length (7+)      |
-                    +---+---------------------------+
-                    |  Name String (Length octets)  |
-                    +---+---------------------------+
-                    | H |     Value Length (7+)     |
-                    +---+---------------------------+
-                    | Value String (Length octets)  |
-                    +-------------------------------+
-                    Literal Header Field with Incremental Indexing — New Name 
-                     */
-
-                    payload = payload.Slice(1);
-
-                    var length = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
-                    var name = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
-
-                    payload = payload.Slice(length);
-                    length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
-                    var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
-
-#if DEBUG
-                    logger.LogDebug("New LwII header: {k}: {v}", name, value);
-#endif
-                    headersPayload.Headers.Add(new HPACKHeader(name, value));
-
-                    payload = payload.Slice(length);
-                }
-                else
-                {
-                    /*
-                      0   1   2   3   4   5   6   7
-                    +---+---+---+---+---+---+---+---+
-                    | 0 | 1 |      Index (6+)       |
-                    +---+---+-----------------------+
-                    | H |     Value Length (7+)     |
-                    +---+---------------------------+
-                    | Value String (Length octets)  |
-                    +-------------------------------+
-
-                    Literal Header Field with Incremental Indexing — Indexed Name
-                    */
-
-                    //index = HPACKInteger.ReadInt(ref payload, 8);
-                    
-                    payload = payload.Slice(1); 
-
-                    // read from header tables
-                    var valueLength = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
-                    var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, valueLength));
-
-                    if (headerTable.TryGetHeader(index, out var header))
-                    {
-#if DEBUG
-                        logger.LogDebug("Indexed LwII header: {k}: {v}", header!.Name, value);
-#endif
-                        headersPayload.Headers.Add(new HPACKHeader(header.HeaderType, header.StaticTableIndex, header.Name, value));
-                    }
-
-                    payload = payload.Slice(valueLength);
-                }
-            }
-            else if ((b & 0b_1111_0000) == 0b_0000_0000) // Literal Header Field without Incremental Indexing, https://httpwg.org/specs/rfc7541.html#literal.header.without.indexing
-            {
-                var index = b & 0b_0000_1111;
-                if (index == 0) // New Name
-                {
-                    /*
-                          0   1   2   3   4   5   6   7
-                        +---+---+---+---+---+---+---+---+
-                        | 0 | 0 | 0 | 0 |       0       |
-                        +---+---+-----------------------+
-                        | H |     Name Length (7+)      |
-                        +---+---------------------------+
-                        |  Name String (Length octets)  |
-                        +---+---------------------------+
-                        | H |     Value Length (7+)     |
-                        +---+---------------------------+
-                        | Value String (Length octets)  |
-                        +-------------------------------+
-                        Literal Header Field without Indexing — New Name
-                     */
-                    payload = payload.Slice(1);
-
-                    var length = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
-                    var name = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
-
-                    payload = payload.Slice(length);
-                    length = HPACKInteger.ReadStringLength(ref payload, out isHuffmanEncoded);
-                    var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, length));
-
-#if DEBUG
-                    logger.LogDebug("New LwoII header: {k}: {v}", name, value);
-#endif
-                    headersPayload.Headers.Add(new HPACKHeader(name, value));
-
-                    payload = payload.Slice(length);
-                }
-                else
-                {
-                    /*
-                        Literal Header Field without Indexing — Indexed Name
-
-                        0   1   2   3   4   5   6   7
-                        +---+---+---+---+---+---+---+---+
-                        | 0 | 0 | 0 | 0 |  Index (4+)   |
-                        +---+---+-----------------------+
-                        | H |     Value Length (7+)     |
-                        +---+---------------------------+
-                        | Value String (Length octets)  |
-                        +-------------------------------+
-                    */
-
-                    index = HPACKInteger.ReadInt(ref payload, 4);
-
-                    // read from header tables
-                    var valueLength = HPACKInteger.ReadStringLength(ref payload, out var isHuffmanEncoded);
-                    var value = HPACKString.Decode(isHuffmanEncoded, payload.Slice(0, valueLength));
-
-                    if (headerTable.TryGetHeader(index, out var header))
-                    {
-#if DEBUG
-                        logger.LogDebug("Indexed LwoII header: {k}: {v}", header!.Name, value);
-#endif
-                        headersPayload.Headers.Add(new HPACKHeader(header.HeaderType, header.StaticTableIndex, header.Name, value));
-                    }
-
-                    payload = payload.Slice(valueLength);
-                }
-            }
-            else if ((b & 0b_1110_0000) == 0b_0010_0000) // Dynamic Table Size Update, https://httpwg.org/specs/rfc7541.html#encoding.context.update
-            {
-
-            }
-        }
-
-        var flags = frame.Flags;
-        int idx = 0;
-
-        var hasPayLength = flags.HasFlag(Http2FrameFlags.PADDED);
-        var hasPriority = flags.HasFlag(Http2FrameFlags.PRIORITY);
-
-        //if (hasPayLength)
-        //{
-        //    headersPayload.PadLength = payloadBytes[0];
-
-        //    idx = Interlocked.Increment(ref idx);
-        //}
-        //else
-        //{
-        //    headersPayload.PadLength = 0;
-        //}
-
-        //if (hasPriority)
-        //{
-        //    headersPayload.Exclusive = (payloadBytes[idx] & 0b_1000_0000) != 0;
-        //    headersPayload.StreamDependency = (uint)((payloadBytes[idx] & 0b_0111_1111) << 24 | payloadBytes[idx + 1] << 16 | payloadBytes[idx + 2] << 8 | payloadBytes[idx + 3]);
-        //    headersPayload.Weight = payloadBytes[idx + 4];
-
-        //    idx = Interlocked.Add(ref idx, 5);
-        //}
-        //else
-        //{
-        //    headersPayload.Exclusive = false;
-        //    headersPayload.StreamDependency = 0;
-        //    headersPayload.Weight = 0;
-        //}
-
-        if (TryParseFieldBlock(payload.Slice(idx), out var fieldBlock))
-        {
-            headersPayload.FieldBlockFragment = fieldBlock;
-        }
-        else
+        int prefixLength = (padded ? 1 : 0) + (hasPriority ? 5 : 0);
+        if (payload.Length < prefixLength)
         {
             return false;
         }
 
+        var prefix = AsSpan(payload.Slice(0, prefixLength));
+
+        byte padLength = 0;
+        int idx = 0;
+        if (padded)
+        {
+            padLength = prefix[idx++];
+            if (padLength > payload.Length - prefixLength)
+            {
+                return false;
+            }
+        }
+
+        bool exclusive = false;
+        uint streamDependency = 0;
+        byte weight = 0;
+        if (hasPriority)
+        {
+            exclusive = (prefix[idx] & 0b_1000_0000) != 0;
+            streamDependency = ReadUInt31(prefix[idx..]);
+            weight = prefix[idx + 4];
+        }
+
+        headersPayload = new()
+        {
+            PadLength = padLength,
+            HasPriority = hasPriority,
+            Exclusive = exclusive,
+            StreamDependency = streamDependency,
+            Weight = weight,
+            FieldBlockFragment = payload.Slice(prefixLength, payload.Length - prefixLength - padLength)
+        };
+
         return true;
     }
-
-    private static ReadOnlySpan<byte> GetSpan(ReadOnlySequence<byte> readOnlySequence)
-    {
-        return readOnlySequence.IsSingleSegment ? readOnlySequence.FirstSpan : readOnlySequence.ToArray();
-    }
-
-    private static bool TryParseFieldBlock(ReadOnlySequence<byte> readOnlySequence, out Http2Fields fields)
-    {
-        var s = Encoding.ASCII.GetString(readOnlySequence.ToArray());
-
-        fields = new Http2Fields();
-
-        return true;
-    }
-
-    
 }

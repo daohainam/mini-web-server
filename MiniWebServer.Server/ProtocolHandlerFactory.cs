@@ -30,10 +30,10 @@ public class ProtocolHandlerFactory(ILoggerFactory loggerFactory, IServiceProvid
         }
         else if (httpVersion == HttpVersions.Http20)
         {
-            return new Http2ProtocolHandler(loggerFactory,
+            return new Http2ProtocolHandler(config, loggerFactory,
                 services.GetService<IHttpComponentParser>() ?? new ByteSequenceHttpParser(loggerFactory),
-                services.GetService<ICookieValueParser>() ?? new DefaultCookieParser(),
-                protocolHandlerContext
+                protocolHandlerContext,
+                services.GetService<Http2ProtocolHandlerOptions>()
                 );
         }
 

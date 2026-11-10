@@ -6,85 +6,127 @@ namespace Http2Tests;
 public class Http2FrameWriterTests
 {
     [Fact]
-    public void SerializeHEADERFrame_WithIndexedHeaderName_CreatesValidFrame()
+    public void SerializeHEADERSFrame_CreatesValidFrame()
     {
         // Arrange
         uint streamId = 2;
-        string headerName = "content-type";
-        string[] headerValues = ["application/json"];
+        byte[] fieldBlock = [0x88, 0x0f, 0x10, 0x09, 0x74, 0x65, 0x78, 0x74, 0x2f, 0x70, 0x6c, 0x61, 0x69, 0x6e]; // :status 200, content-type: text/plain
         byte[] writePayload = new byte[1024];
 
         // Act
-        int length = Http2FrameWriter.SerializeHEADERFrame(streamId, headerName, headerValues, true, true, writePayload);
+        int length = Http2FrameWriter.SerializeHEADERSFrame(streamId, fieldBlock, endHeaders: true, endStream: false, writePayload);
 
         // Assert
-        Assert.True(length > 9); // Frame header is 9 bytes
+        Assert.Equal(9 + fieldBlock.Length, length);
         Assert.Equal(Http2FrameType.HEADERS, (Http2FrameType)writePayload[3]);
         Assert.Equal((byte)Http2FrameFlags.END_HEADERS, writePayload[4]);
-        
-        // Verify stream identifier (bytes 5-8)
+
         uint actualStreamId = (uint)((writePayload[5] & 0x7F) << 24 | writePayload[6] << 16 | writePayload[7] << 8 | writePayload[8]);
         Assert.Equal(streamId, actualStreamId);
-        
-        // Verify payload length matches
+
         int payloadLength = writePayload[0] << 16 | writePayload[1] << 8 | writePayload[2];
-        Assert.Equal(length - 9, payloadLength);
+        Assert.Equal(fieldBlock.Length, payloadLength);
+        Assert.Equal(fieldBlock, writePayload.AsSpan(9, fieldBlock.Length).ToArray());
     }
 
     [Fact]
-    public void SerializeHEADERFrame_WithLiteralHeaderName_CreatesValidFrame()
+    public void SerializeHEADERSFrame_EndStream_SetsBothFlags()
     {
-        // Arrange
-        uint streamId = 4;
-        string headerName = "x-custom-header";
-        string[] headerValues = ["custom-value"];
         byte[] writePayload = new byte[1024];
 
-        // Act
-        int length = Http2FrameWriter.SerializeHEADERFrame(streamId, headerName, headerValues, false, true, writePayload);
+        Http2FrameWriter.SerializeHEADERSFrame(4, [0x88], endHeaders: true, endStream: true, writePayload);
 
-        // Assert
-        Assert.True(length > 9);
-        Assert.Equal(Http2FrameType.HEADERS, (Http2FrameType)writePayload[3]);
-        Assert.Equal((byte)Http2FrameFlags.END_HEADERS, writePayload[4]);
-        
-        // Verify stream identifier
-        uint actualStreamId = (uint)((writePayload[5] & 0x7F) << 24 | writePayload[6] << 16 | writePayload[7] << 8 | writePayload[8]);
-        Assert.Equal(streamId, actualStreamId);
+        Assert.Equal((byte)(Http2FrameFlags.END_HEADERS | Http2FrameFlags.END_STREAM), writePayload[4]);
     }
 
     [Fact]
-    public void SerializeHEADERFrame_WithoutEndHeaders_NoEndHeadersFlag()
+    public void SerializeHEADERSFrame_WithoutEndHeaders_NoEndHeadersFlag()
     {
-        // Arrange
-        uint streamId = 6;
-        string headerName = "content-length";
-        string[] headerValues = ["1234"];
         byte[] writePayload = new byte[1024];
 
-        // Act
-        int length = Http2FrameWriter.SerializeHEADERFrame(streamId, headerName, headerValues, false, false, writePayload);
+        Http2FrameWriter.SerializeHEADERSFrame(6, [0x88], endHeaders: false, endStream: false, writePayload);
 
-        // Assert
         Assert.Equal((byte)Http2FrameFlags.NONE, writePayload[4]);
     }
 
     [Fact]
-    public void SerializeHEADERFrame_WithMultipleValues_JoinsWithComma()
+    public void WriteHeaderBlock_LargerThanMaxFrameSize_SplitsIntoHeadersAndContinuationFrames()
     {
-        // Arrange
-        uint streamId = 8;
-        string headerName = "accept-encoding";
-        string[] headerValues = ["gzip", "deflate", "br"];
-        byte[] writePayload = new byte[1024];
+        // Arrange: a 25 byte block with a max frame size of 10 => HEADERS(10) + CONTINUATION(10) + CONTINUATION(5)
+        var block = Enumerable.Range(0, 25).Select(i => (byte)i).ToArray();
+        var output = new ArrayBufferWriter<byte>();
 
         // Act
-        int length = Http2FrameWriter.SerializeHEADERFrame(streamId, headerName, headerValues, false, true, writePayload);
+        Http2FrameWriter.WriteHeaderBlock(output, 7, block, endStream: true, maxFrameSize: 10);
 
         // Assert
-        Assert.True(length > 9);
-        // The header value should be joined with ", " so the length should be longer
-        Assert.True(length > 9 + 10); // At least header + some value
+        var buffer = new ReadOnlySequence<byte>(output.WrittenMemory);
+        var frame = new Http2Frame();
+        var frames = new List<(Http2FrameType Type, Http2FrameFlags Flags, byte[] Payload)>();
+        while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, 16384, out var payload))
+        {
+            Assert.Equal(7u, frame.StreamIdentifier);
+            frames.Add((frame.FrameType, frame.Flags, payload.ToArray()));
+        }
+
+        Assert.Equal(3, frames.Count);
+        Assert.Equal(Http2FrameType.HEADERS, frames[0].Type);
+        Assert.Equal(Http2FrameFlags.END_STREAM, frames[0].Flags); // END_HEADERS only on the last frame
+        Assert.Equal(Http2FrameType.CONTINUATION, frames[1].Type);
+        Assert.Equal(Http2FrameFlags.NONE, frames[1].Flags);
+        Assert.Equal(Http2FrameType.CONTINUATION, frames[2].Type);
+        Assert.Equal(Http2FrameFlags.END_HEADERS, frames[2].Flags);
+        Assert.Equal(block, frames.SelectMany(f => f.Payload).ToArray());
+    }
+
+    [Fact]
+    public void WriteHeaderBlock_EmptyBlock_WritesOneHeadersFrame()
+    {
+        var output = new ArrayBufferWriter<byte>();
+
+        Http2FrameWriter.WriteHeaderBlock(output, 1, [], endStream: false, maxFrameSize: 16384);
+
+        Assert.Equal(9, output.WrittenCount);
+        Assert.Equal((byte)Http2FrameFlags.END_HEADERS, output.WrittenSpan[4]);
+    }
+
+    [Fact]
+    public void SerializeRST_STREAMFrame_CreatesValidFrame()
+    {
+        byte[] writePayload = new byte[32];
+
+        int length = Http2FrameWriter.SerializeRST_STREAMFrame(5, Http2ErrorCode.CANCEL, writePayload);
+
+        Assert.Equal(13, length);
+        Assert.Equal("00000403000000000500000008".ToByteArray(), writePayload.AsSpan(0, length).ToArray());
+    }
+
+    [Fact]
+    public void SerializeGOAWAYFrame_CreatesValidFrame()
+    {
+        byte[] writePayload = new byte[32];
+
+        int length = Http2FrameWriter.SerializeGOAWAYFrame(30, Http2ErrorCode.COMPRESSION_ERROR, writePayload);
+
+        Assert.Equal(17, length);
+        Assert.Equal("0000080700000000000000001E00000009".ToByteArray(), writePayload.AsSpan(0, length).ToArray());
+    }
+
+    [Fact]
+    public void SerializeWINDOW_UPDATEFrame_CreatesValidFrame()
+    {
+        byte[] writePayload = new byte[32];
+
+        int length = Http2FrameWriter.SerializeWINDOW_UPDATEFrame(50, 1000, writePayload);
+
+        Assert.Equal(13, length);
+        Assert.Equal("000004080000000032000003E8".ToByteArray(), writePayload.AsSpan(0, length).ToArray());
+    }
+
+    [Fact]
+    public void SerializeWINDOW_UPDATEFrame_ZeroIncrement_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => Http2FrameWriter.SerializeWINDOW_UPDATEFrame(1, 0, new byte[32]));
     }
 
     [Fact]
@@ -271,17 +313,12 @@ public class Http2FrameWriterTests
     }
 
     [Fact]
-    public void SerializeHEADERFrame_PayloadTooSmall_ThrowsException()
+    public void SerializeHEADERSFrame_PayloadTooSmall_ThrowsException()
     {
-        // Arrange
-        uint streamId = 2;
-        string headerName = "content-type";
-        string[] headerValues = ["application/json"];
         byte[] writePayload = new byte[5]; // Too small
 
-        // Act & Assert
         Assert.Throws<InternalHttp2Exception>(() =>
-            Http2FrameWriter.SerializeHEADERFrame(streamId, headerName, headerValues, true, true, writePayload));
+            Http2FrameWriter.SerializeHEADERSFrame(2, [0x88], true, true, writePayload));
     }
 
     [Fact]

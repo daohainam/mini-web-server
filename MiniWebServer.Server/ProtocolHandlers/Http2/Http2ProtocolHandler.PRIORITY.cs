@@ -1,29 +1,28 @@
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Buffers;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2;
 
 public partial class Http2ProtocolHandler
 {
-    private bool ProcessPRIORITYFrame(ref Http2Frame frame, ref System.Buffers.ReadOnlySequence<byte> payload, out Http2FramePRIOTITYPayload priorityPayload)
+    private void ProcessPRIORITYFrame(Http2Frame frame, ReadOnlySequence<byte> payload)
     {
-        if (!Http2FrameReader.TryReadPRIORITYFramePayload(ref payload, out priorityPayload) || priorityPayload == null)
+        // RFC 9113 6.3: the priority scheme is deprecated, frames are validated and otherwise ignored
+        if (frame.StreamIdentifier == 0)
         {
-            logger.LogError("Error reading PRIORITY payload");
-            return false;
+            throw new Http2ConnectionException(Http2ErrorCode.PROTOCOL_ERROR, "PRIORITY frames must not use stream identifier 0");
         }
 
-        if (frame.StreamIdentifier == 0) {
-            logger.LogError("PRIORITY payload error: StreamIdentifier == 0");
-            return false;
+        if (!Http2FrameReader.TryReadPRIORITYFramePayload(ref payload, out var priority))
+        {
+            throw new Http2StreamException(frame.StreamIdentifier, Http2ErrorCode.FRAME_SIZE_ERROR, "PRIORITY payload must be 5 bytes");
         }
 
-        // since PRIORITY is deprecated so we do nothing
+        if (priority.StreamDependency == frame.StreamIdentifier)
+        {
+            // RFC 9113 5.3.1 (via RFC 7540): a stream cannot depend on itself
+            throw new Http2StreamException(frame.StreamIdentifier, Http2ErrorCode.PROTOCOL_ERROR, "A stream cannot depend on itself");
+        }
 
-        return true;
+        // PRIORITY is allowed in every stream state, including idle and closed, and never creates a stream
     }
 }

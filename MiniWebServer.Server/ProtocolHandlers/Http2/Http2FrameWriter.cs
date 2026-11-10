@@ -1,56 +1,57 @@
-using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.Http;
+using System.Buffers;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2;
 
-internal class Http2FrameWriter
+/// <summary>
+/// Serializes frames into caller supplied buffers. Every method returns the number of bytes written, frame header included.
+/// </summary>
+internal static class Http2FrameWriter
 {
+    public const int FrameHeaderLength = Http2FrameReader.HeaderLength;
     private const int PING_OPAQUE_DATA_SIZE = 8;
 
-    internal static Task<bool> SerializeHeaderFrames(uint streamId, IHttpResponse response, Stream stream)
+    public static void WriteFrameHeader(Span<byte> buffer, int payloadLength, Http2FrameType frameType, Http2FrameFlags flags, uint streamId)
     {
-        throw new NotImplementedException();
+        ArgumentOutOfRangeException.ThrowIfLessThan(buffer.Length, FrameHeaderLength);
+        ArgumentOutOfRangeException.ThrowIfNegative(payloadLength);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(payloadLength, 0xFF_FFFF);
+
+        buffer[0] = (byte)((payloadLength >> 16) & 0xFF);
+        buffer[1] = (byte)((payloadLength >> 8) & 0xFF);
+        buffer[2] = (byte)(payloadLength & 0xFF);
+        buffer[3] = (byte)frameType;
+        buffer[4] = (byte)flags;
+        buffer[5] = (byte)((streamId >> 24) & 0x7F); // the reserved bit must stay unset
+        buffer[6] = (byte)((streamId >> 16) & 0xFF);
+        buffer[7] = (byte)((streamId >> 8) & 0xFF);
+        buffer[8] = (byte)(streamId & 0xFF);
     }
 
-    //internal static async Task WriteFrameAsync(Stream stream, ulong http2StreamId, Http2Frame frame, byte[] writePayload)
-    //{
-    //    ArgumentNullException.ThrowIfNull(nameof(stream));
-    //    ArgumentNullException.ThrowIfNull(nameof(frame));
-
-    //    switch (frame.FrameType) { 
-    //        case Http2FrameType.SETTINGS:
-    //            var b = SerializeSettingFrame(stream, http2StreamId, frame, writePayload);
-    //    }
-    //}
-
-    private static void WritePayloadLength(byte[] payload, int length)
+    private static void EnsureCapacity(byte[] writePayload, int required)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(payload.Length, 3);
+        ArgumentNullException.ThrowIfNull(writePayload);
 
-        payload[0] = (byte)((length >> 16) & 0xFF);
-        payload[1] = (byte)((length >> 8) & 0xFF);
-        payload[2] = (byte)(length & 0xFF);
+        if (writePayload.Length < required)
+        {
+            throw new InternalHttp2Exception("Payload size too small");
+        }
     }
 
     public static int SerializeSETTINGSFrame(Http2Frame frame, IEnumerable<Http2FrameSETTINGSItem> settingItems, byte[] writePayload)
     {
-        ArgumentNullException.ThrowIfNull(nameof(frame));
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(settingItems);
 
-        if (writePayload.Length < (9 + (settingItems.Count() * 6)))
+        var items = settingItems as IReadOnlyCollection<Http2FrameSETTINGSItem> ?? settingItems.ToArray();
+        int length = items.Count * 6; // RFC 9113 6.5.1: each setting is a 16-bit identifier and a 32-bit value
+        EnsureCapacity(writePayload, FrameHeaderLength + length);
+
+        // SETTINGS frames always apply to the connection, stream identifier 0
+        WriteFrameHeader(writePayload, length, Http2FrameType.SETTINGS, frame.Flags, 0);
+
+        int idx = FrameHeaderLength;
+        foreach (var settingItem in items)
         {
-            throw new InternalHttp2Exception("Payload size too small");
-        }
-
-        int length = settingItems.Count() * 6; // 6 == setting item size
-
-        WritePayloadLength(writePayload, length);
-        writePayload[3] = (byte)Http2FrameType.SETTINGS;
-        writePayload[4] = (byte)frame.Flags;
-        // note: SETTINGS frames always have stream Id == 0
-        Array.Clear(writePayload, 5, 4);
-
-        int idx = 9;
-        foreach (var settingItem in settingItems) {
             writePayload[idx++] = (byte)(((ushort)settingItem.Identifier >> 8) & 0xFF);
             writePayload[idx++] = (byte)((ushort)settingItem.Identifier & 0xFF);
 
@@ -65,244 +66,147 @@ internal class Http2FrameWriter
 
     public static int SerializePINGFrame(Http2Frame frame, byte[] opaqueData, byte[] writePayload)
     {
-        ArgumentNullException.ThrowIfNull(nameof(frame));
+        ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(opaqueData);
 
         if (opaqueData.Length != PING_OPAQUE_DATA_SIZE)
         {
             throw new InternalHttp2Exception("Invalid OpaqueData size");
         }
 
-        WritePayloadLength(writePayload, 8);
-        writePayload[3] = (byte)Http2FrameType.PING;
-        writePayload[4] = (byte)frame.Flags;
-        // note: PING frames always have stream Id == 0
-        Array.Clear(writePayload, 5, 4);
-        Array.Copy(opaqueData, 0, writePayload, 9, PING_OPAQUE_DATA_SIZE);
+        EnsureCapacity(writePayload, FrameHeaderLength + PING_OPAQUE_DATA_SIZE);
 
-        return 9 + PING_OPAQUE_DATA_SIZE; // header size + opaque data size
+        WriteFrameHeader(writePayload, PING_OPAQUE_DATA_SIZE, Http2FrameType.PING, frame.Flags, 0);
+        Array.Copy(opaqueData, 0, writePayload, FrameHeaderLength, PING_OPAQUE_DATA_SIZE);
+
+        return FrameHeaderLength + PING_OPAQUE_DATA_SIZE;
     }
 
-    //internal static int SerializeHEADERFrame(ulong streamId, IEnumerable<HttpHeader> headers, byte[] writePayload)
-    //{
-    //    ArgumentNullException.ThrowIfNull(nameof(frame));
-    //    ArgumentNullException.ThrowIfNull(nameof(headers));
-    //    ArgumentNullException.ThrowIfNull(nameof(writePayload));
-
-    //    int payLoadLength = 0;
-    //    foreach (HttpHeader header in headers) { 
-
-    //    }
-
-    //    WritePayloadLength(writePayload, payLoadLength);
-    //}
-
-    internal static int SerializeHEADERFrame(uint streamId, string key, IEnumerable<string> values, bool isFirst, bool isLast, byte[] writePayload)
+    public static int SerializeGOAWAYFrame(uint lastStreamId, Http2ErrorCode errorCode, byte[] writePayload)
     {
-        ArgumentNullException.ThrowIfNull(writePayload);
+        EnsureCapacity(writePayload, FrameHeaderLength + 8);
 
-        if (writePayload.Length < 9)
-        {
-            throw new InternalHttp2Exception("Payload size too small");
-        }
+        WriteFrameHeader(writePayload, 8, Http2FrameType.GOAWAY, Http2FrameFlags.NONE, 0);
+        WriteUInt32(writePayload.AsSpan(FrameHeaderLength), lastStreamId & 0x7FFF_FFFF);
+        WriteUInt32(writePayload.AsSpan(FrameHeaderLength + 4), (uint)errorCode);
 
-        // Build the header field in a temporary buffer
-        var headerFieldBuffer = new byte[writePayload.Length - 9];
-        int headerFieldLength = 0;
+        return FrameHeaderLength + 8;
+    }
 
-        // Encode the header using HPACK literal header field without indexing
-        // Pattern: 0000xxxx where xxxx is the name index (or 0 for new name)
-        
-        // Check if this is a known header name in the static table
-        int nameIndex = GetHeaderNameIndex(key);
-        
-        if (nameIndex > 0)
-        {
-            // Indexed name - Literal Header Field without Indexing
-            // Pattern: 0000xxxx where xxxx is the index (using 4-bit prefix)
-            if (nameIndex < 15)
-            {
-                headerFieldBuffer[headerFieldLength++] = (byte)nameIndex;
-            }
-            else
-            {
-                // Use HPACK integer encoding for larger indices
-                headerFieldBuffer[headerFieldLength++] = 0x0F; // Set lower 4 bits to 1111
-                int remaining = nameIndex - 15;
-                while (remaining >= 128)
-                {
-                    headerFieldBuffer[headerFieldLength++] = (byte)(0x80 | (remaining % 128));
-                    remaining /= 128;
-                }
-                headerFieldBuffer[headerFieldLength++] = (byte)remaining;
-            }
-        }
-        else
-        {
-            // New name - Literal Header Field without Indexing
-            headerFieldBuffer[headerFieldLength++] = 0x00;
-            
-            // Encode name as string (with length prefix)
-            byte[] nameBytes = System.Text.Encoding.ASCII.GetBytes(key.ToLower());
-            if (nameBytes.Length < 127)
-            {
-                headerFieldBuffer[headerFieldLength++] = (byte)nameBytes.Length;
-            }
-            else
-            {
-                // Use HPACK integer encoding for large strings
-                headerFieldBuffer[headerFieldLength++] = 0x7F;
-                int remaining = nameBytes.Length - 127;
-                while (remaining >= 128)
-                {
-                    headerFieldBuffer[headerFieldLength++] = (byte)(0x80 | (remaining % 128));
-                    remaining /= 128;
-                }
-                headerFieldBuffer[headerFieldLength++] = (byte)remaining;
-            }
-            Array.Copy(nameBytes, 0, headerFieldBuffer, headerFieldLength, nameBytes.Length);
-            headerFieldLength += nameBytes.Length;
-        }
+    public static int SerializeRST_STREAMFrame(uint streamId, Http2ErrorCode errorCode, byte[] writePayload)
+    {
+        EnsureCapacity(writePayload, FrameHeaderLength + 4);
 
-        // Encode value as string (with length prefix)
-        string value = string.Join(", ", values);
-        byte[] valueBytes = System.Text.Encoding.ASCII.GetBytes(value);
-        if (valueBytes.Length < 127)
-        {
-            headerFieldBuffer[headerFieldLength++] = (byte)valueBytes.Length;
-        }
-        else
-        {
-            // Use HPACK integer encoding for large strings
-            headerFieldBuffer[headerFieldLength++] = 0x7F;
-            int remaining = valueBytes.Length - 127;
-            while (remaining >= 128)
-            {
-                headerFieldBuffer[headerFieldLength++] = (byte)(0x80 | (remaining % 128));
-                remaining /= 128;
-            }
-            headerFieldBuffer[headerFieldLength++] = (byte)remaining;
-        }
-        Array.Copy(valueBytes, 0, headerFieldBuffer, headerFieldLength, valueBytes.Length);
-        headerFieldLength += valueBytes.Length;
+        WriteFrameHeader(writePayload, 4, Http2FrameType.RST_STREAM, Http2FrameFlags.NONE, streamId);
+        WriteUInt32(writePayload.AsSpan(FrameHeaderLength), (uint)errorCode);
 
-        // Write frame header
-        WritePayloadLength(writePayload, headerFieldLength);
-        writePayload[3] = (byte)Http2FrameType.HEADERS;
-        
-        // Set flags
-        Http2FrameFlags flags = Http2FrameFlags.NONE;
-        if (isLast)
+        return FrameHeaderLength + 4;
+    }
+
+    public static int SerializeWINDOW_UPDATEFrame(uint streamId, uint windowSizeIncrement, byte[] writePayload)
+    {
+        ArgumentOutOfRangeException.ThrowIfZero(windowSizeIncrement);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(windowSizeIncrement, Http2ProtocolHandlerOptions.MaxWindowSize);
+        EnsureCapacity(writePayload, FrameHeaderLength + 4);
+
+        WriteFrameHeader(writePayload, 4, Http2FrameType.WINDOW_UPDATE, Http2FrameFlags.NONE, streamId);
+        WriteUInt32(writePayload.AsSpan(FrameHeaderLength), windowSizeIncrement);
+
+        return FrameHeaderLength + 4;
+    }
+
+    public static int SerializeHEADERSFrame(uint streamId, ReadOnlySpan<byte> fieldBlockFragment, bool endHeaders, bool endStream, byte[] writePayload)
+    {
+        EnsureCapacity(writePayload, FrameHeaderLength + fieldBlockFragment.Length);
+
+        var flags = Http2FrameFlags.NONE;
+        if (endHeaders)
         {
             flags |= Http2FrameFlags.END_HEADERS;
         }
-        writePayload[4] = (byte)flags;
 
-        // Write stream identifier
-        writePayload[5] = (byte)((streamId >> 24) & 0x7F); // First bit must be 0
-        writePayload[6] = (byte)((streamId >> 16) & 0xFF);
-        writePayload[7] = (byte)((streamId >> 8) & 0xFF);
-        writePayload[8] = (byte)(streamId & 0xFF);
-
-        // Copy header field data
-        Array.Copy(headerFieldBuffer, 0, writePayload, 9, headerFieldLength);
-
-        return 9 + headerFieldLength;
-    }
-
-    private static int GetHeaderNameIndex(string name)
-    {
-        // Return static table index for common header names
-        // Reference: https://httpwg.org/specs/rfc7541.html#static.table.definition
-        return name.ToLower() switch
-        {
-            "accept-charset" => 15,
-            "accept-encoding" => 16,
-            "accept-language" => 17,
-            "accept-ranges" => 18,
-            "accept" => 19,
-            "access-control-allow-origin" => 20,
-            "age" => 21,
-            "allow" => 22,
-            "authorization" => 23,
-            "cache-control" => 24,
-            "content-disposition" => 25,
-            "content-encoding" => 26,
-            "content-language" => 27,
-            "content-length" => 28,
-            "content-location" => 29,
-            "content-range" => 30,
-            "content-type" => 31,
-            "cookie" => 32,
-            "date" => 33,
-            "etag" => 34,
-            "expect" => 35,
-            "expires" => 36,
-            "from" => 37,
-            "host" => 38,
-            "if-match" => 39,
-            "if-modified-since" => 40,
-            "if-none-match" => 41,
-            "if-range" => 42,
-            "if-unmodified-since" => 43,
-            "last-modified" => 44,
-            "link" => 45,
-            "location" => 46,
-            "max-forwards" => 47,
-            "proxy-authenticate" => 48,
-            "proxy-authorization" => 49,
-            "range" => 50,
-            "referer" => 51,
-            "refresh" => 52,
-            "retry-after" => 53,
-            "server" => 54,
-            "set-cookie" => 55,
-            "strict-transport-security" => 56,
-            "transfer-encoding" => 57,
-            "user-agent" => 58,
-            "vary" => 59,
-            "via" => 60,
-            "www-authenticate" => 61,
-            _ => 0
-        };
-    }
-
-    internal static int SerializeDATAFrame(uint streamId, byte[] data, int offset, int length, bool endStream, byte[] writePayload)
-    {
-        ArgumentNullException.ThrowIfNull(writePayload);
-        if (data == null)
-        {
-            throw new ArgumentNullException(nameof(data));
-        }
-
-        if (writePayload.Length < 9 + length)
-        {
-            throw new InternalHttp2Exception("Payload size too small");
-        }
-
-        // Write frame header
-        WritePayloadLength(writePayload, length);
-        writePayload[3] = (byte)Http2FrameType.DATA;
-        
-        // Set flags
-        Http2FrameFlags flags = Http2FrameFlags.NONE;
         if (endStream)
         {
             flags |= Http2FrameFlags.END_STREAM;
         }
-        writePayload[4] = (byte)flags;
 
-        // Write stream identifier
-        writePayload[5] = (byte)((streamId >> 24) & 0x7F); // First bit must be 0
-        writePayload[6] = (byte)((streamId >> 16) & 0xFF);
-        writePayload[7] = (byte)((streamId >> 8) & 0xFF);
-        writePayload[8] = (byte)(streamId & 0xFF);
+        WriteFrameHeader(writePayload, fieldBlockFragment.Length, Http2FrameType.HEADERS, flags, streamId);
+        fieldBlockFragment.CopyTo(writePayload.AsSpan(FrameHeaderLength));
 
-        // Copy data
-        if (length > 0 && data.Length > 0)
+        return FrameHeaderLength + fieldBlockFragment.Length;
+    }
+
+    public static int SerializeCONTINUATIONFrame(uint streamId, ReadOnlySpan<byte> fieldBlockFragment, bool endHeaders, byte[] writePayload)
+    {
+        EnsureCapacity(writePayload, FrameHeaderLength + fieldBlockFragment.Length);
+
+        var flags = endHeaders ? Http2FrameFlags.END_HEADERS : Http2FrameFlags.NONE;
+
+        WriteFrameHeader(writePayload, fieldBlockFragment.Length, Http2FrameType.CONTINUATION, flags, streamId);
+        fieldBlockFragment.CopyTo(writePayload.AsSpan(FrameHeaderLength));
+
+        return FrameHeaderLength + fieldBlockFragment.Length;
+    }
+
+    /// <summary>
+    /// Writes a complete header block as one HEADERS frame followed by as many CONTINUATION frames as needed (RFC 9113 4.3).
+    /// </summary>
+    public static void WriteHeaderBlock(IBufferWriter<byte> output, uint streamId, ReadOnlySpan<byte> headerBlock, bool endStream, int maxFrameSize)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(maxFrameSize, 0);
+
+        int offset = 0;
+        bool first = true;
+        do
         {
-            Array.Copy(data, offset, writePayload, 9, length);
-        }
+            int chunk = Math.Min(maxFrameSize, headerBlock.Length - offset);
+            bool last = offset + chunk >= headerBlock.Length;
+            var flags = last ? Http2FrameFlags.END_HEADERS : Http2FrameFlags.NONE;
+            var type = Http2FrameType.CONTINUATION;
+            if (first)
+            {
+                type = Http2FrameType.HEADERS;
+                if (endStream)
+                {
+                    flags |= Http2FrameFlags.END_STREAM;
+                }
+            }
 
-        return 9 + length;
+            var span = output.GetSpan(FrameHeaderLength + chunk);
+            WriteFrameHeader(span, chunk, type, flags, streamId);
+            headerBlock.Slice(offset, chunk).CopyTo(span[FrameHeaderLength..]);
+            output.Advance(FrameHeaderLength + chunk);
+
+            offset += chunk;
+            first = false;
+        } while (offset < headerBlock.Length);
+    }
+
+    public static int SerializeDATAFrame(uint streamId, byte[] data, int offset, int length, bool endStream, byte[] writePayload)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+
+        return SerializeDATAFrame(streamId, data.AsSpan(offset, length), endStream, writePayload);
+    }
+
+    public static int SerializeDATAFrame(uint streamId, ReadOnlySpan<byte> data, bool endStream, byte[] writePayload)
+    {
+        EnsureCapacity(writePayload, FrameHeaderLength + data.Length);
+
+        var flags = endStream ? Http2FrameFlags.END_STREAM : Http2FrameFlags.NONE;
+
+        WriteFrameHeader(writePayload, data.Length, Http2FrameType.DATA, flags, streamId);
+        data.CopyTo(writePayload.AsSpan(FrameHeaderLength));
+
+        return FrameHeaderLength + data.Length;
+    }
+
+    private static void WriteUInt32(Span<byte> buffer, uint value)
+    {
+        buffer[0] = (byte)((value >> 24) & 0xFF);
+        buffer[1] = (byte)((value >> 16) & 0xFF);
+        buffer[2] = (byte)((value >> 8) & 0xFF);
+        buffer[3] = (byte)(value & 0xFF);
     }
 }

@@ -15,7 +15,11 @@ public interface IProtocolHandler
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<bool> ReadRequestAsync(IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken);
-    Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken);
+    /// <summary>
+    /// Write a response. <paramref name="request"/> is the request being answered, multiplexed protocols need it to find the stream
+    /// the response belongs to. It is null only when no request could be read at all.
+    /// </summary>
+    Task<bool> WriteResponseAsync(IHttpRequest? request, IHttpResponse response, CancellationToken cancellationToken);
     void Reset();
     Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken);
 }

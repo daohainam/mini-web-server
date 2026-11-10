@@ -315,7 +315,7 @@ public class Http11ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerF
     //    return true;
     //}
 
-    public async Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
+    public async Task<bool> WriteResponseAsync(IHttpRequest? request, IHttpResponse response, CancellationToken cancellationToken)
     {
         var stream = response.Stream ?? throw new InvalidOperationException("response.Stream should not be null");
         Write(stream, $"{HttpVersionString} {((int)response.StatusCode)} {response.ReasonPhrase}\r\n");

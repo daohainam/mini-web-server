@@ -137,12 +137,19 @@ public class HttpRequest : IHttpRequest
                     reader.AdvanceTo(buffer.GetPosition(maxBytesToRead));
                     break;
                 }
-                else if (buffer.Length > 0)
+
+                if (buffer.Length > 0)
                 {
                     sb.Append(encoding.GetString(buffer));
-                    reader.AdvanceTo(buffer.GetPosition(buffer.Length));
-
                     bytesRead += buffer.Length;
+                }
+
+                // every read must be followed by AdvanceTo, even an empty one, or the next ReadAsync throws "Reading is already in progress"
+                reader.AdvanceTo(buffer.End);
+
+                if (readResult.IsCompleted || readResult.IsCanceled)
+                {
+                    break; // the body ended early (or the read was cancelled), return what we have
                 }
 
                 readResult = await reader.ReadAsync(cancellationToken);

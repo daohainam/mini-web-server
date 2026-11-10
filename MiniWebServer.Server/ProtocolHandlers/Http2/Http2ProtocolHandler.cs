@@ -1,534 +1,438 @@
 using Microsoft.Extensions.Logging;
 using MiniWebServer.Abstractions;
-using MiniWebServer.Abstractions.Http;
-using MiniWebServer.Abstractions.Http.Header;
 using MiniWebServer.Server.Abstractions;
 using MiniWebServer.Server.Abstractions.Http;
-using MiniWebServer.Server.Abstractions.Parsers;
 using MiniWebServer.Server.Abstractions.Parsers.Http11;
-using MiniWebServer.Server.Http;
-using MiniWebServer.Server.ProtocolHandlers.Http11;
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
+using System.Collections.Concurrent;
 using System.IO.Pipelines;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Reflection.PortableExecutable;
-using System.Runtime.Serialization;
-using System.Security.Principal;
-using System.Text;
-using System.Threading.Tasks;
-using HttpMethod = MiniWebServer.Abstractions.Http.HttpMethod;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2;
 
-/* 
- * protocol handler for http2 based on RFC 9113 (https://datatracker.ietf.org/doc/html/rfc9113)
- * 
- * Some problems we must solve before going online:
- * - find a way to switch between HTTP11 and HTTP2 (will it be handled in protocol handler factory in or internally inside HTTP2 protocol handler?)
- * - how do we handle frame buffers effectively? will it need to be shared between threads?
- * - a buffer will be controlled inside or outside protocol handlers?
- * 
- * Note:
- * - use buffer pools 
- * 
+/*
+ * HTTP/2 protocol handler based on RFC 9113 (https://www.rfc-editor.org/rfc/rfc9113) and HPACK, RFC 7541.
+ *
+ * How it fits into the connection loop:
+ * - ReadRequestAsync runs the frame demultiplexer. It returns true as soon as one stream has a complete request header block, the
+ *   caller builds and dispatches the request and calls ReadRequestAsync again. DATA frames arriving later for that stream are written
+ *   to the stream's body pipe by the demultiplexer, so ReadBodyAsync has nothing to do.
+ * - WriteResponseAsync is called concurrently from the dispatched requests, the response goes to the stream the request came from.
+ *   All frame writes are serialized through a single lock so frames never interleave.
+ * - Connection errors send GOAWAY and make ReadRequestAsync return false, stream errors send RST_STREAM and keep the connection alive.
+ *
+ * Not supported: server push (SETTINGS_ENABLE_PUSH is always 0), the deprecated priority scheme (PRIORITY frames are validated and ignored),
+ * the CONNECT method and the h2c Upgrade mechanism (deprecated by RFC 9113, only the connection preface / "prior knowledge" is used).
  */
 
-public partial class Http2ProtocolHandler(ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ICookieValueParser cookieValueParser, ProtocolHandlerContext protocolHandlerContext) : IProtocolHandler
+public partial class Http2ProtocolHandler : IProtocolHandler
 {
-    private const uint DefaultMaxFrameSize = 16_384; // frame size = 2^14 unless when you change it with a SETTINGS frame
-    private const uint DefaultInitialWindowSize = 65_535;
-    private const uint DefaultHeaderTableSize = 4_096;
+    private readonly ILogger<Http2ProtocolHandler> logger;
+    private readonly ProtocolHandlerConfiguration config;
+    private readonly IHttpComponentParser httpComponentParser;
+    private readonly ProtocolHandlerContext protocolHandlerContext;
+    private readonly Http2ProtocolHandlerOptions options;
 
-    private readonly ILogger<Http2ProtocolHandler> logger = loggerFactory.CreateLogger<Http2ProtocolHandler>();
+    // peer settings, these govern what we send (RFC 9113 6.5.2)
+    private uint peerMaxFrameSize = Http2ProtocolHandlerOptions.DefaultMaxFrameSize;
+    private uint peerInitialWindowSize = Http2ProtocolHandlerOptions.DefaultInitialWindowSize;
+    private uint peerMaxConcurrentStreams = uint.MaxValue; // only matters for server push, which we do not do
+    private uint? peerMaxHeaderListSize;
+
+    // flow control (RFC 9113 6.9), every window is guarded by flowControlLock
+    private readonly object flowControlLock = new();
+    private long connectionSendWindow = Http2ProtocolHandlerOptions.DefaultInitialWindowSize;
+    private long connectionReceiveWindow;
+    private long unacknowledgedConnectionBytes;
+    private TaskCompletionSource windowUpdated = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // streams (RFC 9113 5.1)
+    private readonly ConcurrentDictionary<uint, Http2Stream> streams = new();
+    private readonly ConcurrentDictionary<Pipe, Http2Stream> streamsByBody = new();
+    private readonly Queue<Http2Stream> readyStreams = new(); // complete requests waiting to be handed to the connection, read loop only
+    private uint lastClientStreamId; // the highest client stream id seen so far, used to tell idle from closed streams
+
+    // a header block in progress: HEADERS followed by CONTINUATION frames (RFC 9113 4.3)
+    private Http2Stream? headerBlockStream;
+    private bool headerBlockEndStream;
+    private readonly ArrayBufferWriter<byte> headerBlock = new();
+
+    // HPACK contexts, one per direction
+    private readonly HPACKDecoder decoder;
+    private readonly HPACKEncoder encoder = new();
+
+    // connection state
+    private readonly SemaphoreSlim writeLock = new(1, 1);
+    private bool prefaceSent;
+    private bool firstFrameReceived;
+    private bool goAwayReceived;
+    private bool goAwaySent;
+    private bool connectionClosed;
+
+    public Http2ProtocolHandler(ProtocolHandlerConfiguration config, ILoggerFactory loggerFactory, IHttpComponentParser httpComponentParser, ProtocolHandlerContext protocolHandlerContext, Http2ProtocolHandlerOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+
+        this.config = config ?? throw new ArgumentNullException(nameof(config));
+        this.httpComponentParser = httpComponentParser ?? throw new ArgumentNullException(nameof(httpComponentParser));
+        this.protocolHandlerContext = protocolHandlerContext ?? throw new ArgumentNullException(nameof(protocolHandlerContext));
+        this.options = options ?? new Http2ProtocolHandlerOptions();
+
+        logger = loggerFactory.CreateLogger<Http2ProtocolHandler>();
+
+        connectionReceiveWindow = Http2ProtocolHandlerOptions.DefaultInitialWindowSize; // the connection window always starts at the default, SETTINGS do not change it
+        decoder = new HPACKDecoder(new HPACKHeaderTable((int)this.options.HeaderTableSize), (int)this.options.MaxHeaderListSize, this.options.MaxHeaderCount);
+    }
 
     public int ProtocolVersion => 20;
 
-    // connection settings
-    private uint maxFrameSize = DefaultMaxFrameSize;
-    private uint initialWindowSize = DefaultInitialWindowSize;
-    private uint headerTableSize = DefaultHeaderTableSize;
-    private uint maxConcurrentStreams = 100; // can be changed by SETTINGS_MAX_CONCURRENT_STREAMS parameter in SETTINGS frame
-    private uint windowSizeIncrement;
-
-    // streams
-    private readonly Http2StreamContainer inputStreamContainer = [];
-    private readonly HPACKHeaderTable headerTable = new();
-    private uint nextOutputStreamId = 0; // do not change this value directly, call GetNextSTreamIdentifier() when you want to get an new Id
-
-    // for analytics
-    private ulong frameCount = 0Lu; // for "telemetry"
-    public Task ReadBodyAsync(PipeReader reader, IHttpRequest requestBuilder, CancellationToken cancellationToken)
+    public Task ReadBodyAsync(PipeReader reader, IHttpRequest request, CancellationToken cancellationToken)
     {
-        // throw new NotImplementedException();
-
+        // request bodies are delivered by the frame demultiplexer in ReadRequestAsync, there is nothing to pull here
         return Task.CompletedTask;
     }
 
+    public void Reset()
+    {
+    }
+
+    /// <summary>
+    /// Runs the frame demultiplexer until one stream has a complete request (true), or until the connection must be closed (false).
+    /// A false result means GOAWAY was already sent when the failure was a protocol error.
+    /// </summary>
     public async Task<bool> ReadRequestAsync(IHttpRequestBuilder requestBuilder, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(requestBuilder);
+
         try
         {
-            bool isCompleted = false;
-
-            while (!isCompleted && !cancellationToken.IsCancellationRequested)
+            if (!prefaceSent)
             {
-                ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAtLeastAsync(9, cancellationToken); // 9 = Frame header size
-                //logger.LogDebug("Read result: IsCompleted={r}, Buffer.Length={l}", readResult.IsCompleted, readResult.Buffer.Length);
+                // RFC 9113 3.4: the server connection preface consists of a potentially empty SETTINGS frame
+                await SendServerPrefaceAsync(cancellationToken);
+                prefaceSent = true;
+            }
 
-                ReadOnlySequence<byte> buffer = readResult.Buffer;
+            var frame = new Http2Frame();
 
-                //requestBuilder.SetBodyPipeline(new Pipe());
-
-                var httpMethod = HttpMethod.Get;
-
-                var frame = new Http2Frame(); // can we reuse?
-
-                // HTTP2 connections always start with a SETTINGS frame
-                while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, maxFrameSize, out ReadOnlySequence<byte> payload))
+            while (true)
+            {
+                while (readyStreams.TryDequeue(out var readyStream))
                 {
-#if DEBUG
-                    if (logger.IsEnabled(LogLevel.Debug))
+                    if (await TryBuildRequestAsync(readyStream, requestBuilder, cancellationToken))
                     {
-                        logger.LogDebug("Frame found: {ft}, Stream Id: {sid}, payload length: {pll}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
-                    }
-#endif
-
-                    if (frameCount == 0)
-                    {
-                        if (frame.FrameType != Http2FrameType.SETTINGS)
-                        {
-                            logger.LogError("First frame must be a SETTINGS frame");
-                            return false;
-                        }
-
-                        var settingFrame = new Http2Frame()
-                        {
-                            FrameType = Http2FrameType.SETTINGS,
-                        };
-
-                        // send first SETTINGS frame
-                        var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-                        Http2FrameSETTINGSItem[] settings = [
-                            new () {
-                                Identifier = Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE,
-                                Value = initialWindowSize,
-                            },
-                            new () {
-                                Identifier = Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE,
-                                Value = maxFrameSize,
-                            },
-                            ];
-                        int length = Http2FrameWriter.SerializeSETTINGSFrame(settingFrame, settings, writePayload);
-                        if (length > 0)
-                        {
-                            protocolHandlerContext.Stream.Write(writePayload, 0, length);
-                            await protocolHandlerContext.Stream.FlushAsync();
-                        }
-
-                        ArrayPool<byte>.Shared.Return(writePayload);
-                    }
-
-                    if (!ProcessFrame(ref frame, ref payload, logger))
-                    {
-                        return false;
-                    }
-
-                    frameCount = Interlocked.Increment(ref frameCount);
-
-                    protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
-
-                    // TODO: like HTTP1.1, we can start building requests after receiving a END_HEADERS
-                    //if (frame.Flags.HasFlag(Http2FrameFlags.END_HEADERS))
-                    //{
-                    //    // parse header frames
-                    //    if (!streamContainer.TryGetValue(frame.StreamIdentifier, out var stream))
-                    //    {
-                    //        logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
-                    //    }
-                    //    else
-                    //    {
-                    //        var headers = BuildHeaders(stream);
-
-                    //    }
-                    //}
-
-                    if ((frame.FrameType == Http2FrameType.HEADERS || frame.FrameType == Http2FrameType.DATA) && frame.Flags.HasFlag(Http2FrameFlags.END_STREAM))
-                    {
-                        // start building a request
-
-                        if (!inputStreamContainer.Remove(frame.StreamIdentifier, out var stream))
-                        {
-                            logger.LogError("Stream not found: {id}", frame.StreamIdentifier);
-                            return false;
-                        }
-
-                        var b = BuildRequestFromStream(stream!, requestBuilder);
-
-                        return b;
+                        return true;
                     }
                 }
 
-                isCompleted = readResult.IsCompleted;
+                if (connectionClosed || (goAwayReceived && streams.IsEmpty))
+                {
+                    return false;
+                }
+
+                ReadResult readResult = await protocolHandlerContext.PipeReader.ReadAsync(cancellationToken);
+                ReadOnlySequence<byte> buffer = readResult.Buffer;
+
+                try
+                {
+                    while (Http2FrameReader.TryReadFrame(ref buffer, ref frame, options.MaxFrameSize, out ReadOnlySequence<byte> payload))
+                    {
+                        try
+                        {
+                            await ProcessFrameAsync(frame, payload, cancellationToken);
+                        }
+                        catch (Http2StreamException ex)
+                        {
+                            await HandleStreamErrorAsync(ex, cancellationToken);
+                        }
+                    }
+                }
+                catch (Http2ConnectionException ex)
+                {
+                    protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start);
+                    logger.LogError("HTTP/2 connection error {code}: {message}", ex.ErrorCode, ex.Message);
+                    await TrySendGoAwayAsync(ex.ErrorCode, cancellationToken);
+
+                    return false;
+                }
+
+                // everything up to buffer.Start is consumed, the remainder (a partial frame) has been examined
+                protocolHandlerContext.PipeReader.AdvanceTo(buffer.Start, buffer.End);
+
+                if (readResult.IsCompleted && readyStreams.Count == 0)
+                {
+                    // the peer will not send anything more, responses already in flight are still written by their own tasks
+                    logger.LogDebug("Peer closed the connection");
+
+                    return false;
+                }
             }
-
-
-            return false;
         }
         catch (OperationCanceledException)
         {
             logger.LogInformation("Connection expired");
+            await TrySendGoAwayAsync(Http2ErrorCode.NO_ERROR, CancellationToken.None);
+
             return false;
         }
         catch (IOException ex)
         {
-            logger.LogError(ex, "I/O error");
+            logger.LogDebug(ex, "I/O error");
+            Shutdown();
+
             return false;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error reading request");
+            await TrySendGoAwayAsync(Http2ErrorCode.INTERNAL_ERROR, CancellationToken.None);
+
             return false;
         }
     }
 
-    private static List<HPACKHeader> BuildHeaders(Http2Stream stream)
+    private async Task ProcessFrameAsync(Http2Frame frame, ReadOnlySequence<byte> payload, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-
-        var headers = new List<HPACKHeader>();
-        foreach (var headerFrame in stream.HeaderPayloads)
+        if (logger.IsEnabled(LogLevel.Debug))
         {
-            headers.AddRange(headerFrame.Headers);
+            logger.LogDebug("Frame received: {ft}, stream: {sid}, length: {len}, flags: {flags}", frame.FrameType, frame.StreamIdentifier, frame.Length, frame.Flags);
         }
 
-        return headers;
-    }
-
-    private bool BuildRequestFromStream(Http2Stream stream, IHttpRequestBuilder requestBuilder)
-    {
-        requestBuilder.SetHttpVersion(HttpVersions.Http20);
-
-        var hpackHeaders = BuildHeaders(stream);
-
-        if (!DecodeHeaders(hpackHeaders, requestBuilder))
+        if (!firstFrameReceived)
         {
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool DecodeHeaders(IEnumerable<HPACKHeader> hpackHeaders, IHttpRequestBuilder requestBuilder)
-    {
-        // convert encoded headers from a frame to HTTP regular headers
-
-        foreach (var hpackHeader in hpackHeaders)
-        {
-            if (hpackHeader.HeaderType == HPACKHeaderTypes.Static)
+            // RFC 9113 3.4: the client preface must be followed by a SETTINGS frame
+            if (frame.FrameType != Http2FrameType.SETTINGS || frame.Flags.HasFlag(Http2FrameFlags.ACK))
             {
-                var staticHeader = HPACKStaticTable.GetHeader(hpackHeader.StaticTableIndex) ?? throw new InvalidOperationException("Invalid HPACK static index");
-                switch (staticHeader.StaticTableIndex) // https://httpwg.org/specs/rfc7541.html#static.table.definition, refer HPACKStaticTable for more information
-                {
-                    case 1:
-                        if (HostHeader.TryParse(hpackHeader.Value, out var host))
-                        {
-                            requestBuilder.RequestHeaders.Host = host;
-                            requestBuilder.SetHost(host!.Host);
-                            requestBuilder.SetPort(host!.Port);
-                        }
-                        else
-                        {
-                            throw new InvalidHeaderException(new HttpHeader("Host", hpackHeader.Value));
-                        }
-                        break;
-                    case 2:
-                        requestBuilder.SetMethod(HttpMethod.Get);
-                        break;
-                    case 3:
-                        requestBuilder.SetMethod(HttpMethod.Post);
-                        break;
-                    case 4:
-                        if (hpackHeader.Value.Length == 0)
-                        {
-                            logger.LogError("Header 4 cannot be empty");
-                            return false;
-                        }
-                        if (httpComponentParser.TryParseUrl(new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(hpackHeader.Value)), out string? url, out string? hash, out string? queryString, out string[]? segments, out HttpParameters? parameters))
-                        {
-                            requestBuilder.SetUrl(url!);
-                            requestBuilder.SetHash(hash!);
-                            requestBuilder.SetQueryString(queryString!);
-                            requestBuilder.SetSegments(segments!);
-                            requestBuilder.SetParameters(parameters!);
-                        }
-                        else
-                        {
-                            logger.LogError("Error parsing header 4: {p}", hpackHeader.Value);
-                            return false;
-                        }
-                        break;
-                    case 5:
-                        requestBuilder.SetUrl(staticHeader.Value);
-                        break;
-                    case 6:
-                        requestBuilder.SetHttps(false);
-                        break;
-                    case 7:
-                        requestBuilder.SetHttps(true);
-                        break;
-                    case >= 8 and <= 14:
-                        // from 8-14 are response statuses
-                        break;
-                    case 15:
-                        // Accept-Charset: Do not use this header. Browsers omit this header and servers should ignore it. (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Charset)
-                        break;
-                    case 16:
-                        requestBuilder.AddHeader(staticHeader.Name, staticHeader.Value);
-                        break;
-                    case >= 17:
-                        requestBuilder.AddHeader(staticHeader.Name, hpackHeader.Value);
-                        break;
-                    default:
-                        throw new NotImplementedException($"Header index not supported: {staticHeader.StaticTableIndex}"); // TODO: this should not happen, I made this to remind myself about this incompletion
-                }
+                throw new Http2ConnectionException(Http2ErrorCode.PROTOCOL_ERROR, "The first frame must be a SETTINGS frame");
             }
-            else if (hpackHeader.HeaderType == HPACKHeaderTypes.Literal)
-            {
-                requestBuilder.AddHeader(hpackHeader.Name, hpackHeader.Value);
-            }
+
+            firstFrameReceived = true;
         }
 
-        return true;
-    }
-
-    private bool ProcessFrame(ref Http2Frame frame, ref ReadOnlySequence<byte> payload, ILogger logger)
-    {
-        var b = false;
+        if (headerBlockStream != null && (frame.FrameType != Http2FrameType.CONTINUATION || frame.StreamIdentifier != headerBlockStream.StreamId))
+        {
+            // RFC 9113 4.3: a header block must be a contiguous sequence of frames on the same stream
+            throw new Http2ConnectionException(Http2ErrorCode.PROTOCOL_ERROR, $"Expected a CONTINUATION frame for stream {headerBlockStream.StreamId}, got {frame.FrameType} for stream {frame.StreamIdentifier}");
+        }
 
         switch (frame.FrameType)
         {
+            case Http2FrameType.DATA:
+                await ProcessDATAFrameAsync(frame, payload, cancellationToken);
+                break;
             case Http2FrameType.HEADERS:
-                b = ProcessHEADERSFrame(ref frame, ref payload, logger);
-                break;
-            case Http2FrameType.SETTINGS:
-                b = ProcessSETTINGSFrame(ref frame, ref payload, out var settings);
-                break;
-            case Http2FrameType.WINDOW_UPDATE:
-                b = ProcessWINDOW_UPDATEFrame(ref frame, ref payload);
+                ProcessHEADERSFrame(frame, payload);
                 break;
             case Http2FrameType.PRIORITY:
-                b = ProcessPRIORITYFrame(ref frame, ref payload, out var priorityPayload);
+                ProcessPRIORITYFrame(frame, payload);
                 break;
+            case Http2FrameType.RST_STREAM:
+                ProcessRST_STREAMFrame(frame, payload);
+                break;
+            case Http2FrameType.SETTINGS:
+                await ProcessSETTINGSFrameAsync(frame, payload, cancellationToken);
+                break;
+            case Http2FrameType.PUSH_PROMISE:
+                // RFC 9113 8.4: clients cannot push
+                throw new Http2ConnectionException(Http2ErrorCode.PROTOCOL_ERROR, "Received a PUSH_PROMISE frame from the client");
             case Http2FrameType.PING:
-                b = ProcessPINGFrame(ref frame, ref payload);
+                await ProcessPINGFrameAsync(frame, payload, cancellationToken);
+                break;
+            case Http2FrameType.GOAWAY:
+                ProcessGOAWAYFrame(frame, payload);
+                break;
+            case Http2FrameType.WINDOW_UPDATE:
+                ProcessWINDOW_UPDATEFrame(frame, payload);
+                break;
+            case Http2FrameType.CONTINUATION:
+                ProcessCONTINUATIONFrame(frame, payload);
                 break;
             default:
-                logger.LogError("Unknown frame type: {ft}, stream: {sid}", frame.FrameType, frame.StreamIdentifier);
+                // RFC 9113 4.1: implementations must ignore and discard frames of unknown types
+                logger.LogDebug("Ignoring frame of unknown type {ft}", (byte)frame.FrameType);
                 break;
         }
-
-        return b;
     }
 
-    public void Reset()
+    private async Task SendServerPrefaceAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
-    }
+        var settingsFrame = new Http2Frame { FrameType = Http2FrameType.SETTINGS };
+        Http2FrameSETTINGSItem[] settings =
+        [
+            new() { Identifier = Http2FrameSettings.SETTINGS_HEADER_TABLE_SIZE, Value = options.HeaderTableSize },
+            new() { Identifier = Http2FrameSettings.SETTINGS_ENABLE_PUSH, Value = 0 },
+            new() { Identifier = Http2FrameSettings.SETTINGS_MAX_CONCURRENT_STREAMS, Value = options.MaxConcurrentStreams },
+            new() { Identifier = Http2FrameSettings.SETTINGS_INITIAL_WINDOW_SIZE, Value = options.InitialWindowSize },
+            new() { Identifier = Http2FrameSettings.SETTINGS_MAX_FRAME_SIZE, Value = options.MaxFrameSize },
+            new() { Identifier = Http2FrameSettings.SETTINGS_MAX_HEADER_LIST_SIZE, Value = options.MaxHeaderListSize },
+        ];
 
-    public async Task<bool> WriteResponseAsync(IHttpResponse response, CancellationToken cancellationToken)
-    {
-        var streamId = GetNextStreamIdentifier();
-        var stream = response.Stream ?? throw new InvalidOperationException("response.Stream should not be null");
-
-        // Write headers (including :status pseudo-header)
-        await WriteHeadersAsync(streamId, response, stream, cancellationToken);
-
-        // Write response body as DATA frame(s)
-        await WriteDataAsync(streamId, response, stream, cancellationToken);
-
-        return true;
-    }
-
-    private async Task WriteHeadersAsync(uint streamId, IHttpResponse response, Stream stream, CancellationToken cancellationToken)
-    {
-        var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-
+        var buffer = ArrayPool<byte>.Shared.Rent(Http2FrameWriter.FrameHeaderLength + settings.Length * 6);
         try
         {
-            // Add content headers to response headers first (before counting)
-            foreach (var header in response.Content.Headers)
-            {
-                response.Headers.AddOrUpdate(header.Key, header.Value);
-            }
-
-            // Calculate total header count for END_HEADERS flag
-            int totalHeaderCount = response.Headers.Count + response.Cookies.Count;
-
-            // First, write the :status pseudo-header
-            int statusIndex = GetStaticHeaderIndex(response.StatusCode);
-            int length;
-            
-            if (statusIndex > 0)
-            {
-                // Use indexed header field representation for status
-                SerializeStatusHeader(statusIndex, writePayload, out length);
-                writePayload[3] = (byte)Http2FrameType.HEADERS;
-                writePayload[4] = (byte)(totalHeaderCount == 0 ? Http2FrameFlags.END_HEADERS : Http2FrameFlags.NONE);
-                
-                // Write stream identifier
-                writePayload[5] = (byte)((streamId >> 24) & 0x7F);
-                writePayload[6] = (byte)((streamId >> 16) & 0xFF);
-                writePayload[7] = (byte)((streamId >> 8) & 0xFF);
-                writePayload[8] = (byte)(streamId & 0xFF);
-
-                await stream.WriteAsync(writePayload.AsMemory(0, 9 + length), cancellationToken);
-            }
-            else
-            {
-                // Use literal header field for non-standard status codes
-                string statusValue = ((int)response.StatusCode).ToString();
-                length = Http2FrameWriter.SerializeHEADERFrame(streamId, ":status", [statusValue], true, totalHeaderCount == 0, writePayload);
-                if (length > 0)
-                {
-                    await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
-                }
-            }
-
-            // Write regular headers
-            int i = 1;
-
-            foreach (var header in response.Headers)
-            {
-                length = Http2FrameWriter.SerializeHEADERFrame(streamId, header.Key, header.Value, false, i == totalHeaderCount, writePayload);
-
-                if (length > 0)
-                {
-                    await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
-                }
-                i++;
-            }
-
-            // Write cookies as set-cookie headers
-            foreach (var cookie in response.Cookies)
-            {
-                string cookieValue = cookie.Value.ToString();
-                length = Http2FrameWriter.SerializeHEADERFrame(streamId, "set-cookie", [cookieValue], false, i == totalHeaderCount, writePayload);
-
-                if (length > 0)
-                {
-                    await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
-                }
-                i++;
-            }
-            
-            await stream.FlushAsync(cancellationToken);
-        } 
-        catch (Exception ex) 
-        {
-            logger.LogError(ex, "Error writing headers");
-            throw;
-        } 
+            int length = Http2FrameWriter.SerializeSETTINGSFrame(settingsFrame, settings, buffer);
+            await WriteFrameAsync(buffer.AsMemory(0, length), cancellationToken);
+        }
         finally
         {
-            ArrayPool<byte>.Shared.Return(writePayload);
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 
-    private void SerializeStatusHeader(int statusIndex, byte[] payload, out int length)
+    /// <summary>
+    /// Writes raw, already serialized frames. All writers share this lock so frames from different streams never interleave.
+    /// </summary>
+    private async Task WriteFrameAsync(ReadOnlyMemory<byte> frames, CancellationToken cancellationToken)
     {
-        // Write indexed header field representation
-        // Pattern: 1xxxxxxx where xxxxxxx is the index
-        length = 0;
-        var tempBuffer = new byte[16]; // Small temporary buffer for integer encoding
-        HPACKInteger.WriteInt(statusIndex, tempBuffer, 7, out length);
-        Array.Copy(tempBuffer, 0, payload, 9, length);
-        payload[9] |= 0b_1000_0000; // Set the indexed bit
-        
-        // Write payload length in frame header
-        payload[0] = (byte)((length >> 16) & 0xFF);
-        payload[1] = (byte)((length >> 8) & 0xFF);
-        payload[2] = (byte)(length & 0xFF);
-    }
+        if (connectionClosed)
+        {
+            throw new Http2StreamResetException(0, Http2ErrorCode.CANCEL);
+        }
 
-    private async Task WriteDataAsync(uint streamId, IHttpResponse response, Stream stream, CancellationToken cancellationToken)
-    {
-        var writePayload = ArrayPool<byte>.Shared.Rent((int)maxFrameSize);
-
+        await writeLock.WaitAsync(cancellationToken);
         try
         {
-            // Get the response content
-            using var contentStream = new MemoryStream();
-            await response.Content.WriteToAsync(contentStream, cancellationToken);
-            byte[] contentData = contentStream.ToArray();
+            await protocolHandlerContext.Stream.WriteAsync(frames, cancellationToken);
+            await protocolHandlerContext.Stream.FlushAsync(cancellationToken);
+        }
+        finally
+        {
+            writeLock.Release();
+        }
+    }
 
-            if (contentData.Length == 0)
-            {
-                // Send empty DATA frame with END_STREAM flag
-                int length = Http2FrameWriter.SerializeDATAFrame(streamId, [], 0, 0, true, writePayload);
-                await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
-            }
-            else
-            {
-                // Send data in chunks if needed (respecting maxFrameSize)
-                int maxDataPerFrame = (int)maxFrameSize - 9; // Frame header is 9 bytes
-                int offset = 0;
+    private async Task SendRstStreamAsync(uint streamId, Http2ErrorCode errorCode, CancellationToken cancellationToken)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(Http2FrameWriter.FrameHeaderLength + 4);
+        try
+        {
+            int length = Http2FrameWriter.SerializeRST_STREAMFrame(streamId, errorCode, buffer);
+            await WriteFrameAsync(buffer.AsMemory(0, length), cancellationToken);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
 
-                while (offset < contentData.Length)
-                {
-                    int chunkSize = Math.Min(maxDataPerFrame, contentData.Length - offset);
-                    bool isLastChunk = (offset + chunkSize) >= contentData.Length;
+    private async Task SendWindowUpdateAsync(uint streamId, uint increment, CancellationToken cancellationToken)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(Http2FrameWriter.FrameHeaderLength + 4);
+        try
+        {
+            int length = Http2FrameWriter.SerializeWINDOW_UPDATEFrame(streamId, increment, buffer);
+            await WriteFrameAsync(buffer.AsMemory(0, length), cancellationToken);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
 
-                    int length = Http2FrameWriter.SerializeDATAFrame(streamId, contentData, offset, chunkSize, isLastChunk, writePayload);
-                    await stream.WriteAsync(writePayload.AsMemory(0, length), cancellationToken);
+    /// <summary>
+    /// Sends GOAWAY (RFC 9113 6.8) and marks the connection as closed. Never throws, the connection is going away anyway.
+    /// </summary>
+    private async Task TrySendGoAwayAsync(Http2ErrorCode errorCode, CancellationToken cancellationToken)
+    {
+        if (goAwaySent)
+        {
+            return;
+        }
 
-                    offset += chunkSize;
-                }
-            }
-            
-            await stream.FlushAsync(cancellationToken);
+        goAwaySent = true;
+
+        var buffer = ArrayPool<byte>.Shared.Rent(Http2FrameWriter.FrameHeaderLength + 8);
+        try
+        {
+            int length = Http2FrameWriter.SerializeGOAWAYFrame(lastClientStreamId, errorCode, buffer);
+            await WriteFrameAsync(buffer.AsMemory(0, length), cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error writing data frames");
-            throw;
+            logger.LogDebug(ex, "Failed to send GOAWAY");
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(writePayload);
+            ArrayPool<byte>.Shared.Return(buffer);
+            Shutdown();
         }
     }
 
-    private void SerializeHeaderFramePayload(IHttpResponse response, ref byte[] payload, out int length)
+    /// <summary>
+    /// Marks the connection as unusable, wakes up blocked writers and fails every open request body.
+    /// </summary>
+    private void Shutdown()
     {
-        int index = GetStaticHeaderIndex(response.StatusCode);
-        length = 0;
+        connectionClosed = true;
 
-        if (index > 0)
+        foreach (var stream in streams.Values)
         {
-            HPACKInteger.WriteInt(index, payload, 7, out length);
-            payload[0] |= 0b_1000_0000;
+            CloseStream(stream, Http2ErrorCode.CANCEL);
+        }
+
+        lock (flowControlLock)
+        {
+            SignalWindowUpdated();
         }
     }
 
-    private static int GetStaticHeaderIndex(HttpResponseCodes code) => code switch
-    { 
-        // return index in static table, refer to HPACK docs: https://httpwg.org/specs/rfc7541.html#static.table.definition
-        HttpResponseCodes.OK => 8,
-        HttpResponseCodes.NoContent => 9,
-        HttpResponseCodes.PartialContent => 10,
-        HttpResponseCodes.NotModified => 11,
-        HttpResponseCodes.BadRequest => 12,
-        HttpResponseCodes.NotFound => 13,
-        HttpResponseCodes.InternalServerError => 14,
-        _ => -1
-    };
-
-    private uint GetNextStreamIdentifier()
+    /// <summary>
+    /// Handles a stream error (RFC 9113 5.4.2): RST_STREAM is sent unless the stream is still idle, and the stream is closed.
+    /// </summary>
+    private async Task HandleStreamErrorAsync(Http2StreamException ex, CancellationToken cancellationToken)
     {
-        return Interlocked.Add(ref nextOutputStreamId, 2); // an Id initiated by server is always an even 31-bit number 
+        logger.LogWarning("HTTP/2 stream {sid} error {code}: {message}", ex.StreamId, ex.ErrorCode, ex.Message);
+
+        if (streams.TryGetValue(ex.StreamId, out var stream))
+        {
+            CloseStream(stream, ex.ErrorCode);
+        }
+
+        if (ex.StreamId != 0 && ex.StreamId <= lastClientStreamId)
+        {
+            // RFC 9113 6.4: RST_STREAM must not be sent for an idle stream
+            await SendRstStreamAsync(ex.StreamId, ex.ErrorCode, cancellationToken);
+        }
+    }
+
+    private Http2Stream? GetStream(uint streamId)
+    {
+        return streams.TryGetValue(streamId, out var stream) ? stream : null;
+    }
+
+    private bool IsIdleStream(uint streamId)
+    {
+        // client streams are odd and opened in increasing order, anything above the last one seen has never been used
+        return streamId > lastClientStreamId;
+    }
+
+    /// <summary>
+    /// Removes a stream from the connection. When <paramref name="resetErrorCode"/> is set the stream was aborted and pending
+    /// writers and body readers are failed, otherwise it completed normally.
+    /// </summary>
+    private void CloseStream(Http2Stream stream, Http2ErrorCode? resetErrorCode)
+    {
+        streams.TryRemove(stream.StreamId, out _);
+        streamsByBody.TryRemove(stream.Body, out _);
+
+        lock (flowControlLock)
+        {
+            stream.State = Http2StreamStates.CLOSED;
+            if (resetErrorCode.HasValue && !stream.IsReset)
+            {
+                stream.ResetErrorCode = resetErrorCode;
+            }
+
+            SignalWindowUpdated(); // wakes up writers blocked on this stream so they notice the reset
+        }
+
+        stream.CompleteBody(resetErrorCode.HasValue ? new Http2StreamResetException(stream.StreamId, resetErrorCode.Value) : null);
+    }
+
+    private void SignalWindowUpdated()
+    {
+        // called under flowControlLock, every waiter captured the previous task and gets released by completing it
+        var previous = windowUpdated;
+        windowUpdated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        previous.TrySetResult();
     }
 }

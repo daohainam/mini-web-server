@@ -1,103 +1,124 @@
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniWebServer.Server.ProtocolHandlers.Http2;
 
-public class HPACKInteger
+/// <summary>
+/// HPACK integer representation, RFC 7541 5.1.
+/// </summary>
+public static class HPACKInteger
 {
-    private const byte IS_HUFFMAN_ENCODED_BITS = 0b_1000_0000;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int Decode(int v, int n)
+    /// <summary>
+    /// Decodes an integer with an n-bit prefix starting at <paramref name="offset"/>, the bits above the prefix are ignored.
+    /// </summary>
+    public static int Read(ReadOnlySpan<byte> buffer, ref int offset, int prefixBits)
     {
-        // https://httpwg.org/specs/rfc7541.html#integer.representation
-        return (int)v;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static int Pow2(int n) // 2 ^ n
-    {
-        if (n == 0)
-            return 1;
-        if (n == 1) 
-            return 2;
-        return 2 << (n - 1);
-    }
-
-    public static int ReadInt(ref ReadOnlySequence<byte> payload, int n)
-    {
-        var mask = n switch
+        if (prefixBits < 1 || prefixBits > 8)
         {
-            7 => 0b_0111_1111,
-            6 => 0b_0011_1111,
-            5 => 0b_0001_1111,
-            4 => 0b_0000_1111,
-            3 => 0b_0000_0111,
-            2 => 0b_0000_0011,
-            1 => 0b_0000_0001,
-            0 => 0b_0000_0000,
-            _ => 0b_1111_1111
-        };
-
-        var hs = payload.Slice(0, 1).FirstSpan[0] & mask;
-        payload = payload.Slice(1);
-        
-        if (hs < Pow2(n) - 1)
-        {
-            return hs;
+            throw new ArgumentOutOfRangeException(nameof(prefixBits));
         }
-        else
+
+        if (offset >= buffer.Length)
         {
-            var m = 0;
-            int i = hs;
-            byte next;
-            do
+            throw new HPACKDecodingException("Truncated integer");
+        }
+
+        int prefixMax = (1 << prefixBits) - 1;
+        int value = buffer[offset++] & prefixMax;
+        if (value < prefixMax)
+        {
+            return value;
+        }
+
+        int shift = 0;
+        byte next;
+        do
+        {
+            if (offset >= buffer.Length)
             {
-                next = payload.Slice(0, 1).FirstSpan[0];
-                payload = payload.Slice(1);
-
-                i += (next & 0b_0111_1111) * Pow2(m);
-
-                m += 7;
-            } while ((next & 0b_1000_0000) == 0b_1000_0000); // bit [0] == 1
-
-            return i;
-        }
-    }
-    public  static int ReadStringLength(ref ReadOnlySequence<byte> payload, out bool isHuffmanEncoded)
-    {
-        var n = payload.Slice(0, 1).FirstSpan[0];
-
-        isHuffmanEncoded = (n & IS_HUFFMAN_ENCODED_BITS) == IS_HUFFMAN_ENCODED_BITS;
-
-        return ReadInt(ref payload, 7);
-    }
-
-    public static void WriteInt(int hs, byte[] bytes, int n, out int length)
-    {
-        length = 0;
-
-        int pow = Pow2(n) - 1;
-        if (hs < pow)
-        {
-            bytes[length++] = (byte)hs;
-        }
-        else
-        {
-            bytes[length++] = (byte)pow;
-            hs -= pow;
-
-            while (hs >= 128)
-            {
-                bytes[length++] = (byte)(0b_1000_0000 | (hs % 128));
-                hs /= 128;
+                throw new HPACKDecodingException("Truncated integer");
             }
-            bytes[length++] = (byte)hs;
+
+            if (shift > 28)
+            {
+                throw new HPACKDecodingException("Integer too large");
+            }
+
+            next = buffer[offset++];
+            long sum = value + ((long)(next & 0x7F) << shift);
+            if (sum > int.MaxValue)
+            {
+                throw new HPACKDecodingException("Integer too large");
+            }
+
+            value = (int)sum;
+            shift += 7;
+        } while ((next & 0x80) != 0);
+
+        return value;
+    }
+
+    public static int ReadInt(ref ReadOnlySequence<byte> payload, int prefixBits)
+    {
+        var buffer = payload.IsSingleSegment ? payload.FirstSpan : payload.ToArray();
+        int offset = 0;
+        int value = Read(buffer, ref offset, prefixBits);
+        payload = payload.Slice(offset);
+
+        return value;
+    }
+
+    /// <summary>
+    /// Returns the number of bytes needed to encode <paramref name="value"/> with an n-bit prefix.
+    /// </summary>
+    public static int GetEncodedLength(int value, int prefixBits)
+    {
+        int prefixMax = (1 << prefixBits) - 1;
+        if (value < prefixMax)
+        {
+            return 1;
         }
+
+        int length = 1;
+        value -= prefixMax;
+        while (value >= 128)
+        {
+            value >>= 7;
+            length++;
+        }
+
+        return length + 1;
+    }
+
+    /// <summary>
+    /// Encodes <paramref name="value"/> with an n-bit prefix, OR-ing <paramref name="prefixPattern"/> into the first byte.
+    /// </summary>
+    public static int Write(Span<byte> buffer, int value, int prefixBits, byte prefixPattern)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+        int prefixMax = (1 << prefixBits) - 1;
+        if (value < prefixMax)
+        {
+            buffer[0] = (byte)(prefixPattern | value);
+            return 1;
+        }
+
+        buffer[0] = (byte)(prefixPattern | prefixMax);
+        int length = 1;
+        value -= prefixMax;
+        while (value >= 128)
+        {
+            buffer[length++] = (byte)(0x80 | (value & 0x7F));
+            value >>= 7;
+        }
+
+        buffer[length++] = (byte)value;
+
+        return length;
+    }
+
+    public static void WriteInt(int value, byte[] bytes, int prefixBits, out int length)
+    {
+        length = Write(bytes, value, prefixBits, 0);
     }
 }
